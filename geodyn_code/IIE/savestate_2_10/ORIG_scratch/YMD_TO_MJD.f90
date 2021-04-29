@@ -1,0 +1,16 @@
+      SUBROUTINE YMD_TO_MJD (YY,MN,DD,HH,MM,SS,MJD,FMJD)
+!
+!     IMPLICIT NONE
+!
+      INTEGER YY,MN,DD,HH,MM
+      INTEGER*4 MJD
+      DOUBLE PRECISION SS,FMJD
+!
+      INTEGER DDD
+      save
+!
+      call  YMD_TO_YDD (YY,MN,DD,DDD)
+      call  YDD_TO_MJD (YY,DDD,HH,MM,SS,MJD,FMJD)
+      RETURN
+!
+      END

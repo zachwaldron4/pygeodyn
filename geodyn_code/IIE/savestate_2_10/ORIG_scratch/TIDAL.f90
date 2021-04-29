@@ -1,0 +1,267 @@
+!$TIDAL
+      SUBROUTINE TIDAL(ISATID,XYZ,R,NEQN,DX,GRPAR,AA,INDBOD,            &
+     &                 MJDSEC,FSEC)
+!********1*********2*********3*********4*********5*********6*********7**
+! TIDAL            83/08/16            8308.0    PGMR - D. ROWLANDS
+!
+!
+! FUNCTION:  CALCULATE ACCELERATION AND (IF NECC) ASSOCIATED
+!            PARTIALS FROM THE BASIC EARTH TIDE MODEL
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   XYZ      I         TRUE OF INTEGRATION STEP SATELLITE POSITION
+!   R        I         SATELLITE RADIUS
+!   NEQN     I         NUMBER OF FORCE MODEL EQUATIONS
+!   DX       O         TRUE OF INTEGRATION STEP ACCELERATION FROM
+!                      BASIC EARTH TIDE MODEL
+!   GRPAR    O         TRUE OF INTEGRATION STEP PARTIALS OF ACCELERATION
+!                      WRT FORCE MODEL PARAMETERS
+!   AA      I/O   A
+!   INDBOD  I          INDBOD = 3 IF SATELLITE ORBITING THE MOON
+!                      INDBOD = 4  FOR ALL OTHER BODIES
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION AA(1),GMMS(2),IPTMS(2)
+      DIMENSION CONST2(2),CONST3(2),ACCEL(3),PACCEL(3),DX(3),UVBODI(3), &
+     &   PAR2(2),PAR3(2),PART(2),GRPAR(NEQN,3),TPART(3,3),XYZ(3)
+      DIMENSION XMN(6)
+      DIMENSION XKMN(6)
+      INCLUDE 'COMMON_DECL.inc'
+      COMMON/CGRAV/GM,AE,AESQ,FE,FFSQ32,FSQ32,XK2,XK3,XLAM,SIGXK2,      &
+     &      SIGXK3,SIGLAM,RATIOM(2),AU,RPRESS
+      COMMON/CONSTR/PI,TWOPI,DEGRAD,SECRAD,SECDAY
+      COMMON/CORA01/KFSEC0,KFSECB,KFSEC ,KFSECV,KH    ,KHV   ,KCTOL ,   &
+     &              KRSQ  ,KVMATX,KCPP  ,KCPV  ,KCCP  ,KCCV  ,KCCPV ,   &
+     &              KCCVV ,KXPPPP,KX    ,KPX   ,KSUMX ,KXDDOT,KSUMPX,   &
+     &              KPXDDT,KAB   ,KPN   ,KAORN ,KSINLM,KCOSLM,KTANPS,   &
+     &              KCRPAR,KVRARY,KXM   ,KXNP1 ,KXPRFL,KXM2  ,KXNNP1,   &
+     &              KWRK  ,KFI   ,KGE   ,KB0DRG,KBDRAG,KAPGM ,KAPLM ,   &
+     &              KCN   ,KSN   ,KSTID ,KTIDE ,KSTDRG,KSTSRD,KSTACC,   &
+     &              KLGRAV,KGM   ,KAE   ,KFPL  ,KFEQ  ,KPLNPO,KPLNVL,   &
+     &              KXEPOC,KCD   ,KCDDOT,KCR   ,KGENAC,KACN  ,KASN  ,   &
+     &              KTHDRG,KCKEP ,KCKEPN,KXNRMZ,KXNRMC,KFSCEP,KFSCND,   &
+     &              KAREA ,KXMASS,KRMSPO,KTCOEF,KTXQQ ,KTIEXP,KTXMM ,   &
+     &              KTXLL1,KTXSN1,KTS2QQ,KT2M2H,KT2MHJ,KTXKK ,KTSCRH,   &
+     &              KPXPK ,KAESHD,KCSAVE,KSSAVE,KCGRVT,KSGRVT,KXDTMC,   &
+     &              KDNLT ,KTXSN2,KTNORM,KTWRK1,KTWRK2,KUNORM,KAERLG,   &
+     &              KSINCO,KPARLG,KCONST,KBFNRM,KTDNRM,KCSTHT,KTPSTR,   &
+     &              KTPSTP,KTPFYW,KPLMGM,KTPXAT,KEAQAT,KEAFSS,KEAINS,   &
+     &              KACS  ,KECS  ,KSOLNA,KSOLNE,KSVECT,KSFLUX,KFACTX,   &
+     &              KFACTY,KADIST,KGEOAN,KPALB ,KALBCO,KEMMCO,KCNAUX,   &
+     &              KSNAUX,KPPER ,KACOSW,KBSINW,KACOFW,KBCOFW,KANGWT,   &
+     &              KWT   ,KPLNDX,KPLANC,KTGACC,KTGDRG,KTGSLR,KWTACC,   &
+     &              KWTDRG,KWTSLR,KTMACC,KTMDRG,KTMSLR,KATTUD,KDYACT,   &
+     &              KACCBT,KACPER,KXDDNC,KXDDAO,KXNC  ,KXPPNC,KSMXNC,   &
+     &              KXDDTH,KPDDTH,KXSSBS,KCPPNC,KEXACT,KXACIN,KXACOB,   &
+     &              KPXHDT,KTPXTH,KPACCL,KTXSTA,KDELXS,KSMRNC,KPRX  ,   &
+     &              KSMRNP,KDSROT,KXUGRD,KYUGRD,KZUGRD,KSUMRC,KXDDRC,   &
+     &              KTMOS0,KTMOS, KTMOSP,KSMXOS,KSGTM1,KSGTM2,KSMPNS,   &
+     &              KXGGRD,KYGGRD,KZGGRD,KXEGRD,KYEGRD,KZEGRD,KSSDST,   &
+     &              KSDINS,KSDIND,KSSDSR,KSSDDG,KTATHM,KTAINS,KTAFSS,   &
+     &              KSRAT ,KTRAT ,KHLDV ,KHLDA1,KHLDA4,KHLDA7,KQAST1,   &
+     &              KQAST2,KQAST3,KQAST4,KQAST5,KQAST6,NXCA01
+      COMMON/CORA06/KPRMV ,KPNAME,KPRMV0,KPRMVC,KPRMVP,KPRMSG,KPARVR,   &
+     &              KPRML0,KPDLTA,KSATCV,KSTACV,KPOLCV,KTIDCV,KSUM1 ,   &
+     &              KSUM2 ,KGPNRA,KGPNRM,KPRSG0,KCONDN,KVELCV,          &
+     &              KSL2CV,KSH2CV,KTIEOU,KPRMDF,NXCA06
+      COMMON/IBODPT/IBDCF(999),IBDSF(999),IBDGM(999),IBDAE(999),    &
+     &              IBDPF(999),                                     &
+     &              ICBDCF,ICBDSF,ICBDGM,ICBDAE,ICBDPF,             &
+     &              ITBDCF,ITBDSF,ITBDGM,ITBDAE,ITBDPF,NXBDPT
+      COMMON/MNSNSP/XMNSNS(7,2)
+      COMMON/NPCOM /NPNAME,NPVAL(92),NPVAL0(92),IPVAL(92),IPVAL0(92),   &
+     &              MPVAL(28),MPVAL0(28),NXNPCM
+      COMMON/NPCOMX/IXARC ,IXSATP,IXDRAG,IXSLRD,IXACCL,IXGPCA,IXGPSA,   &
+     &              IXAREA,IXSPRF,IXDFRF,IXEMIS,IXTMPA,IXTMPC,IXTIMD,   &
+     &              IXTIMF,IXTHTX,IXTHDR,IXOFFS,IXBISA,IXFAGM,IXFAFM,   &
+     &              IXATUD,IXRSEP,IXACCB,IXDXYZ,IXGPSBW,IXCAME,IXBURN,  &
+     &              IXGLBL,IXGPC ,IXGPS, IXTGPC,IXTGPS,IXGPCT,IXGPST,   &
+     &              IXTIDE,IXETDE,IXOTDE,IXOTPC,IXOTPS,IXLOCG,IXKF  ,   &
+     &              IXGM  ,IXSMA ,IXFLTP,IXFLTE,IXPLTP,IXPLTV,IXPMGM,   &
+     &              IXPMJ2,IXVLIT,IXEPHC,IXEPHT,IXH2LV,IXL2LV,IXOLOD,   &
+     &              IXPOLX,IXPOLY,IXUT1 ,IXPXDT,IXPYDT,IXUTDT,IXVLBI,   &
+     &              IXVLBV,IXXTRO,IXBISG,IXSSTF,IXFGGM,IXFGFM,IXLNTM,   &
+     &              IXLNTA,IX2CCO,IX2SCO,IX2GM ,IX2BDA,IXRELP,IXJ2SN,   &
+     &              IXGMSN,IXPLNF,IXPSRF,IXANTD,IXTARG,                 &
+     &              IXSTAP,IXSSTC,IXSSTS,IXSTAV,IXSTL2,                 &
+     &              IXSTH2,IXDPSI,IXEPST,IXCOFF,IXTOTL,NXNPCX
+      COMMON/PLMONI/IMNNUM(5,2),NXPLMI
+      COMMON/CTIDES/NTIDE,NSTADJ,NET,NETADJ,NETUN,NOT,NOTADJ,           &
+     &   NOTUN ,NETUNU,NETADU,NOTUNU,NOTADU,NBSTEP,KTIDA(3),            &
+     &   ILLMAX,NUNPLY,NNMPLY,NDOODN,MXTMRT,NRESP ,NXCTID
+      COMMON/CRMI/RMI(9)
+      COMMON/SETADJ/LSADRG(4),LSASRD(4),LSAGA(4),LSAGP,LSATID,LSAGM,    &
+     &              LSADPM,LSAKF,LSADNX,LSADJ2,LSAPGM
+      COMMON/SETAPT/                                                    &
+     &       JSADRG(1),JSASRD(1),JSAGA(1),JFAADJ,JTHDRG,JACBIA,JATITD,  &
+     &       JDSTAT,JDTUM ,                                             &
+     &       JSACS, JSATID,JSALG,JSAGM,JSAKF,JSAXYP,JSADJ2,JSAPGM,      &
+     &       JFGADJ,JLTPMU,JLTPAL,JL2CCO,JL2SCO,JL2GM,JLRELT,           &
+     &       JLJ2SN,JLGMSN,JLPLFM,JL2AE,JSAXTO,JSABRN
+      DATA ZERO/0.0D0/,HALF/0.5D0/,C0P6/0.6D0/,C2P5/2.5D0/
+      DATA THREE/3.0D0/,FIVE/5.0D0/,SIX/6.0D0/,SEVEN/7.0D0/
+      DATA FIFTEN/15.0D0/
+!      DATA IPTMS/4,11/
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+      HQ1=XMNSNS(1,1)
+      HQ2=XMNSNS(2,1)
+      HQ3=XMNSNS(3,1)
+      HQ4=XMNSNS(4,1)
+      IPTMS(1)=INDBOD
+      IPTMS(2)= 11
+!
+!     WRITE(6,*)'TIDAL*INDBOD=',INDBOD,XK2,XK3
+!     WRITE(6,*)'TIDAL*IBDGM,R =',IBDGM(4),IBDGM(11),R
+! SET CONSTANTS ON FIRST CALL FOR EACH OUTER ITERATION
+!     IF(NOT1ST) GO TO 100
+!      IF(ICBDGM.EQ.4) IPTMS(1)= 3
+      COSLAM=COS(XLAM)
+      SINLAM=SIN(XLAM)
+      DO 50 I=1,2
+      GMMS(I)=ZERO
+      IF(IBDGM(IPTMS(I)).EQ.0) GO TO 10
+      JGM=KPRMV+IPVAL(IXGM)+IBDGM(IPTMS(I))-2
+      GMMS(I)=AA(JGM)
+   10 CONTINUE
+!..... if integrated body is Phobos .
+      IF(ISATID.EQ.401)THEN
+      PHBMAS=AA(KXMASS)
+      GMMS(1)=PHBMAS*6.672D-11
+      ENDIF
+!
+!
+! IF CENTRAL BODY IS MARS AND MOONPO OPTION IS ON
+!
+      NMN=NPVAL(IXPMGM)
+      IF(ICBDGM.EQ.5.AND.NMN.GT.0) THEN
+         LFND=.FALSE.
+         DO IMN = 1,NMN
+            GMMOON = AA( KPLMGM + IMN -1 )
+            NUMMON = IMNNUM(IMN,1)
+            IF(NUMMON.EQ.401) THEN
+               CALL MOONPO(IMN, GM, MJDSEC, FSEC, XMN, XKMN,            &
+     &                     AA, 6)
+               LFND=.TRUE.
+               GMPHB=GMMOON
+            ENDIF
+         ENDDO
+         IF(LFND) THEN
+             GMMS(1)=GMPHB
+             XMNSNS(4,1)=SQRT(XMN(1)*XMN(1)+XMN(2)*XMN(2)              &
+     &                        +XMN(3)*XMN(3))
+             XMNSNS(1,1)=XMN(1)/XMNSNS(4,1)
+             XMNSNS(2,1)=XMN(2)/XMNSNS(4,1)
+             XMNSNS(3,1)=XMN(3)/XMNSNS(4,1)
+         ENDIF
+!
+!
+      ENDIF
+!
+!
+      PAR3(I)=AESQ*C2P5*GMMS(I)
+      PAR3(I)=AESQ*C2P5*GMMS(I)
+      PAR2(I)=AE*HALF*GMMS(I)
+!     PAR3(I)=GM*AESQ*RATIOM(I)*C2P5
+!     PAR2(I)=GM*AE*RATIOM(I)*HALF
+      CONST2(I)=XK2*PAR2(I)
+      CONST3(I)=XK3*PAR3(I)
+   50 END DO
+!     WRITE(6,*)'*TIDAL * AE,GM,GMMS =', AE,GM,GMMS(1),GMMS(2)
+!     WRITE(6,*)'*TIDAL * RATIOM     =',RATIOM(1),RATIOM(2)
+!     NOT1ST=.TRUE.
+! 100 CONTINUE
+      IF(NSTADJ.LE.0) GO TO 150
+! SET PARTIALS TO ZERO
+      DO 120 I=1,3
+      DO 120 J=1,3
+      TPART(J,I)=ZERO
+  120 CONTINUE
+  150 CONTINUE
+!     WRITE(6,*)'TIDAL*XYZ*XMNSNS*', XYZ,(XMNSNS(I,1),I=1,7)
+      DO 1000 K=1,2
+! ROTATE FOR PHASE SHIFT
+      UVBODI(1)=XMNSNS(1,K)*COSLAM-XMNSNS(2,K)*SINLAM
+      UVBODI(2)=XMNSNS(2,K)*COSLAM+XMNSNS(1,K)*SINLAM
+      UVBODI(3)=XMNSNS(3,K)
+      IF(NSTADJ.LE.0) GO TO 180
+      PART(1)=-UVBODI(2)
+      PART(2)= UVBODI(1)
+  180 CONTINUE
+      DP2=(XMNSNS(1,K)*XYZ(1)+XMNSNS(2,K)*XYZ(2)+XMNSNS(3,K)*XYZ(3))/R
+      DP=(XYZ(1)*UVBODI(1)+XYZ(2)*UVBODI(2)+XYZ(3)*UVBODI(3))/R
+      DP3=THREE-FIFTEN*DP**2
+      DO 200 I=1,3
+      ACCEL(I)=DP*SIX*UVBODI(I)+DP3*XYZ(I)/R
+  200 END DO
+      IF(NSTADJ.LE.0) GO TO 350
+      DO 250 J=1,3
+      PACCEL(J)=ZERO
+  250 END DO
+      DO 300 I=1,2
+      DO 275 J=1,3
+      PACCEL(J)=PACCEL(J)+SIX*XYZ(I)*PART(I)*(UVBODI(J)-FIVE*XYZ(J)*    &
+     &   DP/R)/R
+  275 END DO
+      PACCEL(I)=PACCEL(I)+SIX*DP*PART(I)
+  300 END DO
+  350 CONTINUE
+      RATIO4=(AE/R)**4/XMNSNS(4,K)**3
+      RATIO5=((AE/R)/XMNSNS(4,K))**5
+      C1=XMNSNS(4,K)*(SEVEN*DP2**3-THREE*DP2)/R
+      C2=XMNSNS(4,K)*(THREE*DP2**2-C0P6)
+! SUM IN ACCELERATIONS
+      DO 400 I=1,3
+      DX(I)=DX(I)+ACCEL(I)*CONST2(K)*RATIO4-RATIO5*CONST3(K)*           &
+     &   (XYZ(I)*C1-XMNSNS(I,K)*C2)
+  400 END DO
+!     IF(K.EQ.1) WRITE(6,*)'**TIDAL**DX**',DX
+      IF(.NOT.LSATID) GO TO 1000
+      J=0
+      IF(SIGXK2.LE.ZERO) GO TO 600
+      J=J+1
+! PARTIALS FOR K2
+      DO 500 I=1,3
+      TPART(J,I)=TPART(J,I)+ACCEL(I)*PAR2(K)*RATIO4
+  500 END DO
+  600 CONTINUE
+      IF(SIGXK3.LE.ZERO) GO TO 800
+      J=J+1
+! PARTIALS FOR K3
+      DO 700 I=1,3
+      TPART(J,I)=TPART(J,I)-RATIO5*PAR3(K)*(XYZ(I)*C1-XMNSNS(I,K)*C2)
+  700 END DO
+  800 CONTINUE
+      IF(SIGLAM.LE.ZERO) GO TO 1000
+      J=J+1
+! PARTIALS FOR K2 PHASE
+      DO 900 I=1,3
+      TPART(J,I)=TPART(J,I)+PACCEL(I)*CONST2(K)*RATIO4
+  900 END DO
+ 1000 END DO
+      XMNSNS(1,1)=HQ1
+      XMNSNS(2,1)=HQ2
+      XMNSNS(3,1)=HQ3
+      XMNSNS(4,1)=HQ4
+      IF(NSTADJ.LE.0.OR..NOT.LSATID) RETURN
+      DO 2000 J=1,NSTADJ
+      INDX=JSATID+J-1
+      GRPAR(INDX,1)=RMI(1)*TPART(J,1)+RMI(2)*TPART(J,2)+                &
+     &              RMI(3)*TPART(J,3)
+      GRPAR(INDX,2)=RMI(4)*TPART(J,1)+RMI(5)*TPART(J,2)+                &
+     &              RMI(6)*TPART(J,3)
+      GRPAR(INDX,3)=RMI(7)*TPART(J,1)+RMI(8)*TPART(J,2)+                &
+     &              RMI(9)*TPART(J,3)
+ 2000 END DO
+      RETURN
+      END

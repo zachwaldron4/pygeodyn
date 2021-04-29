@@ -1,0 +1,328 @@
+      SUBROUTINE EXDYN3(AA,II,LL,ND1,PMPA,PXEPA,PXEPA2,ACOEF,ACOEF2,    &
+     &                  ACOEF3,BCOEF,BCOEF2,DDDA,NDM1,NDM2,IOBSC,       &
+     &                  FSEC,DIST,DIST0,MAXLAS,MAXD,MAXNM,NB1,NB2,      &
+     &                  NADJST,LNPNM,ISAT,IDSAT,IDLAS,KEY1,KEY2,        &
+     &                  MADJST,IAVP,NAVP,DCDP,AUX1,MJDLAS,ACOF4,NMF,    &
+     &                  NPDEGF,TIME1)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      COMMON/EDPAR/MD3C,MD3C2
+      COMMON/CBLOKI/MJDSBL,MTYPE ,NM    ,JSTATS,NPSEG ,JSATNO(3),ITSYS ,&
+     &       NHEADB,NELEVS,ISTAEL(12),INDELV(3,4),JSTANO(3),ITARNO,     &
+     &       KTARNO
+      COMMON/COBLOC/KXMN  (3,4)  ,KENVN (3,4)  ,KSTINF(3,4)  ,          &
+     &       KOBS  ,KDTIME,KSMCOR,KSMCR2,KTMCOR,KOBTIM,KOBSIG,KOBSG2,   &
+     &       KIAUNO,KOBCOR(9,7)  ,KFSECS(6,8)  ,KOBSUM(8)    ,          &
+     &       KEDSIG,KEDSG2
+!
+      COMMON/CORA05/KOBTYP,KDSCRP,KGMEAN,KGLRMS,KWGMEA,KWGRMS,KTYMEA,   &
+     &       KTYRMS,KWTMTY,KWTYRM,KTMEAN,KTRMS ,KWMEAN,KWTRMS,KWTRND,   &
+     &       KPRVRT,KEBSTT,KVLOPT,NXCA05
+      COMMON/CORA06/KPRMV ,KPNAME,KPRMV0,KPRMVC,KPRMVP,KPRMSG,KPARVR,   &
+     &              KPRML0,KPDLTA,KSATCV,KSTACV,KPOLCV,KTIDCV,KSUM1 ,   &
+     &              KSUM2 ,KGPNRA,KGPNRM,KPRSG0,KCONDN,KVELCV,          &
+     &              KSL2CV,KSH2CV,KTIEOU,KPRMDF,NXCA06
+      COMMON/CORI05/KNOBGL,KNOBWG,KNOBTY,KNOBWY,KNOBST,KNOBWT,KNEBOB,   &
+     &              KJSTAT,NXCI05
+      COMMON/CORL04/KLEDIT,KLBEDT,KLEDT1,KLEDT2,KNSCID,KEXTOF,KLSDAT,   &
+     &              KLRDED,KLAVOI,KLFEDT,KLANTC,NXCL04
+      COMMON/CORL05/KLGPRV,NXCL05
+      COMMON/CESTIM/MPARM,MAPARM,MAXDIM,MAXFMG,ICLINK,IPROCS,NXCEST
+      COMMON/NEWCON/XOK0,XNOK0
+      COMMON/NPCOM /NPNAME,NPVAL(92),NPVAL0(92),IPVAL(92),IPVAL0(92),   &
+     &              MPVAL(28),MPVAL0(28),NXNPCM
+      COMMON/NPCOMX/IXARC ,IXSATP,IXDRAG,IXSLRD,IXACCL,IXGPCA,IXGPSA,   &
+     &              IXAREA,IXSPRF,IXDFRF,IXEMIS,IXTMPA,IXTMPC,IXTIMD,   &
+     &              IXTIMF,IXTHTX,IXTHDR,IXOFFS,IXBISA,IXFAGM,IXFAFM,   &
+     &              IXATUD,IXRSEP,IXACCB,IXDXYZ,IXGPSBW,IXCAME,IXBURN,  &
+     &              IXGLBL,IXGPC ,IXGPS, IXTGPC,IXTGPS,IXGPCT,IXGPST,   &
+     &              IXTIDE,IXETDE,IXOTDE,IXOTPC,IXOTPS,IXLOCG,IXKF  ,   &
+     &              IXGM  ,IXSMA ,IXFLTP,IXFLTE,IXPLTP,IXPLTV,IXPMGM,   &
+     &              IXPMJ2,IXVLIT,IXEPHC,IXEPHT,IXH2LV,IXL2LV,IXOLOD,   &
+     &              IXPOLX,IXPOLY,IXUT1 ,IXPXDT,IXPYDT,IXUTDT,IXVLBI,   &
+     &              IXVLBV,IXXTRO,IXBISG,IXSSTF,IXFGGM,IXFGFM,IXLNTM,   &
+     &              IXLNTA,IX2CCO,IX2SCO,IX2GM ,IX2BDA,IXRELP,IXJ2SN,   &
+     &              IXGMSN,IXPLNF,IXPSRF,IXANTD,IXTARG,                 &
+     &              IXSTAP,IXSSTC,IXSSTS,IXSTAV,IXSTL2,                 &
+     &              IXSTH2,IXDPSI,IXEPST,IXCOFF,IXTOTL,NXNPCX
+      COMMON/CITER /NINNER,NARC,NGLOBL
+      DIMENSION AA(1),II(1),LL(1)
+      DIMENSION PMPA(1),DDDA(1)
+      DIMENSION PXEPA(NDM1,NDM2,3,MAXLAS,2)
+      DIMENSION PXEPA2(NDM1,NDM2,3,2)
+      DIMENSION ACOEF(MAXD,MAXNM,3,MAXLAS,2),ACOEF2(3,3,MAXLAS,2)
+      DIMENSION ACOEF3(MAXD,4,MAXLAS,2)
+      DIMENSION ISAT(2),IDSAT(2),IDLAS(MAXLAS,2)
+      DIMENSION BCOEF(ND1,MAXNM,3,2),BCOEF2(3,3,2)
+      DIMENSION IOBSC(MAXLAS,2),FSEC(MAXNM,MAXLAS,2)
+      DIMENSION DIST(MAXLAS,MAXLAS),DIST0(MAXLAS,MAXLAS)
+      DIMENSION IAVP(MADJST,MAXLAS,2),NAVP(MAXLAS,2)
+      DIMENSION DCDP(MAXD,MADJST,3,MAXLAS,2)
+      DIMENSION RESID(1),RESIDU(1),SIGMA(1),RATIO(1)
+      DIMENSION AUX1(MAXNM,5,MAXLAS,2)
+      DIMENSION MJDLAS(MAXLAS,2)
+      DIMENSION ACOF4(1)
+      DIMENSION TIME1(1)
+      DATA NTYPE/101/
+!
+! IFACT IS HOW MANY CROSSOVERS CAN BE LINKED TOGETHER FOR NORMAL MATRIX
+! SUMMING
+!
+      LFINDA=.FALSE.
+      IFACT=1
+!
+      PPARM=0.D0
+      IF(NPVAL0(IXRSEP).GE.1) THEN
+         IP=IPVAL(IXRSEP)
+         PPARM=AA(KPRMV-1+IP)
+      ENDIF
+!
+      MD3C2=0
+      DO 1000 I=1,NB1
+!
+      ICSUM=0
+!
+      CALL CLEARA(PMPA,NADJST)
+      LSMALT=.FALSE.
+      DTOT=0.D0
+      DTOT0=0.D0
+      DTOTE=0.D0
+      NX=0
+      NXE=0
+!
+      NM1=IOBSC(I,1)
+      DO K2=1,NDM2
+         DO K1=1,NDM1
+            PXEPA2(K1,K2,1,1)=PXEPA(K1,K2,1,I,1)
+            PXEPA2(K1,K2,2,1)=PXEPA(K1,K2,2,I,1)
+            PXEPA2(K1,K2,3,1)=PXEPA(K1,K2,3,I,1)
+         ENDDO
+      ENDDO
+      DO K2=1,MAXNM
+         DO K1=1,ND1
+            BCOEF(K1,K2,1,1)=ACOEF(K1,K2,1,I,1)
+            BCOEF(K1,K2,2,1)=ACOEF(K1,K2,2,I,1)
+            BCOEF(K1,K2,3,1)=ACOEF(K1,K2,3,I,1)
+         ENDDO
+      ENDDO
+      DO K2=1,3
+         DO K1=1,3
+            BCOEF2(K1,K2,1)=ACOEF2(K1,K2,I,1)
+         ENDDO
+      ENDDO
+!
+      DO  900 J=1,NB2
+      CALL CLEARA(PMPA,NADJST)
+!     IF(LFINDA) RETURN
+      ICSUM=ICSUM+1
+      NM2=IOBSC(J,2)
+      DO K2=1,NDM2
+         DO K1=1,NDM1
+            PXEPA2(K1,K2,1,2)=PXEPA(K1,K2,1,J,2)
+            PXEPA2(K1,K2,2,2)=PXEPA(K1,K2,2,J,2)
+            PXEPA2(K1,K2,3,2)=PXEPA(K1,K2,3,J,2)
+         ENDDO
+      ENDDO
+!
+      DO K2=1,MAXNM
+         DO K1=1,ND1
+            BCOEF(K1,K2,1,1)=ACOEF(K1,K2,1,I,1)
+            BCOEF(K1,K2,2,1)=ACOEF(K1,K2,2,I,1)
+            BCOEF(K1,K2,3,1)=ACOEF(K1,K2,3,I,1)
+            BCOEF(K1,K2,1,2)=ACOEF(K1,K2,1,J,2)
+            BCOEF(K1,K2,2,2)=ACOEF(K1,K2,2,J,2)
+            BCOEF(K1,K2,3,2)=ACOEF(K1,K2,3,J,2)
+         ENDDO
+      ENDDO
+      DO K2=1,3
+         DO K1=1,3
+            BCOEF2(K1,K2,2)=ACOEF2(K1,K2,J,2)
+         ENDDO
+      ENDDO
+!
+!
+      MD3C=0
+      CALL EXDYN2(LNPNM,ND1,AA,II,LL,                                   &
+     &            PMPA,                                                 &
+     &            PXEPA2,BCOEF,                                         &
+     &            BCOEF2,ACOEF3(1,1,I,1),ACOEF3(1,1,J,2),               &
+     &            DDDA,NDM1,NDM2,MAXNM,                                 &
+!!!! &            NM1,NM2,T11,T12,T21,T22,                              &
+     &            NM1,NM2,MJDLAS(I,1),FSEC(1,I,1),MJDLAS(J,2),          &
+     &            FSEC(1,J,2),                                          &
+     &            PPARM,LSMALT,DIST0(I,J),DIST(I,J),LFIND,I,J,          &
+     &            ISAT(1),ISAT(2),                                      &
+     &            IDSAT(1),IDSAT(2),IDLAS(I,1),IDLAS(J,2),              &
+     &            KEY1,KEY2,LEDIT,MAXD,MADJST,MAXLAS,IAVP,NAVP,         &
+     &            DCDP(1,1,1,I,1),DCDP(1,1,1,J,2),                      &
+     &            AUX1(1,1,I,1),AUX1(1,1,J,2),ACOF4,NMF,NPDEGF,TIME1)
+!
+      IF(LFIND) THEN
+         IF(.NOT.LEDIT) THEN
+         LFINDA=.TRUE.
+           NX=NX+1
+!!!!       DTOT=DTOT+DIST(I,J)*DIST(I,J)
+           DTOT=DIST(I,J)*DIST(I,J)
+           DTOT0=DTOT0+DIST0(I,J)*DIST0(I,J)
+           WRITE(6,6000) I,J,DIST(I,J),DIST0(I,J)
+         ELSE
+           NXE=NXE+1
+           DTOTE=DTOTE+DIST(I,J)*DIST(I,J)
+           WRITE(6,6100) I,J,DIST(I,J),DIST0(I,J)
+         ENDIF
+      ELSE
+         WRITE(6,6002) I,J
+      ENDIF
+!
+!
+! THIS IS WHERE 900 CONTINUE WAS
+!
+      ICT=MOD(ICSUM,IFACT)
+      IF(ICT.NE.0) GO TO 900
+!
+      IF(NX.EQ.0) THEN
+         GO TO 890
+      ENDIF
+!
+! DIVIDE PARTIALS ABD SUM
+! TAKE CARE OF SUMMING THE RADIAL CONSTRAINT ON 1ST ENCOUNTER
+! MAKE PRINTOUTS OF CROSSOVERS
+!
+      DTOT=SQRT(DTOT)
+      DO IJ=1,NADJST
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&77
+!!!!    PMPA(IJ)=PMPA(IJ)/DTOT
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&77
+      ENDDO
+      LEDQ=.FALSE.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!! WHAT FOLLOWS IS AN EXAMPLE FOR A SPECIFIC 2HR IRBIT ANGLE CASE
+!!!!! FOR HOW TO EDIT BAD POINTING PAERTIALS
+!!!!      XMAX=0.D0
+!!!!      IPTAQR=IPVAL0(IXATUD)+15
+!!!!      IPTAQP=IPVAL0(IXATUD)+20
+!!!!      DO IJ=1,12
+!!!!         DO JI=1,5
+!!!!           IF(DABS(PMPA(IPTAQR+(JI-1)*15)).GT.500.D0) LEDQ=.TRUE.
+!!!!           IF(DABS(PMPA(IPTAQR+(JI-1)*15)).GT.XMAX) THEN
+!!!!             XMAX=DABS(PMPA(IPTAQR+(JI-1)*15))
+!!!!           ENDIF
+!!!!           IF(DABS(PMPA(IPTAQP+(JI-1)*15)).GT.500.D0) LEDQ=.TRUE.
+!!!!         IF(DABS(PMPA(IPTAQP+(JI-1)*15)).GT.XMAX) THEN
+!!!!            XMAX=DABS(PMPA(IPTAQP+(JI-1)*15))
+!!!!           ENDIF
+!!!!         ENDDO
+!!!!         IPTAQR=IPTAQR+90
+!!!!         IPTAQP=IPTAQP+90
+!!!!      ENDDO
+!!!!! ABOVE IS AN EXAMPLE FOR A SPECIFIC 2HR IRBIT ANGLE CASE
+!!!!! FOR HOW TO EDIT BAD POINTING PAERTIALS
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF(MD3C.GT.3) LEDQ=.TRUE.
+      IF(MD3C2.GT.6) LEDQ=.TRUE.
+!!!!! IF(LEDQ) WRITE(73,77665) NINNER,KEY1,KEY2,I,J,XMAX
+77665 FORMAT(5I12,D20.11)
+      IF(LEDQ) LFINDA=.FALSE.
+ !!!!&!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF(LEDQ) GO TO 890
+!
+      RESID(1)=-DTOT
+! THIS ASSIGNMENT ASSUMES ALL LASERS IN BOTH SIDES OF THE
+! SNAPSHOT HAVE THE SAME SIGMA
+      OBSSGX=AA(KOBSIG)
+      IF(OBSSGX.LE.0.D0) OBSSGX=1.D0
+      OBSSGX=0.10D0
+      SIGMA(1)=1.D0/(OBSSGX*OBSSGX)
+!
+      DO KK=1,NADJST
+        LL(KLAVOI-1+KK)=.TRUE.
+        IF(ABS(PMPA(KK)).GT.1.D-30) LL(KLAVOI-1+KK)=.FALSE.
+        IF(AA(KPRSG0-1+KK).LT.1.D-25)  LL(KLAVOI-1+KK)=.TRUE.
+      ENDDO
+!
+!
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+      LPQ=.FALSE.
+!!!!      IF(DABS(PMPA(7)).GT.5.D+03) LPQ=.TRUE.
+!!!!      IF(DABS(PMPA(8)).GT.5.D+03) LPQ=.TRUE.
+!!!!      IF(DABS(PMPA(12)).GT.5.D+03) LPQ=.TRUE.
+!!!!      IF(DABS(PMPA(13)).GT.5.D+03) LPQ=.TRUE.
+      IF(LPQ) THEN
+        LEDIT=.TRUE.
+        NX=NX-1
+      ENDIF
+      WRITE(25,72345) KEY1,KEY2,IDLAS(I,1),IDLAS(J,2),LEDIT,            &
+     &                PMPA(7),PMPA(12)
+72345 FORMAT(4I12,2X,L1,2X,2D20.11)
+      IF(LPQ) GO TO 890
+!&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+!
+!
+      CALL SUMNPF(PMPA,RESID,SIGMA,NADJST,MAPARM,1,                     &
+     &            AA(KSUM1),AA(KSUM2),AA(KPDLTA),LL(KLAVOI))
+!
+!
+!
+!
+      IF(LSMALT.AND.XNOK0.LT.1.5D0.AND.NPVAL0(IXRSEP).GE.1) THEN
+        RESID(1)=-ABS(PPARM)
+        SIGMA(1)=1.D20
+        CALL CLEARA(PMPA,NADJST)
+        DO KK=1,NADJST
+          LL(KLAVOI-1+KK)=.TRUE.
+        ENDDO
+        LL(KLAVOI-1+IPVAL0(IXRSEP))=.FALSE.
+        PMPA(IPVAL0(IXRSEP))=1.D0
+!  LAVOID WILL HAVE BEEN SET BY ONE OF THE CALSS TO EXDYN2
+        CALL SUMNPF(PMPA,RESID,SIGMA,NADJST,MAPARM,1,                   &
+     &              AA(KSUM1),AA(KSUM2),AA(KPDLTA),LL(KLAVOI))
+      ENDIF
+!
+      RMS=SQRT(DTOT0/DBLE(NX))
+      WRITE(6,6001) NX,RMS
+      NMQ=1
+      NMQW=1
+      RESIDU(1)=RMS
+      RATIO(1)=RESIDU(1)/OBSSGX
+      SIGMA(1)=RESIDU(1)/OBSSGX
+      CALL SMSTAT  (AA(KTMEAN),AA(KTRMS ),AA(KWMEAN),AA(KWTRMS),        &
+     &   AA(KWTRND),AA(KPRVRT),AA(KTYMEA),AA(KTYRMS),AA(KWTMTY),        &
+     &   AA(KWTYRM),II(KNOBST),II(KNOBWT),II(KNOBTY),II(KNOBWY),        &
+     &   LL(KLGPRV),RESIDU    ,NMQ       ,SIGMA     ,RATIO     ,        &
+     &   NMQW    ,NTYPE     ,JSTATS    )
+!
+      CALL CLEARA(PMPA,NADJST)
+      LSMALT=.FALSE.
+      DTOT=0.D0
+      DTOT0=0.D0
+      NX=0
+  890 CONTINUE
+      IF(NXE.EQ.0) GO TO 900
+      RMS=SQRT(DTOTE/DBLE(NXE))
+      NMQ=1
+      NMQW=0
+      RESIDU(1)=RMS
+! THIS ASSIGNMENT ASSUMES ALL LASERS IN BOTH SIDES OF THE
+! SNAPSHOT HAVE THE SAME SIGMA
+      OBSSGX=AA(KOBSIG)
+      IF(OBSSGX.LE.0.D0) OBSSGX=1.D0
+      OBSSGX=.001D0
+      SIGMA(1)=1.D0/(OBSSGX*OBSSGX)
+      RATIO(1)=RESIDU(1)/OBSSGX
+      SIGMA(1)=RESIDU(1)/OBSSGX
+      CALL SMSTAT  (AA(KTMEAN),AA(KTRMS ),AA(KWMEAN),AA(KWTRMS),        &
+     &   AA(KWTRND),AA(KPRVRT),AA(KTYMEA),AA(KTYRMS),AA(KWTMTY),        &
+     &   AA(KWTYRM),II(KNOBST),II(KNOBWT),II(KNOBTY),II(KNOBWY),        &
+     &   LL(KLGPRV),RESIDU    ,NMQ       ,SIGMA     ,RATIO     ,        &
+     &   NMQW    ,NTYPE     ,JSTATS    )
+      DTOTE=0.D0
+      NXE=0
+  900 CONTINUE
+ 1000 CONTINUE
+!
+      RETURN
+ 6000 FORMAT(' PT CROSSOVER DISCREPANCY: ',2I3,2F20.3)
+ 6001 FORMAT(' RMS DISCREPANCY FOR ',I4,' POINTS: ',F20.3)
+ 6002 FORMAT(' CROSSOVER NOT FOUND       ',2I3,2F20.3)
+ 6003 FORMAT(' NO CROSSOVERS FOUND FOR THIS I BLOCK  ')
+ 6100 FORMAT(' EDITED PT CROSSOVER DISCREPANCY: ',2I3,2F20.3)
+      END

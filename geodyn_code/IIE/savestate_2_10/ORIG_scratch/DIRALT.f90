@@ -1,0 +1,1306 @@
+!$DIRALT
+      SUBROUTINE DIRALT(AA, II, LL, FSECN, FSECM, FSECK, XSK, VSK, &
+              XSN, VSN, COSTHG, SINTHG, ISATID, ISAT, ISET, OFF, &
+              PMPA, GEOIDS, SSTS, THETAG, OTIDES, ETIDES, SATH, &
+              OBS, OCDRYT, OCWETT, OBSMET, WORK, OCEANP, PMPXI, R, &
+              PMPAT, DIST1, UZ, UZSQ, TPARTL, C3, TEMP, XTRA, ATPER, &
+              HOLD, OBSC, RESID, LAVOID, ATROT, UNQNDX, RLAND, &
+              LEDIT_EXTRA)
+!********1*********2*********3*********4*********5*********6*********7**
+! DIRALT           99/11/19            9910.0    PGMR - Scott B. Luthcke
+!
+! FUNCTION: PROCESS DIRECT ALTIMETRY
+!
+! I/O PARAMETERS:
+!
+! NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+! ------  ---  ---   ------------------------------------------------
+! AA      I/O   A    DYNAMIC REAL ARRAY
+! II      I/O   A    DYNAMIC INTEGER ARRAY
+! LL      I/O   A    DYNAMIC LOGICAL ARRAY
+! FSECN   I/O        ELAPSED SECONDS FROM MJDSBL OF THE TIMES
+!                    ASSOCIATED WITH SATELLITE RECEIVE TIMES.
+! FSECM   I/O        ELAPSED SECONDS FROM MJDSBL OF THE SURFACE
+!                    REFLECTION TIMES OF THE OBSERVATIONS
+! FSECK   I/O        ELAPSED SECONDS FROM MJDSBL OF THE SATELLITE
+!                    TRANSMIT TIMES
+! XSK      O         TRUE OF DATE INERT. COORD. OF SATELLITE AT TRANSMIT
+! VSK      O         TRUE OF DATE INERT. VELOCITY OF SATELLITE AT
+!                    TRANSMIT ... GREENWICH
+! COSTHG   O         COSINES OF RIGHT ASCENSION OF GREENWICH
+! SINTHG   O         SINES  OF RIGHT ASCENSION OF GREENWICH
+! LIGHT    I         .TRUE. IF LIGHT TIMES HAVE BEEN DETERMINED
+! LGPART   I         .TRUE. IF GEOID PARTIALS REQUIRED
+! LGEOID   I         .TRUE. IF GEOID EVALUATION REQUIRED
+! LETIDE   I         .TRUE. IF SOLID TIDE EVALUATION REQUIRED
+! LOTIDE   I         .TRUE. IF OCEAN TIDE EVALUATION REQUIRED
+! HOLD     O      A  WORKING MEMORY, HOLDS VARIOUS QUANTITIES
+! DIST     O      A  DISTANCE BETWEEN SATELLITE AND TOPOGRAPHY
+! ISATID   I      S    SATELLITE ID FOR THIS BLOCK
+! PMPXI    O      A  PARTIALS OF OBSERVATION WRT SATELLITE COORDINATES
+! R        O      A  SAVE RANGE FROM FIRST ITERP ITERATION
+! PMPAT    O      A  PARTIALS OF ATTITUDE PARAMETERS
+! UNQNDX   I      A  UNIQUE INDEX FOR ALTIMETRY SHOTS
+! RLAND    I      A  LAND OCEAN FLAG (0=>DON'T KNOW; 1=>OCEAN; 2=>LAND)
+! LEDIT_EXTRA I/O A  MARKS DATA TO EDIT (SET TO TRUE FOR DELETED DATA)
+!
+! COMMENTS:
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z), LOGICAL (L)
+      SAVE
+
+      PARAMETER(TIMPRT=0.010D0)
+      PARAMETER(MAXNM=100)
+      ! NOTE: IF YA CHANGA THE BELOW PARAMETERA
+      !       YA HAVA TA CHANGA ITA INA RPY ALSO
+
+      DOUBLE PRECISION, ALLOCATABLE :: WGEOID(:)
+      DOUBLE PRECISION, ALLOCATABLE :: WETD(:)
+      DOUBLE PRECISION, ALLOCATABLE :: WOTD(:)
+      COMMON/LNDTRP/BSLAT(10000),BSLON(10000),BSHT(10000),BSXYX(10000,3)
+      COMMON/ALTCB /NALTW,MAXIT,NPERT,NXALT
+      COMMON/ATTCB /KPAT,MAXAT,MAXLAS,IBLAS,                            &
+     &              NASAT,IATCNT,NXATT
+      COMMON/ATTCBD/BATPER,ATTPRT
+      COMMON/AXIS/LINTAX
+      COMMON/BIAOR/NAMBB,NCYCB,NAMBBH
+      COMMON/CALTOP/LADYNO,LAGEOO,LRGEOT,LRETDT,LROTDT,LRSSTT,LCOTRM,   &
+     &              LFILOT,LATCOR,LFIRIT,LX1ALT,LX2ALT,LMSSWG,LATMOD,   &
+     &              LG1BOT,LG1B,LONEG1,LXATTD,LXBEAM,NXALTO
+      COMMON/CBIASA/BIASE (4),BIASM (2),BSCALE(1)  ,TBIAS (1),          &
+     &              BSTROP(3),BSIONO(3),CLKSTA(4,2),CLKSAT(4,2),        &
+     &              CLKSTS(2,2),TROPZE(2,2),TROPGR(2,4),BSLBIA(1)
+      COMMON/CBIASI/IEBIAS(4),IMBIAS(2),IBSCAL(1)  ,ITBIAS(1),          &
+     &              IBTROP(3),IBIONO(3),KLKSTA(4,2),KLKSAT(4,2),        &
+     &              KLKSTS(2,2),ITRPZE(2,2),ITRPGR(2,4),IBSBIA(1)
+      COMMON/CBLOKA/FSECBL,SIGNL ,VLITEC,SECEND,BLKDAT(6,4),DOPSCL(5,4)
+      COMMON/CBLOKI/MJDSBL,MTYPE ,NM    ,JSTATS,NPSEG ,JSATNO(3),ITSYS ,&
+     &       NHEADB,NELEVS,ISTAEL(12),INDELV(3,4),JSTANO(3),ITARNO,     &
+     &       KTARNO
+      COMMON/CLIGHT/VLIGHT,ERRLIM,XCLITE
+      COMMON/CBINRL/LBINR,LLOCR,LODR,LBNCR,LBINRI,LLOCRI,LODRI,LBNCRI,  &
+     &              NXCBIN
+      COMMON/CBLOKL/LIGHT ,LNRATE,LNREFR,LPOLAD,LTDRIV,LNANT ,LNTRAK,   &
+     &       LASER ,LGPART,LGEOID,LETIDE,LOTIDE,LNTIME,LAVGRR,LRANGE,   &
+     &       LSSTMD,LSSTAJ,LNTDRS,LPSBL,LACC,LAPP,LTARG,LTIEOU,LEOTRM,  &
+     &       LSURFM,LGEOI2,LSSTM2,LOTID2,LOTRM2,LETID2,LNUTAD
+      COMMON/CEARTH/AEG,AEGSQ,FGINV,FG,EGSQ,EGSQP1,C1,C2,FOURC1,TWOC2,  &
+     &              XH2,XL2,WREF,RMEAN,REFC20,REFC40,REFC60,BEG,CBLTC,  &
+     &              WAE2,GAMMAA,FSTAR,F4
+      COMMON/CESTIM/MPARM,MAPARM,MAXDIM,MAXFMG,ICLINK,IPROCS,NXCEST
+      COMMON/CESTML/LNPNM ,NXCSTL
+      COMMON/CGRAV/GM,AE,AESQ,FE,FFSQ32,FSQ32,XK2,XK3,XLAM,SIGXK2,      &
+     &      SIGXK3,SIGLAM,RATIOM(2),AU,RPRESS
+      COMMON/CEGREL/LGRELE,LRLCLK,LGRELR,LXPCLK,LBPCLK,NXEGRL
+      COMMON/CITER /NINNER,NARC,NGLOBL
+      COMMON/CITERL/LSTGLB,LSTARC,LSTINR,LNADJ ,LITER1,LSTITR,          &
+     &              LOBORB,LRESID,LFREEZ,LSAVEF,LHALT,LADJPI,LADJCI
+      COMMON/CLSSOT/LSSTMO,LOTMOD,LPRDES,NXLSST
+      COMMON/CNIGLO/MINTIM,MSATG3,MEQNG ,MEQNG3,MSATG ,MSATOB,MSATA ,   &
+     &              MSATA3,MSETA ,MINTVL,MSORDR,MSORDV,NMXORD,          &
+     &       MCIPV ,MXBACK,MXI   ,MPXPF ,MAXAB ,MSETDG,MXSATD,          &
+     &       MXDEGS,MXDRP ,MXDRPA,MXSRP ,MXSRPA,MXGAP ,MSATDR,          &
+     &       MSATSR,MSATGA,MXDRPD,MXSRPD,MXGAPD,MXBCKP,MXTPMS,          &
+     &       NSTAIN,NXCNIG
+      COMMON/COBLOC/KXMN  (3,4)  ,KENVN (3,4)  ,KSTINF(3,4)  ,          &
+     &       KOBS  ,KDTIME,KSMCOR,KSMCR2,KTMCOR,KOBTIM,KOBSIG,KOBSG2,   &
+     &       KIAUNO,KOBCOR(9,7)  ,KFSECS(6,8)  ,KOBSUM(8)    ,          &
+     &       KEDSIG,KEDSG2
+      COMMON/CONSTR/PI,TWOPI,DEGRAD,SECRAD,SECDAY
+      COMMON/CORA01/KFSEC0,KFSECB,KFSEC ,KFSECV,KH    ,KHV   ,KCTOL ,   &
+     &              KRSQ  ,KVMATX,KCPP  ,KCPV  ,KCCP  ,KCCV  ,KCCPV ,   &
+     &              KCCVV ,KXPPPP,KX    ,KPX   ,KSUMX ,KXDDOT,KSUMPX,   &
+     &              KPXDDT,KAB   ,KPN   ,KAORN ,KSINLM,KCOSLM,KTANPS,   &
+     &              KCRPAR,KVRARY,KXM   ,KXNP1 ,KXPRFL,KXM2  ,KXNNP1,   &
+     &              KWRK  ,KFI   ,KGE   ,KB0DRG,KBDRAG,KAPGM ,KAPLM ,   &
+     &              KCN   ,KSN   ,KSTID ,KTIDE ,KSTDRG,KSTSRD,KSTACC,   &
+     &              KLGRAV,KGM   ,KAE   ,KFPL  ,KFEQ  ,KPLNPO,KPLNVL,   &
+     &              KXEPOC,KCD   ,KCDDOT,KCR   ,KGENAC,KACN  ,KASN  ,   &
+     &              KTHDRG,KCKEP ,KCKEPN,KXNRMZ,KXNRMC,KFSCEP,KFSCND,   &
+     &              KAREA ,KXMASS,KRMSPO,KTCOEF,KTXQQ ,KTIEXP,KTXMM ,   &
+     &              KTXLL1,KTXSN1,KTS2QQ,KT2M2H,KT2MHJ,KTXKK ,KTSCRH,   &
+     &              KPXPK ,KAESHD,KCSAVE,KSSAVE,KCGRVT,KSGRVT,KXDTMC,   &
+     &              KDNLT ,KTXSN2,KTNORM,KTWRK1,KTWRK2,KUNORM,KAERLG,   &
+     &              KSINCO,KPARLG,KCONST,KBFNRM,KTDNRM,KCSTHT,KTPSTR,   &
+     &              KTPSTP,KTPFYW,KPLMGM,KTPXAT,KEAQAT,KEAFSS,KEAINS,   &
+     &              KACS  ,KECS  ,KSOLNA,KSOLNE,KSVECT,KSFLUX,KFACTX,   &
+     &              KFACTY,KADIST,KGEOAN,KPALB ,KALBCO,KEMMCO,KCNAUX,   &
+     &              KSNAUX,KPPER ,KACOSW,KBSINW,KACOFW,KBCOFW,KANGWT,   &
+     &              KWT   ,KPLNDX,KPLANC,KTGACC,KTGDRG,KTGSLR,KWTACC,   &
+     &              KWTDRG,KWTSLR,KTMACC,KTMDRG,KTMSLR,KATTUD,KDYACT,   &
+     &              KACCBT,KACPER,KXDDNC,KXDDAO,KXNC  ,KXPPNC,KSMXNC,   &
+     &              KXDDTH,KPDDTH,KXSSBS,KCPPNC,KEXACT,KXACIN,KXACOB,   &
+     &              KPXHDT,KTPXTH,KPACCL,KTXSTA,KDELXS,KSMRNC,KPRX  ,   &
+     &              KSMRNP,KDSROT,KXUGRD,KYUGRD,KZUGRD,KSUMRC,KXDDRC,   &
+     &              KTMOS0,KTMOS, KTMOSP,KSMXOS,KSGTM1,KSGTM2,KSMPNS,   &
+     &              KXGGRD,KYGGRD,KZGGRD,KXEGRD,KYEGRD,KZEGRD,KSSDST,   &
+     &              KSDINS,KSDIND,KSSDSR,KSSDDG,KTATHM,KTAINS,KTAFSS,   &
+     &              KSRAT ,KTRAT ,KHLDV ,KHLDA1,KHLDA4,KHLDA7,KQAST1,   &
+     &              KQAST2,KQAST3,KQAST4,KQAST5,KQAST6,NXCA01
+      COMMON/CORA02/KFSCTB,KFSCTC,KFSCTE,KDSECT,                        &
+     &              KFSECT,KS    ,KCIP  ,KCIV  ,                        &
+     &       KXTN  ,KXSM  ,KXTK  ,KXSJ  ,KXTI  ,KXTKP ,                 &
+     &       KVTN  ,KVSM  ,KVTK  ,KVSJ  ,KVTI  ,KVTKP ,                 &
+     &       KSATLT,KSATLN,KSATH ,KCOSTH,KSINTH,                        &
+     &       KPXPFM,KPXPFK,KPXPFJ,KTRBF ,KFSTRC,                        &
+     &       KFSTRE,KDSCTR,KFSCVS,KXSMBF,KXSKBF,KXSJBF,                 &
+     &       KRSSV1,KRSSV2,KRSSV3,KTPMES,KACOEF,KACTIM,                 &
+     &       KXTNPC,KXSMPC,KXTKPC,KXSJPC,KXTIPC,KXTKPP,                 &
+     &       KRLRNG,KASTO,KASTP,NXCA02
+      COMMON/CORA03/KRFMT ,KROTMT,KSRTCH,KCFSC ,KTHG  ,KCOSTG,KSINTG,   &
+     &              KDPSI ,KEPST ,KEPSM ,KETA  ,KZTA  ,KTHTA ,KEQN  ,   &
+     &              KDPSR ,KSL   ,KH2   ,KL2   ,KXPUT ,KYPUT ,KUT   ,   &
+     &              KSPCRD,KSPSIG,KSTAIN,KSXYZ ,KSPWT ,KDXSDP,KDPSDP,   &
+     &              KXLOCV,KSTNAM,KA1UT ,KPLTIN,KPLTVL,KPLTDV,KPUTBH,   &
+     &              KABCOF,KSPEED,KANGFC,KSCROL,KSTVEL,KSTVDV,KTIMVL,   &
+     &              KSTEL2,KSTEH2,KSL2DV,KSH2DV,                        &
+     &              KAPRES, KASCAL, KASOFF,KXDOTP,KSAVST,               &
+     &              KANGT , KSPDT , KCONAM,KGRDAN,KUANG ,KFAMP ,        &
+     &              KOFACT, KOTSGN,KWRKRS,KANFSD,KSPDSD,KPRMFS,KSCRFR,  &
+     &              KCOSAS,KSINAS,KDXTID,KALCOF,KSTANF,KNUTIN,KNUTMD,   &
+     &              KPDPSI,KPEPST,KDXDNU,KDPSIE,KEPSTE,NXCA03
+      COMMON/CORA04/KABIAS,KABSTR,KABSTP,KCBIAS,KCBSTR,KCBSTP,          &
+     &       KRNM  ,KRKM  ,KRKJ  ,KRIJ  ,KRKPM ,                        &
+     &       KRRNM ,KRRKM ,KRRKJ ,KRRIJ ,KRRKPM,                        &
+     &       KURNM ,KURKM ,KURKJ ,KURIJ ,KURKPM,                        &
+     &       KPRRNM,KPRRKM,KPRRKJ,KPRRIJ,KPRRKP,                        &
+     &       KPMPXI,KPMPXE,KRA   ,KRELV ,KUHAT ,KWORK ,KTMPCR,KU    ,   &
+     &       KS0   ,KS1   ,KXTP  ,KPXSXP,KPXDXP,KXUTDT,KRPOLE,KPXPOL,   &
+     &       KXDPOL,KOBBUF,KOBSC ,KRESID,KSIGMA,KRATIO,KELEVS,          &
+     &       KPMPA ,KPXSLV,KTPRTL,                                      &
+     &       KFRQOF,KXYZOF,KFRQST,KFRQSA,KSTDLY,KSADLY,KXYZCG,KSCMRA,   &
+     &       KEBVAL,KEBSIG,KEBNAM,KBTWB ,KTBTWA,KBTWD ,KPMPE ,          &
+     &       KFSEB1,KFSEB2,KSTAMT,KPXSPA,KDIAGN,KOBOUT,KGRLT1,KGRLT2,   &
+     &       KGRLT3,KGRLT4,KGRLT5,KPSTAT,KRSUNS,KCHEMR,KCHMOR,KEPOSR,   &
+     &       KCHEMT,KCHMOT,KEPOST,KCHCBS,KCPOSS,KSCRTM,KXSTT ,KXSTR ,   &
+     &       KXSS  ,KRANGT,KRANGR,KCHB1 ,KCHB2 ,KCHBV1,KCHBV2,KCHEB ,   &
+     &       KSSTFQ,KSSTCC,KSSTSS,KSSTWT,KRLCOR,KWVLBI,KQUINF,KBRTS ,   &
+     &       KBRTSV,KLRARC,KXEPBF,KXEPBR,KPRCBD,KPRTBD,KXPMPA,KXL,      &
+     &       KXSIG ,KXEDTS,KXALO1,KXALO2,KXYOF2,KDLATF,KDLATS,KDLONF,   &
+     &       KDLONS,KPF   ,KPS   ,                                      &
+     &       KXOBSV,KXOBSW,KXEDSW,                                      &
+     &       KXSIGW,KPSF  ,KDNUM ,KCNUM ,KFCOR ,KCOSAR,KSINAR,KSABIA,   &
+     &       KSBTM1,KSBTM2,KYAWBS,KVLOUV,KACMAG,KOBSTR,                 &
+     &       KPRL1 ,KPRL2, KRL1  ,KT1SE ,KTCP  ,                        &
+     &       KRATDR,KFQT1S,KFQT1E,KT1STR,KFTTSE,KFRSTR,KFRRAT,KSV1  ,   &
+     &       KSV2  ,KTSLOV,                                             &
+     &       KGLGR1,KGLGR2,KGLFR1,KGLFR2,                               &
+     &       KARGR1,KARGR2,KARFR1,KARFR2,                               &
+     &       KRDS1L,KFT1AV,KDFQP ,KFREQ1,KFREQ3,KSAVD1,KSAVD2,          &
+     &       KANTOU,KFM3CF,KF2CF,KTMG,KLTMG,KX2TIM,KX2OBS,KXRNDX,KX2SCR,&
+     &       KALTWV,KXXBM ,KX2PAR,KATIME,KPMPAT,KPMATT,KX2PAT,          &
+     &       KPXEXI,KPXEPA,KPV,KPXEP2,KX2COF,KACOF2,KACOF3,KBCOF,KBCOF2,&
+     &       KDDDA ,KX2AUX,KX2VPR,KX2VPA,KEXTRA,KVARAY,KATROT,KATPER,   &
+     &       KLTAR ,KXHOLD,KANTBL,KPHC  ,KOFDRV,KGNAME,KGRSIZ,KGRCNT,   &
+     &       KGRDAT,KACCDT,KCTBTI,KCTBWE,KCTCTM,KANTUV,KANTOR,KW1PU ,   &
+     &       KPYSQH,KSIGSP,KXYOF3,KXVTM1,KXDIST,KXDST0,KTMSE ,KDSDP ,   &
+     &       KEXCST,KEXCDT,KEXCGX,KEXCGY,KEXCGZ,KIMNDX,KIMOBS,KIMTIM,   &
+     &       KIMSAT,KM2VPA,KDCDD ,KDWNWT,KDPOR ,KC2PAR,KBOUNC,KBPART,   &
+     &       NXCA04
+      COMMON/CORA06/KPRMV ,KPNAME,KPRMV0,KPRMVC,KPRMVP,KPRMSG,KPARVR,   &
+     &              KPRML0,KPDLTA,KSATCV,KSTACV,KPOLCV,KTIDCV,KSUM1 ,   &
+     &              KSUM2 ,KGPNRA,KGPNRM,KPRSG0,KCONDN,KVELCV,          &
+     &              KSL2CV,KSH2CV,KTIEOU,KPRMDF,NXCA06
+      COMMON/CORI01/KMJDS0,KMJDSB,KMJDSC,KMJDSV,KIBACK,KIBAKV,KIORDR,   &
+     &              KIORDV,KNOSTP,KNOCOR,KNSAT ,KN3   ,KNEQN ,KNEQN3,   &
+     &              KNH   ,KNHV  ,KNSTPS,KNSTPV,KICPP ,KICPV ,KICCP ,   &
+     &              KICCV ,KICCPV,KICCVV,KISUMX,KIXDDT,KISMPX,KIPXDD,   &
+     &              KNMAX ,KNTOLD,KNTOLO,KICNT ,KISNT ,KMM   ,KKK   ,   &
+     &              KJJ   ,KHH   ,KIBDY ,KSIGN1,KSIGN2,KLL   ,KQQ   ,   &
+     &              KIORFR,KIPDFR,KITACC,KJSAFR,KJSPFR,KMJDEP,KMJDND,   &
+     &              KNVSTP,KNSTRN,KNDARK,KTIPPT,KTJBDY,                 &
+     &              KICNTA,KISNTA,KISHDP,KIPTC ,KIPTS ,KIGTSR,KIXTMC,   &
+     &              KTIPTT,KTNOSD,KTQNDX,KTLL1 ,KTJJBD,KTITDE,KTCNTR,   &
+     &              KTNN  ,KITACX,KNMOVE,KPANEL,KPLPTR,KNADAR,KNADSP,   &
+     &              KNADDF,KNADEM,KNADTA,KNADTC,KNADTD,KNADTF,KNADTX,   &
+     &              KITPMD,KSCATT,KITPAT,KILTPX,KEASBJ,KEANMP,KEANAN,   &
+     &              KEAPMP,KEAPAN,KEAMJS,KEAPPP,KEAAAA,KICNTT,KISNTT,   &
+     &              KTPGRC,KTPGRS,KTPC  ,KTPS  ,KALCAP,KEMCAP,KNSEG ,   &
+     &              KICNTP,KISNTP,KNRDGA,KNRDDR,KNRDSR,KIRDGA,KIRDRG,   &
+     &              KIRSLR,KSTRTA,KSTRTD,KSTRTS,KDYNPE,KACCPE,KIBCKN,   &
+     &              KNRAT ,KIXDDN,KISMXN,KDXDDN,KDSMXN,KICPPN,KACSID,   &
+     &              KNEQNH,KHRFRC,KPTFBS,KPTFSB,KIPXDA,KIACCP,KXSTAT,   &
+     &              KPXST ,KSALST,KMAPLG,KNMBUF,KSTEPS,KSGMNT,KSATIN,   &
+     &              KMEMST,KNEQNI,KBUFIN,KWEMGA,KWEMDR,KTPATS,KTANMP,   &
+     &              KTAPPP,KTAMJS,KTASID,KGPSID,KNSSVA,KPNALB,KBRAX1,   &
+     &              KBRAX2,KBRAX3,NXCI01
+      COMMON/CORI02/KNTIME,KMJSTB,KMJSTC,KMJSTE,KISECT,                 &
+     &              KINDH ,KNMH  ,KIVSAT,KIPXPF,KNTRTM,KMSTRC,          &
+     &              KMSTRE,KISCTR,KISATR,KITRUN,KTRTMB,KTRTMC,          &
+     &              KMJDVS,KNTMVM,NXCI02
+      COMMON/CORI04/KNMP  ,KINDP ,KNDPAR,KNPVCT,KISATN,KISET ,KIANTO,   &
+     &              KISATO,KIANTD,KISATD,KISTAD,KISATC,KMJDCG,KISTAT,   &
+     &              KMJDEB,KMJDBN,KNDBIN,KNWTDB,KIXPAR,KNDBUF,KSSTNM,   &
+     &              KSSTNA,KMBSAT,KMBSTA,KXKEY ,KXVKEY,KXFLAG,KIPNTF,   &
+     &              KIPNTS,KNCON ,KKF   ,KIDATB,KNSTLV,KSLVID,KLLBIA,   &
+     &              KTMRA1,KTMRA2,KIND1 ,KTARID,KATARD,KYAWID,KXOBLK,   &
+     &              KDSCWV,KATRSQ,KATSAT,KKVLAS,KPARTP,KLTMSC,KLTASC,   &
+     &              KCTBST,KSTBST,KANCUT,KANGPS,KANTYP,                 &
+     &              KANTOF,                                             &
+     &              KYSAT, KMBDEG,                                      &
+     &              KMBNOD,KMBSST,KBSPLN,KSSPLN,KXIOBS,KIDLAS,KIAVP ,   &
+     &              KXNAVP,KNEXCG,KIDEXC,KNREXC,KTELEO,KIKEY ,KIMKEY,   &
+     &              KIMBLK,KIMPRT,KCN110,KCN111,KC110,KC111,KTDSAT,     &
+     &              KTDANT,NXCI04
+      COMMON/CORI06/KPTRAU,KPTRUA,KNFMG ,KIPTFM,KILNFM,KIGPC ,          &
+     &              KIGPS ,KIGPCA,KIGPSA,KIELMT,KMFMG ,KTPGPC,          &
+     &              KTPGPS,KTPUC ,KTPUS,                                &
+     &              KLINK,KPTFAU,KPTFUA,NXCI06
+      COMMON/CORL01/KLORBT,KLORBV,KLNDRG,KLBAKW,KLSETS,KLAFRC,KLSTSN,   &
+     &              KLSNLT,KLAJDP,KLAJSP,KLAJGP,KLTPAT,KEALQT,KLRDGA,   &
+     &              KLRDDR,KLRDSR,KFHIRT,KLSURF,KHRFON,KLTPXH,KSETDN,   &
+     &              KTALTA,NXCL01
+      COMMON/CORL02/KLNDTT,KLWSTR,KLNDTR,KLEVMF,KLTPMS,NXCL02
+      COMMON/CORL04/KLEDIT,KLBEDT,KLEDT1,KLEDT2,KNSCID,KEXTOF,KLSDAT,   &
+     &              KLRDED,KLAVOI,KLFEDT,KLANTC,NXCL04
+      COMMON/CPARTL/LPART ,LPARTI,NXPARL
+      COMMON/CPMPA /KTMPAR(3)    ,KMBPAR(2)    ,KRFPAR(2)    ,          &
+     &              KAEPAR,KFEPAR,KFPPAR,KVLPAR,KETPAR(2,2)  ,          &
+     &              KPMPAR,KUTPAR,KSTPAR(3,4)  ,NADJST       ,          &
+     &              NDIM1 ,NDIM2 ,NXDIM1,NXDIM2
+      COMMON/CRM5OE/RM5OE(9)
+      COMMON/CREFMT/REFMT(9)
+      COMMON/CSBSAT/KR,KRT,KZT,KXY2,KUZ,KUZSQ,KTEMP,KC3,KTHETG
+      COMMON/CTIDES/NTIDE,NSTADJ,NET,NETADJ,NETUN,NOT,NOTADJ,           &
+     &   NOTUN ,NETUNU,NETADU,NOTUNU,NOTADU,NBSTEP,KTIDA(3),            &
+     &   ILLMAX,NUNPLY,NNMPLY,NDOODN,MXTMRT,NRESP ,NXCTID
+      COMMON/CPRESW/LPRE9 (24),LPRE  (24,3),LSWTCH(10,8),LOBSIN,LPREPW, &
+     &              LFS   (40)
+      COMMON/DPLNOR/DXGEO1,DXGEO2,DXFRC1,DXFRC2,XPLNOR
+      COMMON/DTMGDN/TGTYMD,TMGDN1,TMGDN2,REPDIF,XTMGN
+      COMMON/EDTALT/LEDRQ(10000)
+      COMMON/EXATFL/LEXATO
+      COMMON/EXATGL/LEXATT,NXEAGL
+      COMMON/IBODPT/IBDCF(999),IBDSF(999),IBDGM(999),IBDAE(999),    &
+     &              IBDPF(999),                                     &
+     &              ICBDCF,ICBDSF,ICBDGM,ICBDAE,ICBDPF,             &
+     &              ITBDCF,ITBDSF,ITBDGM,ITBDAE,ITBDPF,NXBDPT
+      COMMON/MREFDT/DMESRF,RMESRF,XMREF
+      COMMON/NEQINT/NINTOT,MEMTOT,NEQNIM,NXNEQS
+      COMMON/NPCOM /NPNAME,NPVAL(92),NPVAL0(92),IPVAL(92),IPVAL0(92),   &
+     &              MPVAL(28),MPVAL0(28),NXNPCM
+      COMMON/NPCOMX/IXARC ,IXSATP,IXDRAG,IXSLRD,IXACCL,IXGPCA,IXGPSA,   &
+     &              IXAREA,IXSPRF,IXDFRF,IXEMIS,IXTMPA,IXTMPC,IXTIMD,   &
+     &              IXTIMF,IXTHTX,IXTHDR,IXOFFS,IXBISA,IXFAGM,IXFAFM,   &
+     &              IXATUD,IXRSEP,IXACCB,IXDXYZ,IXGPSBW,IXCAME,IXBURN,  &
+     &              IXGLBL,IXGPC ,IXGPS, IXTGPC,IXTGPS,IXGPCT,IXGPST,   &
+     &              IXTIDE,IXETDE,IXOTDE,IXOTPC,IXOTPS,IXLOCG,IXKF  ,   &
+     &              IXGM  ,IXSMA ,IXFLTP,IXFLTE,IXPLTP,IXPLTV,IXPMGM,   &
+     &              IXPMJ2,IXVLIT,IXEPHC,IXEPHT,IXH2LV,IXL2LV,IXOLOD,   &
+     &              IXPOLX,IXPOLY,IXUT1 ,IXPXDT,IXPYDT,IXUTDT,IXVLBI,   &
+     &              IXVLBV,IXXTRO,IXBISG,IXSSTF,IXFGGM,IXFGFM,IXLNTM,   &
+     &              IXLNTA,IX2CCO,IX2SCO,IX2GM ,IX2BDA,IXRELP,IXJ2SN,   &
+     &              IXGMSN,IXPLNF,IXPSRF,IXANTD,IXTARG,                 &
+     &              IXSTAP,IXSSTC,IXSSTS,IXSTAV,IXSTL2,                 &
+     &              IXSTH2,IXDPSI,IXEPST,IXCOFF,IXTOTL,NXNPCX
+      COMMON/PORINF/PLOR(228,2),DO0DA0(12,6,2)
+      COMMON/QQTIDE/IQMAX,IQMIN,IQDIF,NUMFRQ,NBAND
+      COMMON/SSTCOM/NCBAR, NSBAR ,NCDOT ,NSDOT ,NCAPRD,NCBPRD,NSAPRD,   &
+     &              NSBPRD,NCBARA,NSBARA,NCDOTA,NSDOTA,NCAPDA,NCBPDA,   &
+     &              NSAPDA,NSBPDA,ISSTEP,NXSST
+      COMMON/TOPSCL/SCDIRA,SCLNDM,PSCDRA,PSCLND
+      COMMON/UNITS/IUNT11,IUNT12,IUNT13,IUNT19,IUNT30,IUNT71,IUNT72,    &
+     &             IUNT73,IUNT05,IUNT14,IUNT65,IUNT88,IUNT21,IUNT22,    &
+     &             IUNT23,IUNT24,IUNT25,IUNT26
+      COMMON/XPCNT /NXTRAC,NXFLAG,NXALLC,NCPPER,NMINRT,NDPOR,NXXTRA
+      COMMON/XOVER /KXKNT,KXBST,KXOBL,KXBUP,KXBPA,IAPLSC,IAPLL
+      COMMON/XOVERR/XBTIME
+      COMMON/XTRAOR/T0XTRO,T0XTRO2,CVENUS,CLIBMN,CMARS,CMERC,XXTRAO
+      COMMON/IOS/ISTOS1,ISTOS2,ISTOS3,ISTLST,INTSUB(3),JNTSUB(3),      &
+     &        ILSTSG(80),INTOSP,MAPSAT(3,4)
+
+      DIMENSION FSECN(NM), FSECM(NM), FSECK(NM), XSK(MINTIM,3), &
+              VSK(MINTIM,3), XSN(MINTIM,3), VSN(MINTIM,3), COSTHG(NM), &
+              SINTHG(NM), AA(*), II(*), LL(*)
+      DIMENSION PMPA(NDIM1,NDIM2)
+      DIMENSION OFF(MINTIM,3), GEOIDS(NM), SSTS(NM), OTIDES(NM)
+      DIMENSION ETIDES(NM), SATH(NM), OCEANP(NM)
+      DIMENSION THETAG(NM), OBS(NM), WORK(NM), OBSC(NM), RESID(NM)
+      DIMENSION OCDRYT(NM), OCWETT(NM), OBSMET(NM)
+      DIMENSION PMPXI(NM,3), R(NM)
+      DIMENSION PMPAT(MINTIM,3,2)
+      DIMENSION DIST1(NM)
+      DIMENSION UZ(NM), UZSQ(NM), TPARTL(NM), C3(NM), TEMP(NM)
+      DIMENSION XTRA(MINTIM,33), ATPER(*)
+      DIMENSION HOLD(MINTIM,30), LAVOID(*)
+      DIMENSION ATROT(3,3,MINTIM)
+      DIMENSION XPQ(3), VPQ(3), QSBFJ2(4)
+      DIMENSION UNQNDX(NM), RLAND(NM)
+      LOGICAL, INTENT(INOUT) :: LEDIT_EXTRA(NM)
+
+      ! CENTER OF FIGURE TO CENTER OF MASS OFFSET (BODY FIXED, TOR)
+      DIMENSION COF_COM_BF(3), COF_COM_TOR(NM,3), COF_COM_BF_PERT(3)
+
+      ! FOR PLANETARY ORIENTATION
+      DIMENSION XR(NDPOR), PPOR(3,NM)
+!!!   DOUBLE PRECISION, ALLOCATABLE :: DADA0(:,:,:), DADIC(:,:,:)
+      DIMENSION  DADA0(3,6,MAXNM), DADIC(3,6,MAXNM)
+
+      DIMENSION FSECKK(5000), FSEKKK(5000)
+      DIMENSION COSW(NM), SINW(NM)
+
+      DATA C1DM1/1.0D-1/
+      DATA C1DM3/1.0D-3/
+      DATA ZERO/0.0D0/, ONE/1.0D0/, DNINTY/90.0D0/, HALF/.5D0/
+      DATA REFRAD/1738000.D0/
+      DATA C360/360.0D0/, C720/720.0D0/
+
+      ! TOL is the tolerance in the difference of the iteratively
+      ! computed topography height
+      DATA TOL/0.00100D0/
+      DATA TOL1/0.00000001D0/
+      DATA LSIM/.FALSE./
+
+      !*****************************************************************
+      !* START OF EXECUTABLE CODE **************************************
+      !*****************************************************************
+      IF(LINTAX.AND.NM.GT.MAXNM) THEN
+        WRITE(6,60000)
+        WRITE(6,60001) NM
+        WRITE(6,60002) MAXM
+        STOP
+      ENDIF
+!
+! ASSIGN ANY EXISTING BIASES
+      BIASV=0.D0
+! OVERALL BIAS
+      IF(IMBIAS(1).GT.0) BIASV=BIASM(1)
+! LASER SPECIFIC BIAS (THRU 20 CONTINUE)  WILL ADD TO OVERALL BIAS
+      IANT=BLKDAT(4,1)
+      INTR=IANT/10
+      INTT=IANT-(INTR*10)
+      IPTLB0=0
+      IF(INTT.LE.0) GO TO 20
+      NUMD=NPVAL(IXANTD)
+      IF(NUMD.LE.0) GO TO 20
+!
+      DO 10 I=1,NUMD
+      IPT=IPVAL(IXANTD)+I-1
+      IF(ISATID.NE.II(KTDSAT-1+I)) GO TO 10
+      ITEST=II(KTDANT-1+I)-50
+      IF(INTT.EQ.ITEST) GO TO 15
+ 10   CONTINUE
+      GO TO 20
+ 15   CONTINUE
+! BIAS FOR LASER IDENTIFIED
+      BIASV=BIASV+AA(KPRMV-1+IPT)
+      IPTLB0=II(KPTRUA-1+IPT)
+ 20   CONTINUE
+      IF(.NOT.LSTINR) IPTLB0=0
+!
+!
+!
+
+      ! INITIALIZE BODY FIXED COM-COF OFFSET
+      COF_COM_BF(1:3) = 0.D0
+      IF (NPVAL(IXCOFF) > 0) THEN
+          INDX = IPVAL(IXCOFF)
+          DO I = 1, 3
+              COF_COM_BF(I) = AA(KPRMV-2+INDX+I)
+          END DO
+      END IF
+
+      ! CONVERT BODY FIXED COM-COF OFFSET TO TRUE OF REFERENCE
+      CALL BF_TO_TOR(NM, COF_COM_BF, COF_COM_TOR, MJDSBL, FSECN, AA, II)
+
+      POSPRT = REAL(NPERT, KIND=KIND(POSPRT))
+      LEDQ = .TRUE.
+      DO I = 1, 10000
+          LEDRQ(I) = .FALSE.
+      END DO
+      IF (NINTOT > 0) THEN
+          CALL FNDNUM(ISATID, II(KSATIN), NINTOT, IRET)
+          IF (IRET > 0) THEN
+              KSUMXOS = MAPSAT(INTOSP, 1)
+              KSUMPOS = MAPSAT(INTOSP, 2)
+              KXDDTOS = MAPSAT(INTOSP, 3)
+              KPDDTOS = MAPSAT(INTOSP, 4)
+              KNSTEPS = II(KSTEPS-1 + IRET)
+              NEQNI = II(KNEQNI-1 + IRET)
+          END IF
+      END IF
+
+      IF (NM > 5000) THEN
+          WRITE(6,"(' EXECUTION TERMINATING IN DIRALT')")
+          WRITE(6,"(' NM = ', I10, ' EXCEEDS 5000 FOR TMP ARRAYS')") NM
+          STOP
+      END IF
+
+      ! INITIALIZATIONS
+      ! ...OBSERVATION TIMING BIAS
+      TTGO0 = 0.D0
+      IPTOTB = 0
+      IF (KLKSTA(1,2) > 0) THEN
+          TTGO0 = CLKSTA(1, 2)
+          IPTOTB = KLKSTA(1, 2)
+      ELSE
+          IF (ITBIAS(1) > 0) THEN
+              TTGO0 = TBIAS(1)
+              IPTOTB = ITBIAS(1)
+          END IF
+      END IF
+      ! ...ATTITUDE TIMING BIAS
+      TTGA0 = 0.D0
+      IPTATB = 0
+      IF (KLKSTA(1,1) > 0) THEN
+          TTGA0 = CLKSTA(1, 1)
+          IPTATB = KLKSTA(1, 1)
+      END IF
+      DO N = 1, NM
+          FSECKK(N) = FSECK(N) + TTGO0
+          FSEKKK(N) = FSECKK(N) + TTGA0
+      END DO
+      ! MORE INITIALIZATIONS
+      DO N = 1, MINTIM
+          DO J = 1, 30
+              XTRA(N, J) = 0.D0
+              HOLD(N, J) = 0.D0
+          END DO
+      END DO
+
+      DO N = 1, NM
+          THETAG(N) = 0.0D0
+      END DO
+
+      BAXIS = AE*(ONE - FE) ! Semi-minor axis
+
+      ! GET TRUE OF REF POSITION OF SATELLITE AT ALTIM TRANSMIT
+      CALL ORBSET(II(KNSAT), II(KIVSAT), LL(KLSETS), ISAT, KNSTEPS, &
+              NEQNI, II(KSGMNT-1+IRET), AA(KSGTM1-1+IRET), &
+              AA(KSGTM2-1+IRET), IRET, MJDSBL, FSECKK(1), FSECKK(NM), &
+              NM, AA, II)
+
+      CALL ORBIT(MJDSBL, FSECKK, AA(KS), NM, II(KINDH), II(KNMH), &
+              II(KMJDSC), AA(KFSEC), II(KMJDSV), AA(KFSECV), &
+              LL(KLSETS), II(KIPXPF), II(KIVSAT), 1, II(KNMAX), &
+              II(KNTOLD), XSK, AA(KPXPFM), LNADJ, .FALSE., &
+              II(KPLPTR), II(KPANEL), II(KNMOVE), &
+              AA(KTPMES+4*MINTIM), LL(KLTPMS+6*MINTIM), LL(KSETDN), &
+              AA(KTMOS0-1+INTOSP), AA(KTMOS-1+INTOSP), &
+              AA(KTMOSP-1+INTOSP), AA(KSMXOS-1+KSUMXOS), &
+              AA(KSMXOS-1+KSUMPOS), AA(KSMXOS-1+KXDDTOS), &
+              AA(KSMXOS-1+KPDDTOS), KNSTEPS, NEQNI, &
+              II(KSGMNT-1+IRET), AA(KSGTM1-1+IRET), &
+              AA(KSGTM2-1+IRET), AA, II, LL)
+      ! MODIFY SPACECRAFT POSITION FROM CENTER OF MASS
+      ! TO CENTER OF FIGURE ORIGIN
+      XSK(1:NM,1:3) = XSK(1:NM,1:3) + COF_COM_TOR(1:NM,1:3)
+
+      IF (LINTAX) THEN
+!!!!      ALLOCATE(DADA0(3,6,NM))
+!!!!      ALLOCATE(DADIC(3,6,NM))
+          DO III=1,NM
+              DO J = 1, NDPOR
+                  XR(J) = AA(KDPOR + (J-1)*MINTIM + III - 1)
+              END DO
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! DO0DA0 SET FOR FIRST ASTEROID FOR NOW
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              CALL GETDADA0(XR(4),XR(13),DO0DA0,DADA0(1,1,III))
+              CALL GETDADIC(XR(4),XR(157),DADIC(1,1,III))
+          END DO
+      END IF
+
+      ! COMPUTE 1ST GUESS BOUNCE POINT AND TRANSMIT RANGE
+      ! COMPUTED TO ELLIPSOID INTERSECTION
+      ! ...BOUNCE POINT TIME and TROP. REFRAC ARE ALSO
+      ! ...COMPUTED TO ELLIP. INTERSECTION POINT
+      !
+      ! ***CAREFUL: MANY VALUES IN HOLD ARE LOADED AND ASSUMED
+      !             TO BE UNMOLESTED FOR THE REST OF THE EVALUATION
+      !             OF THE BLOCK
+      !
+      ! HOLD KEY:
+      !     *,1-3     XBTOR
+      !     *,4-6     XTTOR
+      !     *,7       DT2B
+      !     *,8-10    TTKTOR
+      !     *,11-13   RTKTOR
+      !     *,14      DB2R
+      !     *,15-30   USED IN ALDST2
+      !     *,16      XPOLE
+      !     *,17      YPOLE
+      !     *,18      GEODETIC LAT. OF SURFACE (RAD.)
+      !     *,19      EAST LONG. OF SURFACE (RAD.)
+      !     *,20      ELLIP. HT. OF TIME VAR. SURF.
+      !     *,21-23   EARTH TIDE VECTOR CORRECTION
+
+      CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, ISET, &
+              OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, OCWETT, &
+              OBSMET, FSECM, HOLD(1,1), HOLD(1,4), HOLD(1,7), &
+              HOLD(1,8), 0, ATROT, 0,LEDIT_EXTRA)
+
+      ! ALDTST1 MAKES THE CALL TO ALTPT TO DETERMINE THE POINTING VECTOR
+      ! (OFF). WITH THE ICESat POINTING VECTOR BEING DETERMINED FROM A
+      ! COMBINATION OF A VECTOR FROM THE DATA RECORD AND QUATERNIONS
+      ! FROM THE EXAT01 FILE, THERE IS THE POSSIBILITY THAT OFF WILL BE
+      ! UNDEFINED FOR A FEW EPOCHS. FOR THESE CASES ALDST1 WILL HAVE
+      ! SET OFF TO GEOCENTRIC POINTING AND XTRA(*,33) WILL HAVE BEEN
+      ! SET TO 999. THE GEOCENTRIC POINTING ALLOWS NORMAL PROCESING
+      ! TO CONTINUE. FOR THE POINTS WITH MISSING POINTING, PRESET
+      ! RESID TO 9999999999.
+
+      DO N = 1, NM
+          RESID(N) = 0.D0
+          IF (XTRA(N,33) > 998.D0) THEN
+!!!           RESID(N) = 9999999999.D0
+              LEDRQ(N) = .TRUE.
+              LEDIT_EXTRA(N) = .TRUE.
+          END IF
+      END DO
+
+      ! WRITE TRANSMIT ROTATION INFORMATION
+      IF (LSTINR .AND. LFILOT) THEN
+          ! GET TRANSMIT TIME IN UTC
+          CALL UTCET(.FALSE., NM, MJDSBL, FSECK, XTRA(1,30), AA(KA1UT))
+
+          IMESRF = INT(DMESRF + 0.5)
+          TIMEBL = DBLE(MJDSBL)
+
+          DO N = 1, NM
+              REFELP = DBLE(MJDSBL - IMESRF) + (XTRA(N,30) - RMESRF)
+
+              ! GET J2000 COORDINATES OF S/C
+              XPQ(1) = REFMT(1)*XSK(N, 1) + REFMT(4)*XSK(N, 2) &
+                      + REFMT(7)*XSK(N, 3)
+              XPQ(2) = REFMT(2)*XSK(N, 1) + REFMT(5)*XSK(N, 2) &
+                      + REFMT(8)*XSK(N, 3)
+              XPQ(3) = REFMT(3)*XSK(N, 1) + REFMT(6)*XSK(N, 2) &
+                      + REFMT(9)*XSK(N, 3)
+              VPQ(1) = REFMT(1)*VSK(N, 1) + REFMT(4)*VSK(N, 2) &
+                      + REFMT(7)*VSK(N, 3)
+              VPQ(2) = REFMT(2)*VSK(N, 1) + REFMT(5)*VSK(N, 2) &
+                      + REFMT(8)*VSK(N, 3)
+              VPQ(3) = REFMT(3)*VSK(N, 1) + REFMT(6)*VSK(N, 2) &
+                      + REFMT(9)*VSK(N, 3)
+
+              ! GET SBF TO J2000 QUATERNION
+              CALL ROTQAT(ATROT(1,1,N), QSBFJ2)
+
+              ! GET ROLL, PITCH AND YAW TO LVLH
+              CALL QATCMP(XPQ, VPQ, QSBFJ2, ROLL, PITCH, YAW)
+
+              WRITE(69,'(4(2X,E24.16))') REFELP, ROLL, PITCH, YAW
+          END DO
+      END IF
+
+      ! ITERATE FOR BOUNCE POINT POSITION; COMPUTE TRANSMIT LEG RANGE;
+      ! ITERATE AND COMPUTE RECEIVE LEG RANGE
+      LEDITB = .FALSE.
+      CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), HOLD(1,7), &
+              HOLD(1,8), HOLD(1,11), HOLD(1,14), HOLD(1,15), XTRA, &
+              THETAG, COSTHG, SINTHG, OTIDES, ETIDES, GEOIDS, OFF, &
+              FSECN, FSECKK, OCDRYT, OCWETT, XSN, VSN, ISAT, ISET, &
+              ATROT, .TRUE., UZ, UZSQ, TEMP, SSTS, PMPA, LEDITB, 0, &
+              POSPRT, .FALSE., RLAND, ISATID, COF_COM_TOR, 0,.TRUE., &
+              SCDIRA)
+
+
+      ! ----------------------------------------------------------------
+      ! FOR INTERPLANETARY ONLY, WRITE A SATELLITE RECORD WITH
+      ! COORDINATES WRT CENTER OF INTEGRATION, AND GIVE LAT, LON, HT
+      ! XSS HAS SAVED SAT COORD WRT CENTER OF INTEGRATION
+      IF (ICBDGM /= ITBDGM .AND. LLOCRI) THEN
+          KTRJX = KVTKP + 3*MINTIM
+          KTRJV = KTRJX + 3*MINTIM
+          IF (.NOT. LOBORB) THEN
+              ! GET POS & VEL IN TRUE OF DATE SYSTEM
+              CALL SATUPD(MJDSBL, FSECN, XSN, AA(KTRJX), AA, NM, &
+                      MINTIM, .TRUE., .FALSE., II, 0,1)
+              CALL SATUPD(MJDSBL, FSECN, VSN, AA(KTRJV), AA, NM, &
+                      MINTIM, .FALSE., .FALSE., II, 0,1)
+
+              ! COMPUTE RIGHT ASCENSION OF GREENWICH
+              ! ACROSS ENTIRE BLOCK OF DATA
+              IF (ICBDGM == 3) THEN
+                  CALL GRHRAN(MJDSBL, FSECN, .FALSE., .FALSE., &
+                          AA(KEQN), AA(KSRTCH), AA(KTHETG), &
+                          AA(KCOSTH), AA(KSINTH), NM, AA, II, &
+                          AA(KXUTDT), .FALSE., DUM, DUM1)
+              ELSE
+                  IF (LINTAX) THEN
+                      CALL GETWCS(NM, AA(KDPOR), AA(KCOSTH), AA(KSINTH),&
+     &                            1)
+                      DO N = 1, NM
+                          AA(KTHETG-1+N) = ATAN2(AA(KSINTH-1+N), &
+                                                 AA(KCOSTH-1+N))
+                      END DO
+                  ELSE
+                      CALL ROTXTR(MJDSBL, FSECN, .FALSE., AA(KEQN), &
+                              AA(KSRTCH), AA(KTHETG), AA(KCOSTH), &
+                              AA(KSINTH), NM, AA, AA(KACOSW), &
+                              AA(KBSINW), AA(KANGWT), AA(KWT), &
+                              AA(KACOFW), AA(KBCOFW), II,1)
+                  END IF
+              END IF
+
+              ! COMPUTE S/C HEIGHT ABOVE ELLIPSOID
+              ! AND SUB-SAT LAT & LON
+              CALL SUBTRK(AA(KTRJX), AA(KTHETG), AA(KXY2), &
+                      AA(KZT), AA(KRT), AA(KSATLT), AA(KSATLN), &
+                      AA(KSATH), NM)
+          END IF
+          CALL UTCET(.FALSE., NM, MJDSBL, FSECN, AA(KCFSC), AA(KA1UT))
+
+          WRITE(IUNT19) (AA(KCFSC-1+JP),JP=1,NM), &
+                  (AA(KTRJX-1+JP),JP=1,NM), &
+                  (AA(KTRJX-1+MINTIM+JP),JP=1,NM), &
+                  (AA(KTRJX-1+2*MINTIM+JP),JP=1,NM), &
+                  (AA(KSATLT-1+JP),JP=1,NM), &
+                  (AA(KSATLN-1+JP),JP=1,NM), &
+                  (AA(KSATH-1+JP),JP=1,NM)
+      END IF
+
+      ! NOTE!!! HOLD(*,17-19) CONTAINS LAT,LON and HT of
+      ! bounce pt. (RAD.)
+
+      ! COMPUTE OBSERVATION AND RESIDUAL
+      DO N = 1, NM
+          IF (.NOT. LEDRQ(N)) THEN
+              OBSC(N) = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                      + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+              TQ = DBLE(MJDSBL) + FSECK(N)
+              RQ = -OBS(N) + OBSC(N)
+              IF(LSIM) THEN
+                WRITE(29,'(F20.4,3F15.2,5X,4F15.3)') &
+                      TQ, BSLAT(N), BSLON(N), BSHT(N), BSXYX(N,1), &
+                      BSXYX(N,2), BSXYX(N,3), RQ
+              ENDIF
+              IF (RESID(N) < 9.D9) THEN
+                  RESID(N) = OBS(N) - OBSC(N)
+              END IF
+              IF (LEDITB) THEN
+!!!               RESID(N) = 9999999999.D0
+                  LEDIT_EXTRA(N) = .TRUE.
+              END IF
+          ELSE
+              RESID(N) = 9999999999.D0
+              LEDIT_EXTRA(N) = .TRUE.
+          END IF
+      END DO
+
+      ! WRITE OUT GEOLOCATION FILE
+      ! NOTE THAT THIS CODE IS UNREACHABLE WITHOUT A CHANGE IN
+      ! SUBROUTINE ALTIM. IN STANDARD VERSIONS OF THE CODE LTALTO IS
+      ! CALLED WHEN LSTINR AND LFILOT ARE TRUE. A CALL TO LTALTO IS
+      ! MUTALLY EXCLUSIVE WITH A CALL TO DIRALT
+      IF (LSTINR .AND. LFILOT) THEN
+          ! GET TRANSMIT TIME IN UTC
+          CALL UTCET(.FALSE., NM, MJDSBL, FSECK, XTRA(1,30), AA(KA1UT))
+
+          IMESRF = INT(DMESRF + 0.5)
+          TIMEBL = DBLE(MJDSBL)
+
+          DO N = 1, NM
+              REFELP = DBLE(MJDSBL - IMESRF) + (XTRA(N,30) - RMESRF)
+
+              WRITE(18) TIMEBL, XTRA(N,30), REFELP, HOLD(N,17), &
+                      HOLD(N,18), HOLD(N,19), OBS(N), OBSC(N), &
+                      RESID(N), OCDRYT(N), OCWETT(N), GEOIDS(N), &
+                      OTIDES(N), ETIDES(N), UNQNDX(N), RLAND(N)
+              WRITE(70,'(3(2X,E24.16))') REFELP, OBS(N), RESID(N)
+          END DO
+      END IF
+      ALLOCATE(WGEOID(NM))
+      ALLOCATE(WETD(NM))
+      ALLOCATE(WOTD(NM))
+
+      DO JJ = 1, NM
+          WGEOID(JJ) = GEOIDS(JJ)
+          WETD(JJ) = ETIDES(JJ)
+          WOTD(JJ) = OTIDES(JJ)
+      END DO
+
+      ! PLANOR PARTIALS
+      IF (NPVAL0(IXXTRO) > 0 .AND. LSTINR) THEN
+          IPLNPT = IPVAL0(IXXTRO)
+          DO IP = 1, 3
+              IP2 = 2 * (IP-1)
+              IF (IP < 3) THEN
+                  DXGEOIP = DXGEO1
+              ELSE
+                  DXGEOIP = DXGEO2
+              END IF
+              CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, &
+                      ISET, OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, &
+                      OCWETT, OBSMET, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), 0, ATROT, IP,LEDIT_EXTRA)
+              CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                      HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                      WETD, WGEOID, OFF, FSECN, FSECKK, OCDRYT, &
+                      OCWETT, XSN, VSN, ISAT, ISET, ATROT, .TRUE., UZ, &
+                      UZSQ, TEMP, SSTS, PMPA, LEDITB, 0, POSPRT, &
+                      .FALSE., RLAND, ISATID, COF_COM_TOR, IP,.FALSE., &
+                      SCDIRA)
+              DO N = 1, NM
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 + ABS(OCDRYT(N)) &
+                          + ABS(OCWETT(N)) + BIASV
+                  LAVOID(IPLNPT+IP2) = .FALSE.
+                  PPOR(IP,N) = (TMP - OBSC(N)) / DXGEOIP
+                  IF (ABS(PPOR(IP,N)) > 1.0D5) THEN
+!!!                   RESID(N) = 9999999999.0D0
+                      LEDIT_EXTRA(N) = .TRUE.
+                  END IF
+              END DO
+          END DO
+          CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, &
+                  ISET, OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, &
+                  OCWETT, OBSMET, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), 0, ATROT, 0,LEDIT_EXTRA)
+          CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                  HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, WETD, &
+                  WGEOID, OFF, FSECN, FSECKK, OCDRYT, OCWETT, XSN, VSN, &
+                  ISAT, ISET, ATROT, .TRUE., UZ, UZSQ, TEMP, SSTS, &
+                  PMPA, LEDITB, 0, POSPRT, .FALSE., RLAND, ISATID, &
+                  COF_COM_TOR, 0,.FALSE.,SCDIRA)
+          CALL CHPOR(PPOR, PMPA, NM, NDIM1, NDIM2, LNPNM, &
+                  DBLE(MJDSBL)+FSECM(1:NM), LAVOID, AA(KANGWT), &
+                  AA(KWT), AA(KPPER), DADA0, DADIC, 1)
+      END IF
+      IF (LINTAX) THEN
+!!!!      DEALLOCATE(DADA0)
+!!!!      DEALLOCATE(DADIC)
+      END IF
+      ! END PLANOR
+!
+      ! DEM SCALE FACTOR PARTIALS
+      IF(PSCDRA.GT.0.001D0.AND.LSTINR) THEN
+         IPTTOP=(PSCDRA+0.001D0)
+         LAVOID(IPTTOP) = .FALSE.
+         SCTEMP=SCDIRA+0.01D0
+         CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), HOLD(1,7),&
+              HOLD(1,8), HOLD(1,11), HOLD(1,14), HOLD(1,15), XTRA, &
+              THETAG, COSTHG, SINTHG, OTIDES, ETIDES, GEOIDS, OFF, &
+              FSECN, FSECKK, OCDRYT, OCWETT, XSN, VSN, ISAT, ISET, &
+              ATROT, .TRUE., UZ, UZSQ, TEMP, SSTS, PMPA, LEDITB, 0, &
+              POSPRT, .FALSE., RLAND, ISATID, COF_COM_TOR, 0,.FALSE., &
+              SCTEMP)
+         DO N = 1, NM
+             TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 + ABS(OCDRYT(N)) &
+                     + ABS(OCWETT(N)) + BIASV
+             IF(LNPNM) THEN
+               PMPA(IPTTOP,N) = (TMP - OBSC(N)) / 0.01D0
+             ELSE
+               PMPA(N,IPTTOP) = (TMP - OBSC(N)) / 0.01D0
+             END IF
+         END DO
+         CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), HOLD(1,7),&
+              HOLD(1,8), HOLD(1,11), HOLD(1,14), HOLD(1,15), XTRA, &
+              THETAG, COSTHG, SINTHG, OTIDES, ETIDES, GEOIDS, OFF, &
+              FSECN, FSECKK, OCDRYT, OCWETT, XSN, VSN, ISAT, ISET, &
+              ATROT, .TRUE., UZ, UZSQ, TEMP, SSTS, PMPA, LEDITB, 0, &
+              POSPRT, .FALSE., RLAND, ISATID, COF_COM_TOR, 0,.FALSE., &
+              SCDIRA)
+      ENDIF
+      ! END DEM SCALE FACTOR PARTIALS
+!
+      ! CENTER OF FIGURE - CENTER OF MASS OFFSET PARTIALS
+      IF (NPVAL0(IXCOFF) > 0 .AND. LSTINR) THEN
+          PERT_COFCOM = 1.0D0 ! PERTURB COF-COM OFFSET BY 1 METER
+
+          DO ICOMP = 1, 3 ! LOOP OVER THE X,Y,Z COMPONENTS OF THE OFFSET
+              ! PERTURB COF-COM OFFSET IN BODY FIXED COORDINATES
+              COF_COM_BF_PERT(1:3) = COF_COM_BF(1:3)
+              COF_COM_BF_PERT(ICOMP) = COF_COM_BF_PERT(ICOMP) &
+                      + PERT_COFCOM
+              ! CONVERT FROM BODY FIXED TO TRUE OF REFERENCE
+              CALL BF_TO_TOR(NM, COF_COM_BF_PERT, COF_COM_TOR, &
+                      MJDSBL, FSECN, AA, II)
+
+              CALL ORBIT(MJDSBL, FSECKK, AA(KS), NM, II(KINDH), &
+                      II(KNMH), II(KMJDSC), AA(KFSEC), II(KMJDSV), &
+                      AA(KFSECV), LL(KLSETS), II(KIPXPF), II(KIVSAT), &
+                      1, II(KNMAX), II(KNTOLD), XSK, AA(KPXPFM), &
+                      LNADJ, .FALSE., II(KPLPTR), II(KPANEL), &
+                      II(KNMOVE), AA(KTPMES+4*MINTIM), &
+                      LL(KLTPMS+6*MINTIM), LL(KSETDN), &
+                      AA(KTMOS0-1+INTOSP), AA(KTMOS-1+INTOSP), &
+                      AA(KTMOSP-1+INTOSP), AA(KSMXOS-1+KSUMXOS), &
+                      AA(KSMXOS-1+KSUMPOS), AA(KSMXOS-1+KXDDTOS), &
+                      AA(KSMXOS-1+KPDDTOS), KNSTEPS, NEQNI, &
+                      II(KSGMNT-1+IRET), AA(KSGTM1-1+IRET), &
+                      AA(KSGTM2-1+IRET), AA, II, LL)
+              ! MODIFY SPACECRAFT POSITION FROM CENTER OF MASS
+              ! TO CENTER OF FIGURE ORIGIN
+              XSK(1:NM,1:3) = XSK(1:NM,1:3) + COF_COM_TOR(1:NM,1:3)
+
+              CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, &
+                      ISET, OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, &
+                      OCWETT, OBSMET, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), 0, ATROT, 0,LEDIT_EXTRA)
+              CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                      HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                      WETD, WGEOID, OFF, FSECN, FSECKK, OCDRYT, &
+                      OCWETT, XSN, VSN, ISAT, ISET, ATROT, .TRUE., &
+                      UZ, UZSQ, TEMP, SSTS, PMPA, LEDITB, 0, POSPRT, &
+                      .FALSE., RLAND, ISATID, COF_COM_TOR, 0,.FALSE.,&
+                      SCDIRA)
+
+              DO N = 1, NM
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 + ABS(OCDRYT(N)) &
+                          + ABS(OCWETT(N)) + BIASV
+                  LAVOID(IPVAL0(IXCOFF)-1+ICOMP) = .FALSE.
+                  PARTIAL = (TMP - OBSC(N)) / PERT_COFCOM
+                  IF (LNPNM) THEN
+                      PMPA(IPVAL0(IXCOFF)-1+ICOMP, N) = PARTIAL
+                  ELSE
+                      PMPA(N, IPVAL0(IXCOFF)-1+ICOMP) = PARTIAL
+                  END IF
+                  IF (PARTIAL > 1.0D5) THEN
+!!!                   RESID(N) = 9999999999.D0
+                      LEDIT_EXTRA(N) = .TRUE.
+                  END IF
+              END DO
+          END DO
+
+          ! RESTORE UNPERTURBED VALUES (E.G. OF COF_COM_TOR)
+          XSK(1:NM,1:3) = XSK(1:NM,1:3) - COF_COM_TOR(1:NM,1:3)
+          CALL BF_TO_TOR(NM, COF_COM_BF, COF_COM_TOR, &
+                  MJDSBL, FSECN, AA, II)
+          XSK(1:NM,1:3) = XSK(1:NM,1:3) + COF_COM_TOR(1:NM,1:3)
+          CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, &
+                  ISET, OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, &
+                  OCWETT, OBSMET, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), 0, ATROT, 0,LEDIT_EXTRA)
+          CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                  HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                  WETD, WGEOID, OFF, FSECN, FSECKK, OCDRYT, &
+                  OCWETT, XSN, VSN, ISAT, ISET, ATROT, .TRUE., &
+                  UZ, UZSQ, TEMP, SSTS, PMPA, LEDITB, 0, POSPRT, &
+                  .FALSE., RLAND, ISATID, COF_COM_TOR, 0,.FALSE., &
+                  SCDIRA)
+      END IF
+      ! END (CENTER OF FIGURE - CENTER OF MASS OFFSET PARTIALS)
+
+      ! COMPUTE AND LOAD PARTIALS OF MEAS. WRT TOPOGRAPHY PARAMETERS
+      IF (LSSTAJ) THEN
+          DO N = 1, NM
+              T100 = HOLD(N, 14) + POSPRT
+              XFIX = HOLD(N, 4) + T100*OFF(N, 1)
+              YFIX = HOLD(N, 5) + T100*OFF(N, 2)
+              ZFIX = HOLD(N, 6) + T100*OFF(N, 3)
+              XTRA(N, 31) = .01D0*(SQRT(XFIX*XFIX+YFIX*YFIX+ZFIX*ZFIX) &
+                      - SSTS(N))
+          END DO
+          CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                  HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, WETD, &
+                  WGEOID, OFF, FSECN, FSECKK, OCDRYT, OCWETT, XSN, VSN, &
+                  ISAT, ISET, ATROT, .FALSE., UZ, UZSQ, TEMP, SSTS, &
+                  PMPA, LDUM, 0, POSPRT, .TRUE., RLAND, ISATID, &
+                  COF_COM_TOR, 0,.FALSE.,SCDIRA)
+      END IF
+      ! END COMPUTE AND LOAD PARTIALS OF MEAS. WRT TOPOGRAPHY PARAMETERS
+
+      ! COMPUTE AND LOAD PARTIALS OF MEAS. WRT S/C X,Y,Z
+      ! POSITION PARTIALS:
+      IF (.NOT. LNADJ) THEN
+          J = 0
+          DO WHILE (J < 3)
+              J = J + 1
+
+              SELECT CASE (J)
+                  CASE (1)
+                      ! X PERTURBATION
+                      DO N = 1, NM
+                          HOLD(N, 4) = HOLD(N, 4) + POSPRT
+                          HOLD(N, 1) = HOLD(N, 4) + OBSC(N)*OFF(N, 1)
+                          HOLD(N, 2) = HOLD(N, 5) + OBSC(N)*OFF(N, 2)
+                          HOLD(N, 3) = HOLD(N, 6) + OBSC(N)*OFF(N, 3)
+                      END DO
+                  CASE (2)
+                      ! Y PERTURBATION
+                      DO N = 1, NM
+                          HOLD(N, 4) = HOLD(N, 4) - POSPRT
+                          HOLD(N, 5) = HOLD(N, 5) + POSPRT
+                          HOLD(N, 1) = HOLD(N, 4) + OBSC(N)*OFF(N, 1)
+                          HOLD(N, 2) = HOLD(N, 5) + OBSC(N)*OFF(N, 2)
+                          HOLD(N, 3) = HOLD(N, 6) + OBSC(N)*OFF(N, 3)
+                      END DO
+                  CASE (3)
+                      ! Z PERTURBATION
+                      DO N = 1, NM
+                          HOLD(N, 5) = HOLD(N, 5) - POSPRT
+                          HOLD(N, 6) = HOLD(N, 6) + POSPRT
+                          HOLD(N, 1) = HOLD(N, 4) + OBSC(N)*OFF(N, 1)
+                          HOLD(N, 2) = HOLD(N, 5) + OBSC(N)*OFF(N, 2)
+                          HOLD(N, 3) = HOLD(N, 6) + OBSC(N)*OFF(N, 3)
+                      END DO
+              END SELECT
+
+              CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                      HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                      WETD, WGEOID, OFF, FSECN, FSECK, OCDRYT, OCWETT, &
+                      XSN, VSN, ISAT, ISET, ATROT, .FALSE., UZ, UZSQ, &
+                      TEMP, SSTS, PMPA, LDUM, J, POSPRT, .FALSE., &
+                      RLAND, ISATID, COF_COM_TOR, 0,.FALSE.,SCDIRA)
+
+              DO N = 1, NM
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                          + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+! EMM 2015.05.29
+!                 PMPXI(N, J) = -(OBSC(N) - TMP) / POSPRT
+                  PMPXI(N, J) = +(OBSC(N) - TMP) / POSPRT
+! EMM 2015.05.29
+              END DO
+          END DO
+
+          DO N = 1, NM
+              RQ = SQRT(PMPXI(N,1)*PMPXI(N,1) + PMPXI(N,2)*PMPXI(N, 2) &
+                      + PMPXI(N,3)*PMPXI(N,3))
+              IF (RQ > 5.D0) THEN
+!!!               RESID(N) = 9999999999.D0
+                  LEDIT_EXTRA(N) = .TRUE.
+              END IF
+          END DO
+      END IF ! POSITION PARTIALS
+
+      ! COMPUTE AND LOAD PARTIALS OF MEAS. WRT ATTITUDE PARAMETERS
+      ! ...ATTITUDE PARTIALS:
+      ! NOTE THAT OBSGEN CALLS ATPARP WHICH CHECKS THAT THE ATITUDE
+      ! POINTERS ARE IN ORDER FOR THIS BLOCK OF DATA
+      IF (NPVAL0(IXATUD) > 0) THEN
+          J = 0
+          NUMIT = 3
+          IF (MAXLAS > 0) THEN
+              NUMIT = 6
+          END IF
+
+          DO WHILE (J < NUMIT)
+              J = J + 1
+              JL = 1
+              JC = J
+              IF (J > 3) THEN
+                  JL = 2
+                  JC = JC - 3
+              END IF
+
+              ! COMPUTE PARTIAL OF MEAS. WRT ROLL, PITCH AND YAW
+              CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, &
+                      ISET, OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, &
+                      OCWETT, OBSMET, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), J+3, ATROT, 0,LEDIT_EXTRA)
+
+              CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                      HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                      HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                      WETD, WGEOID, OFF, FSECN, FSECKK, OCDRYT, OCWETT, &
+                      XSN, VSN, ISAT, ISET, ATROT, .FALSE., UZ, UZSQ, &
+                      TEMP, SSTS, PMPA, LDUM, 0, POSPRT, .FALSE., &
+                      RLAND, ISATID, COF_COM_TOR, 0,.FALSE.,SCDIRA)
+
+              DO N = 1, NM
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                          + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+                  PMPAT(N, JC, JL) = (TMP - OBSC(N)) / ATTPRT
+              END DO
+          END DO
+
+          ! CHAIN TO COMPUTE PARTIALS OF MEAS. WRT ATTITUDE PARAMETERS
+          IF (ABS(BATPER) > 0.0D0) THEN
+              SCLPER = 1.0D0
+              WAT = TWOPI / BATPER
+          ELSE
+              SCLPER = 0.0D0
+              WAT = 0.0D0
+          END IF
+
+          ! CHAIN ATT PARTIALS:
+          IF (.NOT. LNPNM) THEN
+              DO N = 1, NM
+                  TDIF = DBLE(MJDSBL) + FSECK(N) - XBTIME
+
+                  ! CHAIN BODY ATTITUDE PARTIALS
+                  ! ..IAPLSC COMPUTED IN ATPARP
+
+                  ! BODY ROLL 5 PARAMETERS
+                  PMPA(N, IAPLSC) = PMPAT(N, 1, 1)
+                  PMPA(N, IAPLSC+1) = PMPAT(N, 1, 1) * TDIF
+                  PMPA(N, IAPLSC+2) = PMPAT(N, 1, 1) * TDIF**2
+                  PMPA(N, IAPLSC+3) = PMPAT(N, 1, 1) * SCLPER &
+                          * SIN(WAT*TDIF)
+                  PMPA(N, IAPLSC+4) = PMPAT(N, 1, 1) * SCLPER &
+                          * COS(WAT*TDIF)
+
+                  ! BODY PITCH 5 PARAMETERS
+                  PMPA(N, IAPLSC+5) = PMPAT(N, 2, 1)
+                  PMPA(N, IAPLSC+6) = PMPAT(N, 2, 1) * TDIF
+                  PMPA(N, IAPLSC+7) = PMPAT(N, 2, 1) * TDIF**2
+                  PMPA(N, IAPLSC+8) = PMPAT(N, 2, 1) * SCLPER &
+                          * SIN(WAT*TDIF)
+                  PMPA(N, IAPLSC+9) = PMPAT(N, 2, 1) * SCLPER &
+                          * COS(WAT*TDIF)
+
+                  ! BODY YAW 5 PARAMETERS
+                  PMPA(N, IAPLSC+10) = PMPAT(N, 3, 1)
+                  PMPA(N, IAPLSC+11) = PMPAT(N, 3, 1) * TDIF
+                  PMPA(N, IAPLSC+12) = PMPAT(N, 3, 1) * TDIF**2
+                  PMPA(N, IAPLSC+13) = PMPAT(N, 3, 1) * SCLPER &
+                          * SIN(WAT*TDIF)
+                  PMPA(N, IAPLSC+14) = PMPAT(N, 3, 1) * SCLPER &
+                          * COS(WAT*TDIF)
+
+                  ! CHAIN LASER NM:
+                  IF (MAXLAS > 0) THEN
+                      ! CHAIN LASER ATTITUDE PARTIALS
+                      ! ..IAPLL COMPUTED IN ATPARP
+
+                      ! LASER ROLL 5 PARAMETERS
+                      PMPA(N, IAPLL) = PMPAT(N, 1, 2)
+                      PMPA(N, IAPLL+1) = PMPAT(N, 1, 2) * TDIF
+                      PMPA(N, IAPLL+2) = PMPAT(N, 1, 2) * TDIF**2
+                      PMPA(N, IAPLL+3) = PMPAT(N, 1, 2) * SCLPER &
+                              * SIN(WAT*TDIF)
+                      PMPA(N, IAPLL+4) = PMPAT(N, 1, 2) * SCLPER &
+                              * COS(WAT*TDIF)
+
+                      ! LASER PITCH 5 PARAMETERS
+                      PMPA(N, IAPLL+5) = PMPAT(N, 2, 2)
+                      PMPA(N, IAPLL+6) = PMPAT(N, 2, 2) * TDIF
+                      PMPA(N, IAPLL+7) = PMPAT(N, 2, 2) * TDIF**2
+                      PMPA(N, IAPLL+8) = PMPAT(N, 2, 2) * SCLPER &
+                              * SIN(WAT*TDIF)
+                      PMPA(N, IAPLL+9) = PMPAT(N, 2, 2) * SCLPER &
+                              * COS(WAT*TDIF)
+
+                      ! LASER YAW 5 PARAMETERS
+                      PMPA(N, IAPLL+10) = PMPAT(N, 3, 2)
+                      PMPA(N, IAPLL+11) = PMPAT(N, 3, 2) * TDIF
+                      PMPA(N, IAPLL+12) = PMPAT(N, 3, 2) * TDIF**2
+                      PMPA(N, IAPLL+13) = PMPAT(N, 3, 2) * SCLPER &
+                              * SIN(WAT*TDIF)
+                      PMPA(N, IAPLL+14) = PMPAT(N, 3, 2) * SCLPER &
+                              * COS(WAT*TDIF)
+                  END IF ! CHAIN LASER NM
+              END DO
+          ELSE ! CHAIN ATT PARTIALS
+              DO N = 1, NM
+                  TDIF = DBLE(MJDSBL) + FSECK(N) - XBTIME
+
+                  ! CHAIN BODY ATTITUDE PARTIALS
+                  ! ..IAPLSC COMPUTED IN RPY
+
+                  ! BODY ROLL 5 PARAMETERS
+                  PMPA(IAPLSC, N) = PMPAT(N, 1, 1)
+                  PMPA(IAPLSC+1, N) = PMPAT(N, 1, 1) * TDIF
+                  PMPA(IAPLSC+2, N) = PMPAT(N, 1, 1) * TDIF**2
+                  PMPA(IAPLSC+3, N) = PMPAT(N, 1, 1) * SCLPER &
+                          * SIN(WAT*TDIF)
+                  PMPA(IAPLSC+4, N) = PMPAT(N, 1, 1) * SCLPER &
+                          * COS(WAT*TDIF)
+
+                  ! BODY PITCH 5 PARAMETERS
+                  PMPA(IAPLSC+5, N) = PMPAT(N, 2, 1)
+                  PMPA(IAPLSC+6, N) = PMPAT(N, 2, 1) * TDIF
+                  PMPA(IAPLSC+7, N) = PMPAT(N, 2, 1) * TDIF**2
+                  PMPA(IAPLSC+8, N) = PMPAT(N, 2, 1) * SCLPER &
+                          * SIN(WAT*TDIF)
+                  PMPA(IAPLSC+9, N) = PMPAT(N, 2, 1) * SCLPER &
+                          * COS(WAT*TDIF)
+
+                  ! BODY YAW 5 PARAMETERS
+                  PMPA(IAPLSC+10, N) = PMPAT(N, 3, 1)
+                  PMPA(IAPLSC+11, N) = PMPAT(N, 3, 1) * TDIF
+                  PMPA(IAPLSC+12, N) = PMPAT(N, 3, 1) * TDIF**2
+                  PMPA(IAPLSC+13, N) = PMPAT(N, 3, 1) * SCLPER &
+                          * SIN(WAT*TDIF)
+                  PMPA(IAPLSC+14, N) = PMPAT(N, 3, 1) * SCLPER &
+                          * COS(WAT*TDIF)
+
+                  ! CHAIN LASER NP:
+                  IF (MAXLAS > 0) THEN
+                      ! CHAIN LASER ATTITUDE PARTIALS
+                      ! ..IAPLL COMPUTED IN RPY
+
+                      ! LASER ROLL 5 PARAMETERS
+                      PMPA(IAPLL, N) = PMPAT(N, 1, 2)
+                      PMPA(IAPLL+1, N) = PMPAT(N, 1, 2) * TDIF
+                      PMPA(IAPLL+2, N) = PMPAT(N, 1, 2) * TDIF**2
+                      PMPA(IAPLL+3, N) = PMPAT(N, 1, 2) * SCLPER &
+                              * SIN(WAT*TDIF)
+                      PMPA(IAPLL+4, N) = PMPAT(N, 1, 2) * SCLPER &
+                              * COS(WAT*TDIF)
+
+                      ! LASER PITCH 5 PARAMETERS
+                      PMPA(IAPLL+5, N) = PMPAT(N, 2, 2)
+                      PMPA(IAPLL+6, N) = PMPAT(N, 2, 2) * TDIF
+                      PMPA(IAPLL+7, N) = PMPAT(N, 2, 2) * TDIF**2
+                      PMPA(IAPLL+8, N) = PMPAT(N, 2, 2) * SCLPER &
+                              * SIN(WAT*TDIF)
+                      PMPA(IAPLL+9, N) = PMPAT(N, 2, 2) * SCLPER &
+                              * COS(WAT*TDIF)
+
+                      ! LASER YAW 5 PARAMETERS
+                      PMPA(IAPLL+10, N) = PMPAT(N, 3, 2)
+                      PMPA(IAPLL+11, N) = PMPAT(N, 3, 2) * TDIF
+                      PMPA(IAPLL+12, N) = PMPAT(N, 3, 2) * TDIF**2
+                      PMPA(IAPLL+13, N) = PMPAT(N, 3, 2) * SCLPER &
+                              * SIN(WAT*TDIF)
+                      PMPA(IAPLL+14, N) = PMPAT(N, 3, 2) * SCLPER &
+                              * COS(WAT*TDIF)
+                  END IF ! CHAIN LASER NP
+              END DO
+          END IF ! CHAIN ATT PARTIALS
+
+          ! SET FLAGS TO SUM ATTITUDE PARTIALS FOR SUMXXX ROUTINE
+          DO ILVOID = 1, 15
+              LAVOID(IAPLSC+ILVOID-1) = .FALSE.
+              IF (MAXLAS > 0) THEN
+                  LAVOID(IAPLL+ILVOID-1) = .FALSE.
+              END IF
+          END DO
+      END IF ! ATTITUDE PARTIALS
+
+      ! COMPUTE OVERALL RANGE BIAS PARTIAL
+      IF (NAMBB > 0) THEN
+          IPT = IMBIAS(1) - IPVAL0(IXBISA) + 1
+      ELSE
+          IPT = IMBIAS(1)
+      END IF
+      IF (IPT > 0) THEN
+          LAVOID(IPT) = .FALSE.
+          ! RANGE BIAS PARTIAL:
+          IF (.NOT. LNPNM) THEN
+              DO N = 1, NM
+                  PMPA(N, IPT) = 1.D0
+              END DO
+          ELSE ! RANGE BIAS PARTIAL
+              DO N = 1, NM
+                  PMPA(IPT, N) = 1.D0
+              END DO
+          END IF ! RANGE BIAS PARTIAL
+      END IF
+      ! COMPUTE INDIVIDUAL LASER RANGE BIAS PARTIAL
+      IPT=IPTLB0
+      IF (IPT > 0) THEN
+          LAVOID(IPT) = .FALSE.
+          ! RANGE BIAS PARTIAL:
+          IF (.NOT. LNPNM) THEN
+              DO N = 1, NM
+                  PMPA(N, IPT) = 1.D0
+              END DO
+          ELSE ! RANGE BIAS PARTIAL
+              DO N = 1, NM
+                  PMPA(IPT, N) = 1.D0
+              END DO
+          END IF ! RANGE BIAS PARTIAL
+      END IF
+      IF (IPTOTB > 0) THEN
+          ! START OBSERVATION TIMING BIAS PARTIAL
+          LAVOID(IPTOTB) = .FALSE.
+
+          DO N = 1, NM
+              FSECKK(N) = FSECKK(N) + TIMPRT
+          END DO
+
+          CALL ORBIT(MJDSBL, FSECKK, AA(KS), NM, II(KINDH), II(KNMH), &
+                  II(KMJDSC), AA(KFSEC), II(KMJDSV), AA(KFSECV), &
+                  LL(KLSETS), II(KIPXPF), II(KIVSAT), 1, II(KNMAX), &
+                  II(KNTOLD), XSK, AA(KPXPFM), LNADJ, .FALSE., &
+                  II(KPLPTR), II(KPANEL), II(KNMOVE), &
+                  AA(KTPMES+4*MINTIM), LL(KLTPMS+6*MINTIM), LL(KSETDN), &
+                  AA(KTMOS0-1+INTOSP), AA(KTMOS-1+INTOSP), &
+                  AA(KTMOSP-1+INTOSP), AA(KSMXOS-1+KSUMXOS), &
+                  AA(KSMXOS-1+KSUMPOS), AA(KSMXOS-1+KXDDTOS), &
+                  AA(KSMXOS-1+KPDDTOS), KNSTEPS, NEQNI, &
+                  II(KSGMNT-1+IRET), AA(KSGTM1-1+IRET), &
+                  AA(KSGTM2-1+IRET), AA, II, LL)
+          ! MODIFY SPACECRAFT POSITION FROM CENTER OF MASS
+          ! TO CENTER OF FIGURE ORIGIN
+          XSK(1:NM,1:3) = XSK(1:NM,1:3) + COF_COM_TOR(1:NM,1:3)
+
+          CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, ISET, &
+                  OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, OCWETT, &
+                  OBSMET, FSECM, HOLD(1,1), HOLD(1,4), HOLD(1,7), &
+                  HOLD(1,8), 0, ATROT, 0,LEDIT_EXTRA)
+          CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                  HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                  WETD, WGEOID, OFF, FSECN, FSECKK, OCDRYT, OCWETT, &
+                  XSN, VSN, ISAT, ISET, ATROT, .FALSE., UZ, UZSQ, &
+                  TEMP, SSTS, PMPA, LDUM, 0, POSPRT, .FALSE., &
+                  RLAND, ISATID, COF_COM_TOR, 0,.FALSE.,SCDIRA)
+
+          IF (LNPNM) THEN
+              DO N = 1, NM
+                  FSECKK(N) = FSECKK(N) - TIMPRT
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                          + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+                  PMPA(IPTOTB, N) = (TMP - OBSC(N)) / TIMPRT
+              END DO
+          ELSE
+              DO N = 1, NM
+                  FSECKK(N) = FSECKK(N) - TIMPRT
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                          + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+                  PMPA(N, IPTOTB) = (TMP - OBSC(N)) / TIMPRT
+              END DO
+          END IF
+          ! END  OBSERVATION TIMING BIAS PARTIAL
+      END IF
+      IF (IPTATB > 0) THEN
+          ! START  ATTITUDE TIMING BIAS PARTIAL
+          LAVOID(IPTATB) = .FALSE.
+          DO N = 1, NM
+              FSEKKK(N) = FSEKKK(N) + TIMPRT
+          END DO
+
+          CALL ORBIT(MJDSBL, FSECKK, AA(KS), NM, II(KINDH), II(KNMH), &
+                  II(KMJDSC), AA(KFSEC), II(KMJDSV), AA(KFSECV), &
+                  LL(KLSETS), II(KIPXPF), II(KIVSAT), 1, II(KNMAX), &
+                  II(KNTOLD), XSK, AA(KPXPFM), LNADJ, .FALSE., &
+                  II(KPLPTR), II(KPANEL), II(KNMOVE), &
+                  AA(KTPMES+4*MINTIM), LL(KLTPMS+6*MINTIM), &
+                  LL(KSETDN), AA(KTMOS0-1+INTOSP), AA(KTMOS-1+INTOSP), &
+                  AA(KTMOSP-1+INTOSP), AA(KSMXOS-1+KSUMXOS), &
+                  AA(KSMXOS-1+KSUMPOS), AA(KSMXOS-1+KXDDTOS), &
+                  AA(KSMXOS-1+KPDDTOS), KNSTEPS, NEQNI, &
+                  II(KSGMNT-1+IRET), AA(KSGTM1-1+IRET), &
+                  AA(KSGTM2-1+IRET), AA, II, LL)
+          ! MODIFY SPACECRAFT POSITION FROM CENTER OF MASS
+          ! TO CENTER OF FIGURE ORIGIN
+          XSK(1:NM,1:3) = XSK(1:NM,1:3) + COF_COM_TOR(1:NM,1:3)
+
+          CALL ALDST1(AA, II, LL, FSECKK, FSEKKK, XSK, VSK, ISAT, &
+                  ISET, OFF, XTRA, WORK, BAXIS, THETAG, OCDRYT, &
+                  OCWETT, OBSMET, FSECM, HOLD(1,1), HOLD(1,4), &
+                   HOLD(1,7), HOLD(1,8), 0, ATROT, 0,LEDIT_EXTRA)
+          CALL ALDST2(AA, II, LL, FSECM, HOLD(1,1), HOLD(1,4), &
+                  HOLD(1,7), HOLD(1,8), HOLD(1,11), HOLD(1,14), &
+                  HOLD(1,15), XTRA, THETAG, COSTHG, SINTHG, WOTD, &
+                  WETD, WGEOID, OFF, FSECN, FSECKK, OCDRYT, OCWETT, &
+                  XSN, VSN, ISAT, ISET, ATROT, .FALSE., UZ, UZSQ, &
+                  TEMP, SSTS, PMPA, LDUM, 0, POSPRT, .FALSE., &
+                  RLAND, ISATID, COF_COM_TOR, 0,.FALSE.,SCDIRA)
+
+          IF (LNPNM) THEN
+              DO N = 1, NM
+                  FSEKKK(N) = FSEKKK(N) - TIMPRT
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                          + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+                  PMPA(IPTATB, N) = (TMP - OBSC(N)) / TIMPRT
+              END DO
+          ELSE
+              DO N = 1, NM
+                  FSEKKK(N) = FSEKKK(N) - TIMPRT
+                  TMP = (HOLD(N,7) + HOLD(N,14))*0.5D0 &
+                          + ABS(OCDRYT(N)) + ABS(OCWETT(N)) + BIASV
+                  PMPA(N, IPTATB) = (TMP - OBSC(N)) / TIMPRT
+              END DO
+          END IF
+          ! END ATTITUDE TIMING BIAS PARTIAL
+      END IF
+
+      DEALLOCATE(WGEOID)
+      DEALLOCATE(WOTD)
+      DEALLOCATE(WETD)
+60000 FORMAT(' EXECUTION TERMINATING IN DIRALT')
+60001 FORMAT(' NUMBER OF MEASURMENTS IN CURRENT BLOCK: ',I10)
+60002 FORMAT(' EXCEEDS MAXIMUM ALLOWED: ',I10)
+      END SUBROUTINE

@@ -1,0 +1,83 @@
+!$DORANT
+      SUBROUTINE DORANT(PHASEC,PHAHDR,PHC,ELEV,NDIMA,NDIMZ)
+!********1*********2*********3*********4*********5*********6*********7**
+! DORANT                                         PGMR - J. WIMERT
+!
+!
+! FUNCTION:  COMPUTE THE ANTENNA MAP CORRECTION AT A DORIS STATION
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   PHASEC   I    A    ANTENNA CORRECTION ARRAY. CORRECTIONS SHOULD
+!                      BE ADDED TO COMPUTED OR SUBTRACTED FROM OBSERVED
+!                      THE FIRST  DIMENSION OF PHASEC IS FOR AZIMUTH
+!                      THE SECOND DIMENSION OF PHASEC IS FOR ELEVATION
+!   NDIMA    I    S    AZIMUTH DIMENSION
+!   NDIMZ    I    S    ZENITH  DIMENSION
+!   PHAHDR   I    A    PHASE TABLE HEADER RECORD
+!                      PHAHDR(1): NUMBER OF ZENITH  ANGLES
+!                      PHAHDR(2): STARTING  ZENITH  ANGLES
+!                      PHAHDR(3): STEP OF   ZENITH  ANGLES
+!                      PHAHDR(4): NUMBER OF AZIMUTH ANGLES
+!                      PHAHDR(5): STARTING  AZIMUTH ANGLES
+!                      PHAHDR(6): STEP OF   AZIMUTH ANGLES
+!   PHC      O    S    CORRECTION FROM PHASEC
+!
+!
+! COMMENTS: SEE VOLUME 3 (ANTPHC CARD) FOR STRUCTURE OF PHASEC ARRAY
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+
+      COMMON/CONSTR/PI,TWOPI,DEGRAD,SECRAD,SECDAY
+      COMMON/CITERL/LSTGLB,LSTARC,LSTINR,LNADJ ,LITER1,LSTITR,          &
+     &              LOBORB,LRESID,LFREEZ,LSAVEF,LHALT,LADJPI,LADJCI
+      COMMON/NPCOM /NPNAME,NPVAL(92),NPVAL0(92),IPVAL(92),IPVAL0(92),   &
+     &              MPVAL(28),MPVAL0(28),NXNPCM
+      COMMON/NPCOMX/IXARC ,IXSATP,IXDRAG,IXSLRD,IXACCL,IXGPCA,IXGPSA,   &
+     &              IXAREA,IXSPRF,IXDFRF,IXEMIS,IXTMPA,IXTMPC,IXTIMD,   &
+     &              IXTIMF,IXTHTX,IXTHDR,IXOFFS,IXBISA,IXFAGM,IXFAFM,   &
+     &              IXATUD,IXRSEP,IXACCB,IXDXYZ,IXGPSBW,IXCAME,IXBURN,  &
+     &              IXGLBL,IXGPC ,IXGPS, IXTGPC,IXTGPS,IXGPCT,IXGPST,   &
+     &              IXTIDE,IXETDE,IXOTDE,IXOTPC,IXOTPS,IXLOCG,IXKF  ,   &
+     &              IXGM  ,IXSMA ,IXFLTP,IXFLTE,IXPLTP,IXPLTV,IXPMGM,   &
+     &              IXPMJ2,IXVLIT,IXEPHC,IXEPHT,IXH2LV,IXL2LV,IXOLOD,   &
+     &              IXPOLX,IXPOLY,IXUT1 ,IXPXDT,IXPYDT,IXUTDT,IXVLBI,   &
+     &              IXVLBV,IXXTRO,IXBISG,IXSSTF,IXFGGM,IXFGFM,IXLNTM,   &
+     &              IXLNTA,IX2CCO,IX2SCO,IX2GM ,IX2BDA,IXRELP,IXJ2SN,   &
+     &              IXGMSN,IXPLNF,IXPSRF,IXANTD,IXTARG,                 &
+     &              IXSTAP,IXSSTC,IXSSTS,IXSTAV,IXSTL2,                 &
+     &              IXSTH2,IXDPSI,IXEPST,IXCOFF,IXTOTL,NXNPCX
+      COMMON/PYUA  /XGPSTB,WVL3,VHIGH(3,3,4),VLOW(3,3,4),PYUSQ(5),      &
+     &              VISATH(4),VISATL(4),XANTSL(4),XCUTSL(4),XANTSH(4)
+      DIMENSION PHASEC(NDIMA,NDIMZ),PHAHDR(6)
+      LOGICAL LDEBUG
+
+!-------------------------------------------------------------------
+!      write(6,*)'enter DORANT'
+      LDEBUG=.FALSE.
+
+! CALCULATE THE ELEVATION ANGLES
+! ZENITH IS FROM 0 TO 90 DEGREEs;
+
+!Correction is based on Zenith, find zenith using ELEV
+
+      ZZ=90.0D0-ELEV
+
+      J1=(ZZ-PHAHDR(2))/PHAHDR(3)
+      J1=J1+1
+      IF(J1.GE.NDIMZ) J1=NDIMZ-1
+      J2=J1+1
+      ELEV1=PHAHDR(2)+DBLE(J1-1)*PHAHDR(3)
+      ELEV2=PHAHDR(2)+DBLE(J1)*PHAHDR(3)
+
+
+      PHC = PHASEC(1,J1)+(PHASEC(1,J2)-PHASEC(1,J1))*&
+     &      ((ZZ-ELEV1)/(ELEV2-ELEV1))
+      PHC = PHC/1000.0D0
+
+
+      RETURN
+      END

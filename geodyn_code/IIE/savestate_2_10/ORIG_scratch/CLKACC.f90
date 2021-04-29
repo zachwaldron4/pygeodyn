@@ -1,0 +1,200 @@
+      SUBROUTINE CLKACC(MJDSEC,FSEC,NSAT,XP,XDDRC,AA,II,LL)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+!
+      COMMON/CBARYC/CBODY(6),TBODY(6),SUNRF(6)
+      COMMON/CBDSTA/BDSTAT(7,999),XBDSTA
+      COMMON/CREFMT/REFMT(9)
+      COMMON/CENACC/DGCEN,TCEN,BMACEN,CCHEBV(50),EPCEN(50,3),           &
+     &              DGEAR,TEAR,BMAEAR,ECHEBV(50),EPEAR(50,3),           &
+     &              DGMON,TMON,BMAMON,SCHEBV(50),EPMON(50,3)
+      COMMON/CGRAV/GM,AE,AESQ,FE,FFSQ32,FSQ32,XK2,XK3,XLAM,SIGXK2,      &
+     &      SIGXK3,SIGLAM,RATIOM(2),AU,RPRESS
+      COMMON/CLIGHT/VLIGHT,ERRLIM,XCLITE
+      COMMON/CNIGLO/MINTIM,MSATG3,MEQNG ,MEQNG3,MSATG ,MSATOB,MSATA ,   &
+     &              MSATA3,MSETA ,MINTVL,MSORDR,MSORDV,NMXORD,          &
+     &       MCIPV ,MXBACK,MXI   ,MPXPF ,MAXAB ,MSETDG,MXSATD,          &
+     &       MXDEGS,MXDRP ,MXDRPA,MXSRP ,MXSRPA,MXGAP ,MSATDR,          &
+     &       MSATSR,MSATGA,MXDRPD,MXSRPD,MXGAPD,MXBCKP,MXTPMS,          &
+     &       NSTAIN,NXCNIG
+      COMMON/CORA01/KFSEC0,KFSECB,KFSEC ,KFSECV,KH    ,KHV   ,KCTOL ,   &
+     &              KRSQ  ,KVMATX,KCPP  ,KCPV  ,KCCP  ,KCCV  ,KCCPV ,   &
+     &              KCCVV ,KXPPPP,KX    ,KPX   ,KSUMX ,KXDDOT,KSUMPX,   &
+     &              KPXDDT,KAB   ,KPN   ,KAORN ,KSINLM,KCOSLM,KTANPS,   &
+     &              KCRPAR,KVRARY,KXM   ,KXNP1 ,KXPRFL,KXM2  ,KXNNP1,   &
+     &              KWRK  ,KFI   ,KGE   ,KB0DRG,KBDRAG,KAPGM ,KAPLM ,   &
+     &              KCN   ,KSN   ,KSTID ,KTIDE ,KSTDRG,KSTSRD,KSTACC,   &
+     &              KLGRAV,KGM   ,KAE   ,KFPL  ,KFEQ  ,KPLNPO,KPLNVL,   &
+     &              KXEPOC,KCD   ,KCDDOT,KCR   ,KGENAC,KACN  ,KASN  ,   &
+     &              KTHDRG,KCKEP ,KCKEPN,KXNRMZ,KXNRMC,KFSCEP,KFSCND,   &
+     &              KAREA ,KXMASS,KRMSPO,KTCOEF,KTXQQ ,KTIEXP,KTXMM ,   &
+     &              KTXLL1,KTXSN1,KTS2QQ,KT2M2H,KT2MHJ,KTXKK ,KTSCRH,   &
+     &              KPXPK ,KAESHD,KCSAVE,KSSAVE,KCGRVT,KSGRVT,KXDTMC,   &
+     &              KDNLT ,KTXSN2,KTNORM,KTWRK1,KTWRK2,KUNORM,KAERLG,   &
+     &              KSINCO,KPARLG,KCONST,KBFNRM,KTDNRM,KCSTHT,KTPSTR,   &
+     &              KTPSTP,KTPFYW,KPLMGM,KTPXAT,KEAQAT,KEAFSS,KEAINS,   &
+     &              KACS  ,KECS  ,KSOLNA,KSOLNE,KSVECT,KSFLUX,KFACTX,   &
+     &              KFACTY,KADIST,KGEOAN,KPALB ,KALBCO,KEMMCO,KCNAUX,   &
+     &              KSNAUX,KPPER ,KACOSW,KBSINW,KACOFW,KBCOFW,KANGWT,   &
+     &              KWT   ,KPLNDX,KPLANC,KTGACC,KTGDRG,KTGSLR,KWTACC,   &
+     &              KWTDRG,KWTSLR,KTMACC,KTMDRG,KTMSLR,KATTUD,KDYACT,   &
+     &              KACCBT,KACPER,KXDDNC,KXDDAO,KXNC  ,KXPPNC,KSMXNC,   &
+     &              KXDDTH,KPDDTH,KXSSBS,KCPPNC,KEXACT,KXACIN,KXACOB,   &
+     &              KPXHDT,KTPXTH,KPACCL,KTXSTA,KDELXS,KSMRNC,KPRX  ,   &
+     &              KSMRNP,KDSROT,KXUGRD,KYUGRD,KZUGRD,KSUMRC,KXDDRC,   &
+     &              KTMOS0,KTMOS, KTMOSP,KSMXOS,KSGTM1,KSGTM2,KSMPNS,   &
+     &              KXGGRD,KYGGRD,KZGGRD,KXEGRD,KYEGRD,KZEGRD,KSSDST,   &
+     &              KSDINS,KSDIND,KSSDSR,KSSDDG,KTATHM,KTAINS,KTAFSS,   &
+     &              KSRAT ,KTRAT ,KHLDV ,KHLDA1,KHLDA4,KHLDA7,KQAST1,   &
+     &              KQAST2,KQAST3,KQAST4,KQAST5,KQAST6,NXCA01
+      COMMON/CORA02/KFSCTB,KFSCTC,KFSCTE,KDSECT,                        &
+     &              KFSECT,KS    ,KCIP  ,KCIV  ,                        &
+     &       KXTN  ,KXSM  ,KXTK  ,KXSJ  ,KXTI  ,KXTKP ,                 &
+     &       KVTN  ,KVSM  ,KVTK  ,KVSJ  ,KVTI  ,KVTKP ,                 &
+     &       KSATLT,KSATLN,KSATH ,KCOSTH,KSINTH,                        &
+     &       KPXPFM,KPXPFK,KPXPFJ,KTRBF ,KFSTRC,                        &
+     &       KFSTRE,KDSCTR,KFSCVS,KXSMBF,KXSKBF,KXSJBF,                 &
+     &       KRSSV1,KRSSV2,KRSSV3,KTPMES,KACOEF,KACTIM,                 &
+     &       KXTNPC,KXSMPC,KXTKPC,KXSJPC,KXTIPC,KXTKPP,                 &
+     &       KRLRNG,KASTO,KASTP,NXCA02
+      COMMON/CORI01/KMJDS0,KMJDSB,KMJDSC,KMJDSV,KIBACK,KIBAKV,KIORDR,   &
+     &              KIORDV,KNOSTP,KNOCOR,KNSAT ,KN3   ,KNEQN ,KNEQN3,   &
+     &              KNH   ,KNHV  ,KNSTPS,KNSTPV,KICPP ,KICPV ,KICCP ,   &
+     &              KICCV ,KICCPV,KICCVV,KISUMX,KIXDDT,KISMPX,KIPXDD,   &
+     &              KNMAX ,KNTOLD,KNTOLO,KICNT ,KISNT ,KMM   ,KKK   ,   &
+     &              KJJ   ,KHH   ,KIBDY ,KSIGN1,KSIGN2,KLL   ,KQQ   ,   &
+     &              KIORFR,KIPDFR,KITACC,KJSAFR,KJSPFR,KMJDEP,KMJDND,   &
+     &              KNVSTP,KNSTRN,KNDARK,KTIPPT,KTJBDY,                 &
+     &              KICNTA,KISNTA,KISHDP,KIPTC ,KIPTS ,KIGTSR,KIXTMC,   &
+     &              KTIPTT,KTNOSD,KTQNDX,KTLL1 ,KTJJBD,KTITDE,KTCNTR,   &
+     &              KTNN  ,KITACX,KNMOVE,KPANEL,KPLPTR,KNADAR,KNADSP,   &
+     &              KNADDF,KNADEM,KNADTA,KNADTC,KNADTD,KNADTF,KNADTX,   &
+     &              KITPMD,KSCATT,KITPAT,KILTPX,KEASBJ,KEANMP,KEANAN,   &
+     &              KEAPMP,KEAPAN,KEAMJS,KEAPPP,KEAAAA,KICNTT,KISNTT,   &
+     &              KTPGRC,KTPGRS,KTPC  ,KTPS  ,KALCAP,KEMCAP,KNSEG ,   &
+     &              KICNTP,KISNTP,KNRDGA,KNRDDR,KNRDSR,KIRDGA,KIRDRG,   &
+     &              KIRSLR,KSTRTA,KSTRTD,KSTRTS,KDYNPE,KACCPE,KIBCKN,   &
+     &              KNRAT ,KIXDDN,KISMXN,KDXDDN,KDSMXN,KICPPN,KACSID,   &
+     &              KNEQNH,KHRFRC,KPTFBS,KPTFSB,KIPXDA,KIACCP,KXSTAT,   &
+     &              KPXST ,KSALST,KMAPLG,KNMBUF,KSTEPS,KSGMNT,KSATIN,   &
+     &              KMEMST,KNEQNI,KBUFIN,KWEMGA,KWEMDR,KTPATS,KTANMP,   &
+     &              KTAPPP,KTAMJS,KTASID,KGPSID,KNSSVA,KPNALB,KBRAX1,   &
+     &              KBRAX2,KBRAX3,NXCI01
+      COMMON/CORI02/KNTIME,KMJSTB,KMJSTC,KMJSTE,KISECT,                 &
+     &              KINDH ,KNMH  ,KIVSAT,KIPXPF,KNTRTM,KMSTRC,          &
+     &              KMSTRE,KISCTR,KISATR,KITRUN,KTRTMB,KTRTMC,          &
+     &              KMJDVS,KNTMVM,NXCI02
+      COMMON/CORL01/KLORBT,KLORBV,KLNDRG,KLBAKW,KLSETS,KLAFRC,KLSTSN,   &
+     &              KLSNLT,KLAJDP,KLAJSP,KLAJGP,KLTPAT,KEALQT,KLRDGA,   &
+     &              KLRDDR,KLRDSR,KFHIRT,KLSURF,KHRFON,KLTPXH,KSETDN,   &
+     &              KTALTA,NXCL01
+      COMMON/CORL02/KLNDTT,KLWSTR,KLNDTR,KLEVMF,KLTPMS,NXCL02
+      COMMON/EPHSET/EMFACT,DTENPD,DTINPD,FSC1EN,FSCENP(2),FSCINP(4),    &
+     &   FSDINP(4),XEPHST
+      COMMON/IBODPT/IBDCF(999),IBDSF(999),IBDGM(999),IBDAE(999),    &
+     &              IBDPF(999),                                     &
+     &              ICBDCF,ICBDSF,ICBDGM,ICBDAE,ICBDPF,             &
+     &              ITBDCF,ITBDSF,ITBDGM,ITBDAE,ITBDPF,NXBDPT
+      COMMON/IORCHB/ IORM,IORJ,IORSA,IORSUN,IOREM,IORMO,IORCB,IORTB,    &
+     &               IGRP,ICHBOG(2,14),IORSCB(988),NXORCH
+!
+      DIMENSION XP(3,NSAT,2),XDDRC(NSAT)
+      DIMENSION AA(1),II(1),LL(1)
+      DIMENSION BODY(3,2,5)
+      DIMENSION IREST(3),IREST2(3),ICBOD(5)
+      DIMENSION GMX(5)
+      DIMENSION SATVC(3,2),SP(3),SV(3)
+      DIMENSION XI(2),XIDOT(2)
+      DATA SQFV/2.236067977499D0/
+      DATA IREST/2,3,4/
+      DATA IREST2/5,6,7/
+      DATA ICBOD/11,3,5,6,7/
+      DATA YL/1.481D-8/
+      VL2=VLIGHT*VLIGHT
+      XL=YL
+      IDEGC=(DGCEN+.001D0)
+      GMX(1)=BDSTAT(7,8)
+      GMX(2)=BDSTAT(7,9)
+      GMX(3)=BDSTAT(7,2)
+      GMX(4)=BDSTAT(7,4)
+      GMX(5)=BDSTAT(7,3)
+!
+      C20=AA(KCN+4)
+      OBLFCT=SQFV*AE*AE*GM*C20
+!
+!
+      U=0.D0
+      V2=0.D0
+      CALL PLANPO(MJDSEC,FSEC,.TRUE.,.TRUE.,AA,II)
+      DO 50 J=1,6
+      BODY(J,1,1)=SUNRF(J)
+      BODY(J,1,2)=TBODY(J)
+   50 END DO
+      DO 60 J=1,3
+      IF(ICBDGM.EQ.IREST2(J)) GO TO 60
+      BODY(1,1,J+2)=REFMT(1)*BDSTAT(1,IREST(J))                         &
+     &             +REFMT(2)*BDSTAT(2,IREST(J))                         &
+     &             +REFMT(3)*BDSTAT(3,IREST(J))
+      BODY(2,1,J+2)=REFMT(4)*BDSTAT(1,IREST(J))                         &
+     &             +REFMT(5)*BDSTAT(2,IREST(J))                         &
+     &             +REFMT(6)*BDSTAT(3,IREST(J))
+      BODY(3,1,J+2)=REFMT(7)*BDSTAT(1,IREST(J))                         &
+     &             +REFMT(8)*BDSTAT(2,IREST(J))                         &
+     &             +REFMT(9)*BDSTAT(3,IREST(J))
+      BODY(1,2,J+2)=REFMT(1)*BDSTAT(4,IREST(J))                         &
+     &             +REFMT(2)*BDSTAT(5,IREST(J))                         &
+     &             +REFMT(3)*BDSTAT(6,IREST(J))
+      BODY(2,2,J+2)=REFMT(4)*BDSTAT(4,IREST(J))                         &
+     &             +REFMT(5)*BDSTAT(5,IREST(J))                         &
+     &             +REFMT(6)*BDSTAT(6,IREST(J))
+      BODY(3,2,J+2)=REFMT(7)*BDSTAT(4,IREST(J))                         &
+     &             +REFMT(8)*BDSTAT(5,IREST(J))                         &
+     &             +REFMT(9)*BDSTAT(6,IREST(J))
+   60 END DO
+!
+      DO 1000 ISAT=1,NSAT
+!
+      RS2=XP(1,ISAT,1)*XP(1,ISAT,1)+XP(2,ISAT,1)*XP(2,ISAT,1)           &
+     &   +XP(3,ISAT,1)*XP(3,ISAT,1)
+      RS=SQRT(RS2)
+      RS3=RS2*RS
+!
+!
+      OBLF=OBLFCT/RS3
+      SINF=XP(3,ISAT,1)/RS
+      RSD=XP(1,ISAT,1)*XP(1,ISAT,2)+XP(2,ISAT,1)*XP(2,ISAT,2)           &
+     &   +XP(3,ISAT,1)*XP(3,ISAT,2)
+      SINFD=XP(3,ISAT,2)/RS-(XP(3,ISAT,1)*RSD)/RS2
+      P1=1.5D0*SINF*SINF-.5D0
+      UOBL=OBLF*P1
+      UOBLD=-3.D0*OBLF*((RSD*P1)/RS-SINF*SINFD)
+!
+      U=UOBL+GM/RS
+!
+      SATVC(1,1)=XP(1,ISAT,1)+CBODY(1)
+      SATVC(2,1)=XP(2,ISAT,1)+CBODY(2)
+      SATVC(3,1)=XP(3,ISAT,1)+CBODY(3)
+      SATVC(1,2)=XP(1,ISAT,2)+CBODY(4)
+      SATVC(2,2)=XP(2,ISAT,2)+CBODY(5)
+      SATVC(3,2)=XP(3,ISAT,2)+CBODY(6)
+      V2=SATVC(1,2)*SATVC(1,2)+SATVC(2,2)*SATVC(2,2)                    &
+     &  +SATVC(3,2)*SATVC(3,2)
+!
+      DO 200 IB=1,5
+      IF(ICBDGM.EQ.ICBOD(IB)) GO TO 200
+      SP(1)=SATVC(1,1)-BODY(1,1,IB)
+      SP(2)=SATVC(2,1)-BODY(2,1,IB)
+      SP(3)=SATVC(3,1)-BODY(3,1,IB)
+      SV(1)=SATVC(1,2)-BODY(1,2,IB)
+      SV(2)=SATVC(2,2)-BODY(2,2,IB)
+      SV(3)=SATVC(3,2)-BODY(3,2,IB)
+      RKP2=SP(1)*SP(1)+SP(2)*SP(2)+SP(3)*SP(3)
+      RKP=SQRT(RKP2)
+      RKP3=RKP*RKP2
+      U=U+GMX(IB)/RKP
+  200 END DO
+!
+!
+      XDDRC(ISAT)=(U+.5D0*V2)/VL2-XL
+ 1000 END DO
+      RETURN
+      END

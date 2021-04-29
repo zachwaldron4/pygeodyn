@@ -1,0 +1,288 @@
+!$ENDARC
+      SUBROUTINE ENDARC(AA,II,LL,LCONVG,PERCNT)
+!********1*********2*********3*********4*********5*********6*********7**
+! ENDARC           00/00/00            0000.0    PGMR - ?
+!
+!
+! FUNCTION:  END ARC OPERATIONS. WRITE OUT VMAT, PART. DERIVATIVE AND
+!            RESIDUAL FILE CENTINEL RECORDS.  ALSO WRITE OUT ARC SUMMARY
+!            PAGE.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   AA       I    A    REAL DYNAMIC ARRAY
+!   II       I    A    INTEGER DYNAMIC ARRAY
+!   LL       I    A    LOGICAL DYNAMIC ARRAY
+!   LCONVG   I    S    TRUE INDICATES CONVERGENCE OF INNER ITERATION
+!                      WITHIN PERCNT %
+!   PERCNT   I    S    PERCENT CHANGE OF RMS RESIDUALS IN THE LAST INNER
+!                      ITERATION.
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      COMMON/BIAOR/NAMBB,NCYCB,NAMBBH
+      COMMON/CBINRL/LBINR,LLOCR,LODR,LBNCR,LBINRI,LLOCRI,LODRI,LBNCRI,  &
+     &              NXCBIN
+      COMMON/CESTIM/MPARM,MAPARM,MAXDIM,MAXFMG,ICLINK,IPROCS,NXCEST
+      COMMON/CITER /NINNER,NARC,NGLOBL
+      COMMON/CITERM/MAXINR,MININR,MAXLST,IHYPSW,NXITER
+      COMMON/CITERG/MARC,MGLOBL,MGLOBM,                                 &
+     &              MGLOCV,NXITRG
+      COMMON/CLVIEW/LNPRNT(18),NXCLVI
+      COMMON/CNIARC/NSATA,NSATG,NSETA,NEQNG,NMORDR,NMORDV,NSORDR,       &
+     &              NSORDV,NSUMX,NXDDOT,NSUMPX,NPXDDT,NXBACK,NXI,       &
+     &              NXILIM,NPXPF,NINTIM,NSATOB,NXBCKP,NXTIMB,           &
+     &              NOBSBK,NXTPMS,NXCNIA
+      COMMON/CNIGLO/MINTIM,MSATG3,MEQNG ,MEQNG3,MSATG ,MSATOB,MSATA ,   &
+     &              MSATA3,MSETA ,MINTVL,MSORDR,MSORDV,NMXORD,          &
+     &       MCIPV ,MXBACK,MXI   ,MPXPF ,MAXAB ,MSETDG,MXSATD,          &
+     &       MXDEGS,MXDRP ,MXDRPA,MXSRP ,MXSRPA,MXGAP ,MSATDR,          &
+     &       MSATSR,MSATGA,MXDRPD,MXSRPD,MXGAPD,MXBCKP,MXTPMS,          &
+     &       NSTAIN,NXCNIG
+      COMMON/CORA01/KFSEC0,KFSECB,KFSEC ,KFSECV,KH    ,KHV   ,KCTOL ,   &
+     &              KRSQ  ,KVMATX,KCPP  ,KCPV  ,KCCP  ,KCCV  ,KCCPV ,   &
+     &              KCCVV ,KXPPPP,KX    ,KPX   ,KSUMX ,KXDDOT,KSUMPX,   &
+     &              KPXDDT,KAB   ,KPN   ,KAORN ,KSINLM,KCOSLM,KTANPS,   &
+     &              KCRPAR,KVRARY,KXM   ,KXNP1 ,KXPRFL,KXM2  ,KXNNP1,   &
+     &              KWRK  ,KFI   ,KGE   ,KB0DRG,KBDRAG,KAPGM ,KAPLM ,   &
+     &              KCN   ,KSN   ,KSTID ,KTIDE ,KSTDRG,KSTSRD,KSTACC,   &
+     &              KLGRAV,KGM   ,KAE   ,KFPL  ,KFEQ  ,KPLNPO,KPLNVL,   &
+     &              KXEPOC,KCD   ,KCDDOT,KCR   ,KGENAC,KACN  ,KASN  ,   &
+     &              KTHDRG,KCKEP ,KCKEPN,KXNRMZ,KXNRMC,KFSCEP,KFSCND,   &
+     &              KAREA ,KXMASS,KRMSPO,KTCOEF,KTXQQ ,KTIEXP,KTXMM ,   &
+     &              KTXLL1,KTXSN1,KTS2QQ,KT2M2H,KT2MHJ,KTXKK ,KTSCRH,   &
+     &              KPXPK ,KAESHD,KCSAVE,KSSAVE,KCGRVT,KSGRVT,KXDTMC,   &
+     &              KDNLT ,KTXSN2,KTNORM,KTWRK1,KTWRK2,KUNORM,KAERLG,   &
+     &              KSINCO,KPARLG,KCONST,KBFNRM,KTDNRM,KCSTHT,KTPSTR,   &
+     &              KTPSTP,KTPFYW,KPLMGM,KTPXAT,KEAQAT,KEAFSS,KEAINS,   &
+     &              KACS  ,KECS  ,KSOLNA,KSOLNE,KSVECT,KSFLUX,KFACTX,   &
+     &              KFACTY,KADIST,KGEOAN,KPALB ,KALBCO,KEMMCO,KCNAUX,   &
+     &              KSNAUX,KPPER ,KACOSW,KBSINW,KACOFW,KBCOFW,KANGWT,   &
+     &              KWT   ,KPLNDX,KPLANC,KTGACC,KTGDRG,KTGSLR,KWTACC,   &
+     &              KWTDRG,KWTSLR,KTMACC,KTMDRG,KTMSLR,KATTUD,KDYACT,   &
+     &              KACCBT,KACPER,KXDDNC,KXDDAO,KXNC  ,KXPPNC,KSMXNC,   &
+     &              KXDDTH,KPDDTH,KXSSBS,KCPPNC,KEXACT,KXACIN,KXACOB,   &
+     &              KPXHDT,KTPXTH,KPACCL,KTXSTA,KDELXS,KSMRNC,KPRX  ,   &
+     &              KSMRNP,KDSROT,KXUGRD,KYUGRD,KZUGRD,KSUMRC,KXDDRC,   &
+     &              KTMOS0,KTMOS, KTMOSP,KSMXOS,KSGTM1,KSGTM2,KSMPNS,   &
+     &              KXGGRD,KYGGRD,KZGGRD,KXEGRD,KYEGRD,KZEGRD,KSSDST,   &
+     &              KSDINS,KSDIND,KSSDSR,KSSDDG,KTATHM,KTAINS,KTAFSS,   &
+     &              KSRAT ,KTRAT ,KHLDV ,KHLDA1,KHLDA4,KHLDA7,KQAST1,   &
+     &              KQAST2,KQAST3,KQAST4,KQAST5,KQAST6,NXCA01
+      COMMON/CORA02/KFSCTB,KFSCTC,KFSCTE,KDSECT,                        &
+     &              KFSECT,KS    ,KCIP  ,KCIV  ,                        &
+     &       KXTN  ,KXSM  ,KXTK  ,KXSJ  ,KXTI  ,KXTKP ,                 &
+     &       KVTN  ,KVSM  ,KVTK  ,KVSJ  ,KVTI  ,KVTKP ,                 &
+     &       KSATLT,KSATLN,KSATH ,KCOSTH,KSINTH,                        &
+     &       KPXPFM,KPXPFK,KPXPFJ,KTRBF ,KFSTRC,                        &
+     &       KFSTRE,KDSCTR,KFSCVS,KXSMBF,KXSKBF,KXSJBF,                 &
+     &       KRSSV1,KRSSV2,KRSSV3,KTPMES,KACOEF,KACTIM,                 &
+     &       KXTNPC,KXSMPC,KXTKPC,KXSJPC,KXTIPC,KXTKPP,                 &
+     &       KRLRNG,KASTO,KASTP,NXCA02
+      COMMON/CORA03/KRFMT ,KROTMT,KSRTCH,KCFSC ,KTHG  ,KCOSTG,KSINTG,   &
+     &              KDPSI ,KEPST ,KEPSM ,KETA  ,KZTA  ,KTHTA ,KEQN  ,   &
+     &              KDPSR ,KSL   ,KH2   ,KL2   ,KXPUT ,KYPUT ,KUT   ,   &
+     &              KSPCRD,KSPSIG,KSTAIN,KSXYZ ,KSPWT ,KDXSDP,KDPSDP,   &
+     &              KXLOCV,KSTNAM,KA1UT ,KPLTIN,KPLTVL,KPLTDV,KPUTBH,   &
+     &              KABCOF,KSPEED,KANGFC,KSCROL,KSTVEL,KSTVDV,KTIMVL,   &
+     &              KSTEL2,KSTEH2,KSL2DV,KSH2DV,                        &
+     &              KAPRES, KASCAL, KASOFF,KXDOTP,KSAVST,               &
+     &              KANGT , KSPDT , KCONAM,KGRDAN,KUANG ,KFAMP ,        &
+     &              KOFACT, KOTSGN,KWRKRS,KANFSD,KSPDSD,KPRMFS,KSCRFR,  &
+     &              KCOSAS,KSINAS,KDXTID,KALCOF,KSTANF,KNUTIN,KNUTMD,   &
+     &              KPDPSI,KPEPST,KDXDNU,KDPSIE,KEPSTE,NXCA03
+      COMMON/CORA04/KABIAS,KABSTR,KABSTP,KCBIAS,KCBSTR,KCBSTP,          &
+     &       KRNM  ,KRKM  ,KRKJ  ,KRIJ  ,KRKPM ,                        &
+     &       KRRNM ,KRRKM ,KRRKJ ,KRRIJ ,KRRKPM,                        &
+     &       KURNM ,KURKM ,KURKJ ,KURIJ ,KURKPM,                        &
+     &       KPRRNM,KPRRKM,KPRRKJ,KPRRIJ,KPRRKP,                        &
+     &       KPMPXI,KPMPXE,KRA   ,KRELV ,KUHAT ,KWORK ,KTMPCR,KU    ,   &
+     &       KS0   ,KS1   ,KXTP  ,KPXSXP,KPXDXP,KXUTDT,KRPOLE,KPXPOL,   &
+     &       KXDPOL,KOBBUF,KOBSC ,KRESID,KSIGMA,KRATIO,KELEVS,          &
+     &       KPMPA ,KPXSLV,KTPRTL,                                      &
+     &       KFRQOF,KXYZOF,KFRQST,KFRQSA,KSTDLY,KSADLY,KXYZCG,KSCMRA,   &
+     &       KEBVAL,KEBSIG,KEBNAM,KBTWB ,KTBTWA,KBTWD ,KPMPE ,          &
+     &       KFSEB1,KFSEB2,KSTAMT,KPXSPA,KDIAGN,KOBOUT,KGRLT1,KGRLT2,   &
+     &       KGRLT3,KGRLT4,KGRLT5,KPSTAT,KRSUNS,KCHEMR,KCHMOR,KEPOSR,   &
+     &       KCHEMT,KCHMOT,KEPOST,KCHCBS,KCPOSS,KSCRTM,KXSTT ,KXSTR ,   &
+     &       KXSS  ,KRANGT,KRANGR,KCHB1 ,KCHB2 ,KCHBV1,KCHBV2,KCHEB ,   &
+     &       KSSTFQ,KSSTCC,KSSTSS,KSSTWT,KRLCOR,KWVLBI,KQUINF,KBRTS ,   &
+     &       KBRTSV,KLRARC,KXEPBF,KXEPBR,KPRCBD,KPRTBD,KXPMPA,KXL,      &
+     &       KXSIG ,KXEDTS,KXALO1,KXALO2,KXYOF2,KDLATF,KDLATS,KDLONF,   &
+     &       KDLONS,KPF   ,KPS   ,                                      &
+     &       KXOBSV,KXOBSW,KXEDSW,                                      &
+     &       KXSIGW,KPSF  ,KDNUM ,KCNUM ,KFCOR ,KCOSAR,KSINAR,KSABIA,   &
+     &       KSBTM1,KSBTM2,KYAWBS,KVLOUV,KACMAG,KOBSTR,                 &
+     &       KPRL1 ,KPRL2, KRL1  ,KT1SE ,KTCP  ,                        &
+     &       KRATDR,KFQT1S,KFQT1E,KT1STR,KFTTSE,KFRSTR,KFRRAT,KSV1  ,   &
+     &       KSV2  ,KTSLOV,                                             &
+     &       KGLGR1,KGLGR2,KGLFR1,KGLFR2,                               &
+     &       KARGR1,KARGR2,KARFR1,KARFR2,                               &
+     &       KRDS1L,KFT1AV,KDFQP ,KFREQ1,KFREQ3,KSAVD1,KSAVD2,          &
+     &       KANTOU,KFM3CF,KF2CF,KTMG,KLTMG,KX2TIM,KX2OBS,KXRNDX,KX2SCR,&
+     &       KALTWV,KXXBM ,KX2PAR,KATIME,KPMPAT,KPMATT,KX2PAT,          &
+     &       KPXEXI,KPXEPA,KPV,KPXEP2,KX2COF,KACOF2,KACOF3,KBCOF,KBCOF2,&
+     &       KDDDA ,KX2AUX,KX2VPR,KX2VPA,KEXTRA,KVARAY,KATROT,KATPER,   &
+     &       KLTAR ,KXHOLD,KANTBL,KPHC  ,KOFDRV,KGNAME,KGRSIZ,KGRCNT,   &
+     &       KGRDAT,KACCDT,KCTBTI,KCTBWE,KCTCTM,KANTUV,KANTOR,KW1PU ,   &
+     &       KPYSQH,KSIGSP,KXYOF3,KXVTM1,KXDIST,KXDST0,KTMSE ,KDSDP ,   &
+     &       KEXCST,KEXCDT,KEXCGX,KEXCGY,KEXCGZ,KIMNDX,KIMOBS,KIMTIM,   &
+     &       KIMSAT,KM2VPA,KDCDD ,KDWNWT,KDPOR ,KC2PAR,KBOUNC,KBPART,   &
+     &       NXCA04
+      COMMON/CORA06/KPRMV ,KPNAME,KPRMV0,KPRMVC,KPRMVP,KPRMSG,KPARVR,   &
+     &              KPRML0,KPDLTA,KSATCV,KSTACV,KPOLCV,KTIDCV,KSUM1 ,   &
+     &              KSUM2 ,KGPNRA,KGPNRM,KPRSG0,KCONDN,KVELCV,          &
+     &              KSL2CV,KSH2CV,KTIEOU,KPRMDF,NXCA06
+      COMMON/CORI01/KMJDS0,KMJDSB,KMJDSC,KMJDSV,KIBACK,KIBAKV,KIORDR,   &
+     &              KIORDV,KNOSTP,KNOCOR,KNSAT ,KN3   ,KNEQN ,KNEQN3,   &
+     &              KNH   ,KNHV  ,KNSTPS,KNSTPV,KICPP ,KICPV ,KICCP ,   &
+     &              KICCV ,KICCPV,KICCVV,KISUMX,KIXDDT,KISMPX,KIPXDD,   &
+     &              KNMAX ,KNTOLD,KNTOLO,KICNT ,KISNT ,KMM   ,KKK   ,   &
+     &              KJJ   ,KHH   ,KIBDY ,KSIGN1,KSIGN2,KLL   ,KQQ   ,   &
+     &              KIORFR,KIPDFR,KITACC,KJSAFR,KJSPFR,KMJDEP,KMJDND,   &
+     &              KNVSTP,KNSTRN,KNDARK,KTIPPT,KTJBDY,                 &
+     &              KICNTA,KISNTA,KISHDP,KIPTC ,KIPTS ,KIGTSR,KIXTMC,   &
+     &              KTIPTT,KTNOSD,KTQNDX,KTLL1 ,KTJJBD,KTITDE,KTCNTR,   &
+     &              KTNN  ,KITACX,KNMOVE,KPANEL,KPLPTR,KNADAR,KNADSP,   &
+     &              KNADDF,KNADEM,KNADTA,KNADTC,KNADTD,KNADTF,KNADTX,   &
+     &              KITPMD,KSCATT,KITPAT,KILTPX,KEASBJ,KEANMP,KEANAN,   &
+     &              KEAPMP,KEAPAN,KEAMJS,KEAPPP,KEAAAA,KICNTT,KISNTT,   &
+     &              KTPGRC,KTPGRS,KTPC  ,KTPS  ,KALCAP,KEMCAP,KNSEG ,   &
+     &              KICNTP,KISNTP,KNRDGA,KNRDDR,KNRDSR,KIRDGA,KIRDRG,   &
+     &              KIRSLR,KSTRTA,KSTRTD,KSTRTS,KDYNPE,KACCPE,KIBCKN,   &
+     &              KNRAT ,KIXDDN,KISMXN,KDXDDN,KDSMXN,KICPPN,KACSID,   &
+     &              KNEQNH,KHRFRC,KPTFBS,KPTFSB,KIPXDA,KIACCP,KXSTAT,   &
+     &              KPXST ,KSALST,KMAPLG,KNMBUF,KSTEPS,KSGMNT,KSATIN,   &
+     &              KMEMST,KNEQNI,KBUFIN,KWEMGA,KWEMDR,KTPATS,KTANMP,   &
+     &              KTAPPP,KTAMJS,KTASID,KGPSID,KNSSVA,KPNALB,KBRAX1,   &
+     &              KBRAX2,KBRAX3,NXCI01
+      COMMON/CORI04/KNMP  ,KINDP ,KNDPAR,KNPVCT,KISATN,KISET ,KIANTO,   &
+     &              KISATO,KIANTD,KISATD,KISTAD,KISATC,KMJDCG,KISTAT,   &
+     &              KMJDEB,KMJDBN,KNDBIN,KNWTDB,KIXPAR,KNDBUF,KSSTNM,   &
+     &              KSSTNA,KMBSAT,KMBSTA,KXKEY ,KXVKEY,KXFLAG,KIPNTF,   &
+     &              KIPNTS,KNCON ,KKF   ,KIDATB,KNSTLV,KSLVID,KLLBIA,   &
+     &              KTMRA1,KTMRA2,KIND1 ,KTARID,KATARD,KYAWID,KXOBLK,   &
+     &              KDSCWV,KATRSQ,KATSAT,KKVLAS,KPARTP,KLTMSC,KLTASC,   &
+     &              KCTBST,KSTBST,KANCUT,KANGPS,KANTYP,                 &
+     &              KANTOF,                                             &
+     &              KYSAT, KMBDEG,                                      &
+     &              KMBNOD,KMBSST,KBSPLN,KSSPLN,KXIOBS,KIDLAS,KIAVP ,   &
+     &              KXNAVP,KNEXCG,KIDEXC,KNREXC,KTELEO,KIKEY ,KIMKEY,   &
+     &              KIMBLK,KIMPRT,KCN110,KCN111,KC110,KC111,KTDSAT,     &
+     &              KTDANT,NXCI04
+      COMMON/CPARFL/LPARFI,LPFEOF,LARCNU,LRORR
+      COMMON/CPARTL/LPART ,LPARTI,NXPARL
+      COMMON/CVIEW /IOUT6 ,ILINE6,IPAGE6,MLINE6,                        &
+     &              IOUT8 ,ILINE8,IPAGE8,MLINE8,                        &
+     &              IOUT9 ,ILINE9,IPAGE9,MLINE9,                        &
+     &              IOUT10,ILIN10,IPAG10,MLIN10,                        &
+     &              IOUT15,ILIN15,IPAG15,MLIN15,                        &
+     &              IOUT16,ILIN16,IPAG16,MLIN16,                        &
+     &              IOUT7 ,NXCVUE
+      COMMON/EMAT  /EMTNUM,EMTPRT,EMTCNT,VMATRT,VMATS,VMATFR,FSCVMA,    &
+     &              XEMAT
+      COMMON/NPCOM /NPNAME,NPVAL(92),NPVAL0(92),IPVAL(92),IPVAL0(92),   &
+     &              MPVAL(28),MPVAL0(28),NXNPCM
+      COMMON/NPCOMX/IXARC ,IXSATP,IXDRAG,IXSLRD,IXACCL,IXGPCA,IXGPSA,   &
+     &              IXAREA,IXSPRF,IXDFRF,IXEMIS,IXTMPA,IXTMPC,IXTIMD,   &
+     &              IXTIMF,IXTHTX,IXTHDR,IXOFFS,IXBISA,IXFAGM,IXFAFM,   &
+     &              IXATUD,IXRSEP,IXACCB,IXDXYZ,IXGPSBW,IXCAME,IXBURN,  &
+     &              IXGLBL,IXGPC ,IXGPS, IXTGPC,IXTGPS,IXGPCT,IXGPST,   &
+     &              IXTIDE,IXETDE,IXOTDE,IXOTPC,IXOTPS,IXLOCG,IXKF  ,   &
+     &              IXGM  ,IXSMA ,IXFLTP,IXFLTE,IXPLTP,IXPLTV,IXPMGM,   &
+     &              IXPMJ2,IXVLIT,IXEPHC,IXEPHT,IXH2LV,IXL2LV,IXOLOD,   &
+     &              IXPOLX,IXPOLY,IXUT1 ,IXPXDT,IXPYDT,IXUTDT,IXVLBI,   &
+     &              IXVLBV,IXXTRO,IXBISG,IXSSTF,IXFGGM,IXFGFM,IXLNTM,   &
+     &              IXLNTA,IX2CCO,IX2SCO,IX2GM ,IX2BDA,IXRELP,IXJ2SN,   &
+     &              IXGMSN,IXPLNF,IXPSRF,IXANTD,IXTARG,                 &
+     &              IXSTAP,IXSSTC,IXSSTS,IXSTAV,IXSTL2,                 &
+     &              IXSTH2,IXDPSI,IXEPST,IXCOFF,IXTOTL,NXNPCX
+      COMMON/PARPRO/MPIPRO
+      COMMON/UNITS/IUNT11,IUNT12,IUNT13,IUNT19,IUNT30,IUNT71,IUNT72,    &
+     &             IUNT73,IUNT05,IUNT14,IUNT65,IUNT88,IUNT21,IUNT22,    &
+     &             IUNT23,IUNT24,IUNT25,IUNT26
+      COMMON/VMATFL/LVMTF,LVMTFO
+!
+      DIMENSION AA(1),II(1),LL(1)
+!
+      DATA ZERO/0.0D0/,W1SENT/1000000000000.D0/
+!
+      INDXNO(I)=MAPARM*(I-1)-(I*(I-1))/2
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+      LSTARC=NARC.GE.MARC
+! WRITE OUT VMAT FILE SENTINEL RECORD IF OBS PRESENT
+      IF(LVMTFO) CALL VMTOE(AA(KPXPFM),II(KNEQN))
+! WRITE OUT PARTIAL DERIVATIVE FILE SENTINEL RECORD
+      IF(LPARFI) CALL PDFEND(AA(KPMPA))
+! WRITE OUT BINARY RESIDUAL SENTINEL RECORD
+      IF(LBINRI) WRITE(IUNT19) W1SENT,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,    &
+     &                                ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,    &
+     &                           ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO
+      IAPARM=NPVAL0(IXARC )
+      IF(ICLINK.GT.0) IAPARM=IAPARM-ICLINK
+      IF(EMTNUM.GT.ZERO) GO TO 500
+!     MODIFY THE COMMON NORMAL MATRIX AND RHS FOR ARC ADJUSTMENT
+      NGLBAL=NPVAL0(IXGLBL)
+      IF(NGLBAL.LE.0) GO TO 500
+      NSTART=MAPARM-NGLBAL
+      ISUM1 =KSUM1 +NSTART
+      IPDLTA=KPDLTA+NSTART
+      JSUM2 =KSUM2 +NSTART
+      NSTART=NSTART+1
+      ISTART=INDXNO(NSTART)+NSTART
+      JSUM1 =KSUM1 +ISTART-1
+      CALL APMODG(AA(JSUM1 ),AA(JSUM2 ),AA(KSUM1 ),                     &
+     &            AA(ISUM1 ),AA(KPDLTA),IAPARM,NGLBAL,                  &
+     &            MAPARM,AA(IPDLTA))
+  500 CONTINUE
+! WRITE OUT ARC SUMMARY PAGE
+      CALL SUMMRY(AA,II,LL,II(KMJDSB),AA(KFSECB),II(KMJDEP),AA(KFSCEP), &
+     &          II(KMJDND),AA(KFSCND),AA(KH    ),AA(KHV   ),II(KNSAT ), &
+     &          AA(KAREA ),AA(KXMASS),II(KISATN),AA(KA1UT),             &
+     &          AA(KXEPOC),AA(KCKEP ),AA(KRMSPO),LCONVG,PERCNT,         &
+     &          AA(KPRML0),AA(KXUTDT))
+!
+!     UNLOAD ARC DYNAMIC ARRAYS TO EXTENDED VIRT. MEMORY
+!
+! DEBUG SUM1
+!     write(6,*)' dbg DEBUG SUM1 ',maparm
+!     kk=maparm
+!     iend=maparm
+!     jj=1
+!     ij=1
+!2221 continue
+!     if(kk.eq.0) goto 42223
+!     write(6,22222)((AA(KSUM1+I-1)),i=jj,iend)
+!     jj=iend+1
+!     iend=iend+maparm-ij
+!     kk=kk-1
+!     ij=ij+1
+!     goto 42221
+!2223 continue
+!2222 format(12D10.4)
+! DEBUG SUM1
+
+
+      CALL ARCLOD(AA,II,LL,NARC,.FALSE.,.TRUE.,.TRUE.)
+
+! PRINT OUT ARC PARAMETER CORRELATIONS
+
+      IF(MPIPRO.GT.0) RETURN
+      IF(LNPRNT(14)) RETURN
+      IF(LPART) RETURN
+      JPOS=NAMBB*(MAPARM-NAMBB+1)
+      MAPK=MAPARM-NAMBB
+      IAPK=IAPARM-NAMBB
+      CALL CRAAGG(AA(KSUM1+JPOS),IAPK,MAPK,NINNER)
+      RETURN
+      END

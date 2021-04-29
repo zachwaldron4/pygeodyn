@@ -1,0 +1,82 @@
+!$GETPOL
+      SUBROUTINE GETPOL(S,S1,NMP,RPOLE,NM,NINTPL,NINTP2,XPOLE,YPOLE)
+!********1*********2*********3*********4*********5*********6*********7**
+! GETPOL           03/10/00            9912.0    PGMR - SCOTT B. LUTHCKE
+!
+!
+! FUNCTION:  GET X and Y OF POLE ACROSS AN ENTIRE BLOCK OF DATA.
+!            TO ACCOMPLISH THIS, LINEARLY INTERPOLATE OVER A TIME SPAN
+!            AS LONG AS ONE PASS OF DATA. IF DISCRETE POLAR
+!            MOTION VALUES SWITCH OVER DURING THIS INTERVAL OF
+!            TIME THEN SUBDIVIDE THE INTERPOLATION INTERVAL AS
+!            NECESSARY TO AVOID INTERPOLATING ACROSS DISCRETE
+!            BOUNDARIES.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   S        I         INTERPOLATION FRACTIONS
+!   S1            A    1.0-S
+!   NMP      I         NUMBER OF MEASUREMENTS IN EACH INTERPOLATION
+!                      INTERVAL
+!   RPOLE    I         POLAR MOTION ROTATION MATRICES AT EACH END
+!                      OF EACH INTERPOLATION INTERVAL
+!   NM       I         NUMBER OF MEASUREMENT TIMES
+!   NINTPL   I         NUMBER OF INTERPOLATION INTERVALS
+!   NINTP2   I         NINTPL*2
+!   XPOLE    O    A    XPOLE VALUE
+!   YPOLE    O    A    YPOLE VALUE
+!
+! COMMENT: THIS ROUTINE ASSUMES INPOLP HAS BEEN CALLED
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+
+      SAVE
+
+!
+      DIMENSION S(NM),S1(NM),RPOLE(3,3,NINTP2),NMP(NINTPL)
+      DIMENSION XPOLE(NM),YPOLE(NM)
+!
+      DATA ZERO/0.0D0/,ONE/1.0D0/
+!
+!***********************************************************************
+! SPART OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+! COMPUTE COMPLEMENT OF INTERPOLATION FRACTIONS
+!
+      DO N=1,NM
+       S1(N)=ONE-S(N)
+      ENDDO
+!
+! FIRST INTERPOLATION INTERVAL ALWAYS BEGINS WITH 1
+!
+      NM1=1
+      INDEX=1
+
+!
+! LOOP THRU ALL INTERVALS
+!
+      DO 2000 INTVL=1,NINTPL
+
+! ...LAST MEASUREMENT IN THE INTERVAL
+      NM2=NMP(INTVL)+NM1-1
+      INDEX1=INDEX+1
+
+! ...GET TRUE POLE COORDINATES AT ENDPOINT TIMES
+      DO N=NM1,NM2
+       XPOLE(N)=S(N)*RPOLE(3,1,INDEX)+S1(N)*RPOLE(3,1,INDEX1)
+       YPOLE(N)=S(N)*RPOLE(2,3,INDEX)+S1(N)*RPOLE(2,3,INDEX1)
+      ENDDO
+
+! ...INCREMENT THE MEASUREMENT POINTER AND THE MATRIX INDEX
+      NM1=NM2+1
+      INDEX=INDEX1+1
+
+ 2000 END DO
+
+      RETURN
+      END

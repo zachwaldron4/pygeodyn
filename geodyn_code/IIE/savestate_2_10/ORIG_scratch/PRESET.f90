@@ -1,0 +1,153 @@
+!$PRESET
+       SUBROUTINE PRESET(SIGN1,MM,KK,HH,JJ,JBDY,QQ,ITIDE,NOSIDE,ICENTR, &
+     &                   IBDY,ILL,MAINNN)
+!********1*********2*********3*********4*********5*********6*********7**
+! PRESET           89/05/23            0000.0    PGMR - D. MORSEBERGER
+!
+! FUNCTION:  DETERMINE WHICH MAIN LINE AND SIDE BAND TIDES ARE USED.
+!            SET APPROPRIATE POINTERS.
+!
+!  I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   SIGN1    I    A    SIGN ASSOCIATED WITH EXPANSION ARGUMENTS (Q TERM)
+!   MM       I    A    TIDAL EXPANSION ARGUMENT
+!   KK       I    A    TIDAL EXPANSION ARGUMENT
+!   HH       I    A    TIDAL EXPANSION ARGUMENT
+!   JJ       I    A    TIDAL EXPANSION ARGUMENT
+!   JBDY     O    A    INDICATES TO WHICH BODY EXPANSION ARGUMENT
+!                      APPLIES
+!   QQ       I    A    ORDER OF TIDAL HARMONIC (MM TOE ETIDE)
+!   ITIDE    O    A    TIDAL POINTER
+!   NOSIDE   O    A    FLAG INDICATING MODEL USAGE
+!                      0 = USE MEAN ELEMENTS (NO V/VF TERM) FOR AMP
+!                      1 = USE OSCULATING V/VF TERM, INCLUDE SIDE BANDS
+!                      2 = USE OSCULATING V/VF TERM, MAIN LINES ONLY
+!   ICENTR   O    A    MAIN LINE TIDE POINTER
+!   IBDY     I    A    DISTURBING BODY AND MODEL FLAGS COMBINED
+!   ILL      I    A    DEGREE OF TIDE IN HARMONIC EXPANSION
+!   MAINNN   O    A    DEGREE OF MAIN LINE
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      CHARACTER*8 DEMOS(30),DEM,DEMOSE(4)
+      INTEGER SIGN1,HH,QQ
+!
+! NUMOT IS NUMBER OF DATA INITIALIZED MAIN LINE OTIDES.
+! NUMET IS NUMBER OF DATA INITIALIZED MAIN LINE ETIDES.
+! NUMGRP IS NUMBER OF TIDAL GROUPS.
+! NUMET & NUMOT MUST BE INCREASED IF NEW TIDES ARE ADDED TO LIST
+! NUMGRP, NUMET,NUMOT MUST BE INCREASED IF NEW GROUPS ARE ADDED TO LIST
+! DIMENSIONS MUST ALSO BE INCREASED IN SUBROUTINES AANDBO & AANDBE
+      PARAMETER (NUMOT=30,NUMET=4,NUMGRP=18)
+!
+      COMMON/CTIDES/NTIDE,NSTADJ,NET,NETADJ,NETUN,NOT,NOTADJ,           &
+     &   NOTUN ,NETUNU,NETADU,NOTUNU,NOTADU,NBSTEP,KTIDA(3),            &
+     &   ILLMAX,NUNPLY,NNMPLY,NDOODN,MXTMRT,NRESP ,NXCTID
+      COMMON/ENDPTS/IPTEND(18)
+      COMMON/QQTIDE/IQMAX,IQMIN,IQDIF,NUMFRQ,NBAND
+      DIMENSION SIGN1(1),MM(1),KK(1),HH(1),JJ(1),JBDY(1),               &
+     &          ITIDE(NTIDE)
+      DIMENSION ILL(1),MAINNN(1)
+      DIMENSION QQ(1),IPTO(NUMOT),IPTE(NUMET),ICENTR(1),NOSIDE(1),      &
+     &          IBDY(1)
+      DIMENSION IPTEN(NUMGRP),IPTED(NUMGRP),INO(NUMGRP),ISCR(NUMGRP)
+!
+! NCENTR = NUMBER OF MAIN LINE OTIDES
+! NCENTE = NUMBER OF MAIN LINE ETIDES
+! IPTEN  = POINTER TO END OF TIDAL GROUP (MAIN+SIDEBAND)
+! IPTED  = POINTER TO BEGINNING OF TIDAL GROUP OR MAIN LINE CONSTITUENT
+! DEMOS  = DEMOS NUMBER FOR OTIDES
+! DEMOSE = DEMOS NUMBER FOR ETIDES
+! IPTO   = POINTER TO TIDAL GROUP (OTIDES)
+! IPTE   = POINTER TO TIDAL GROUP (ETIDES)
+      DATA NCENTR/30/,NCENTE/4/
+      DATA IPTEN /2,11,20,28,30,35,43,45,47,51,55,61,67,73,75,77,83,87/
+      DATA IPTED /1, 3,12,21,29,31,36,44,46,48,52,56,62,68,74,76,78,84/
+       DATA DEMOS/'-1020102',' 1001 91','-1020101',                     &
+     &            ' 1120101',' 1120102',' 1101101',                     &
+     &            ' 1220101',' 1220102',                                &
+     &            ' 1001 92','-1020111',' 1120111',                     &
+     &            ' 1101111',' 1101 91',                                &
+     &            '-1120101',' 1220121',' 1220111',                     &
+     &            ' 1220 91',' 1201101',                                &
+     &            '-1001111','-1101101',' 1101102','-1101102',          &
+     &            '-1001112','-1101 91','-1101111','-1201101',          &
+     &            ' 1201102','-1201102',' 1101100',' 1201100'/
+      DATA IPTO/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,           &
+     &    2,6,6,6,9,12,13,18,18,18,6,18/
+      DATA DEMOSE/                                                      &
+     &            ' 1120101',' 1120102',                                &
+     &            ' 1220101',' 1220102'/
+      DATA IPTE/1,2,3,4/
+!********1*********2*********3*********4*********5*********6*********7**
+! START OF EXECUTABLE CODE
+!********1*********2*********3*********4*********5*********6*********7**
+      DO 100  III=1,NTIDE
+      ITIDE(III)=1
+      ICENTR(III)=0
+  100 END DO
+      NB=0
+      NP=1
+! DETERMINE WHAT ETIDE SIDE BANDS TO USE
+      DO 300 I=1,NET
+         IPT=I
+         IF(I.GT.NETADJ)IPT=IPT+NOTADJ
+         ITIDE(IPT)=I+1
+         NB=NB+1
+         IF(NOSIDE(IPT).EQ.0)GOTO 300
+! INTERNAL WRITE TO CONCATONATE DEMOS NUMBER
+         WRITE(DEM,1000)SIGN1(IPT),MM(IPT),KK(IPT),HH(IPT),             &
+     &            JJ(IPT)+10,JBDY(IPT)
+         NOSIDE(IPT)=0
+       DO 200 K=1,NCENTE
+         IF(DEMOSE(K).NE.DEM)GOTO 200
+         ICENTR(NB)=IPTE(K)
+         NP=1
+         NOSIDE(IPT)=1
+         GOTO 300
+  200  CONTINUE
+      ITMP   =IBDY(IPT)/10
+      IBDY(IPT)=IBDY(IPT)-ITMP*10
+  300 END DO
+      NBAND=0
+!
+! DETERMINE WHAT OTIDE SIDE BANDS TO USE
+      DO 400 III=1,NUMGRP
+      ISCR(III)=0
+      INO(III)=0
+  400 END DO
+      DO 800  I=1,NOT
+         IPT=I+NETADJ
+         IF(I.GT.NOTADJ)IPT=IPT+NETUN
+         IF(NOSIDE(IPT).EQ.0)GOTO 800
+! INTERNAL WRITE TO CONCATENATE DEMOS NUMBER
+         WRITE(DEM,1000)SIGN1(IPT),MM(IPT),KK(IPT),HH(IPT),             &
+     &            JJ(IPT)+10,JBDY(IPT)
+       DO 600  K=1,NCENTR
+         IF(DEMOS(K).NE.DEM)GOTO 600
+         IK=IPTO(K)
+         IF(ISCR(IK).NE.0.AND.INO(IK).EQ.NOSIDE(IPT))GOTO 500
+         INO(IK)=NOSIDE(IPT)
+         NBAND=NBAND+1
+         ICENTR(NBAND+NET)=IK
+         MAINNN(NBAND+NET)=ILL(IPT)
+         IPTEND(IK)=IPTEN(IK)
+         IF(NOSIDE(IPT).EQ.2)IPTEND(IK)=IPTED(IK)
+         ITIDE(IPT)=NBAND+NET+1
+         ISCR(IK)=ITIDE(IPT)
+         GOTO 800
+  500    ITIDE(IPT)=ISCR(IK)
+       GOTO 800
+  600  CONTINUE
+       ITMP   =IBDY(IPT)/10
+       IBDY(IPT)=IBDY(IPT)-ITMP*10
+  800  CONTINUE
+ 1000  FORMAT(I2,3I1,I2,I1)
+       RETURN
+      END

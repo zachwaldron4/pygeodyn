@@ -1,0 +1,282 @@
+!$SUNGRV
+      SUBROUTINE SUNGRV(ISAT,IDSATS,X,C20,LORBIT,DXDD,VMATRX)
+!********1*********2*********3*********4*********5*********6*********7**
+! SUNGRV        83/08/08            8308.0    PGMR - D. ROWLANDS
+!
+! FUNCTION:   (1) CALCULATE THIRD BODY PT MASS EFFECTS ON SATELLITE &
+!                 COORDINATE SYSTEM
+!             (2) CALCULATE THE EFFECT OF EARTH'S C20 TERM ON THE MOON
+!                 AND HENCE ITSELF (INDIRECT OBLATION)
+!             (3) IN THE CASE OF DATA REDUCTION RUNS,CALCULATE THE EFFEC
+!                 OF (1) ON THE VMATRX
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   ISAT     I         INDICATES THAT THE CALL IS BEING MADE FOR THE
+!                      ISAT TIME WITHIN A CALL TO F
+!   X        I         POSITION OF THE ISAT SATELLITE IN TRUE OF
+!                      INTEGRATION STEP TIME
+!   C20      I         C20 GRAVITY COEFFCIENT FOR THE EARTH
+!   LORBIT   I         .TRUE. IF COMPUTATIONS ARE BEING MADE FOR AN
+!                      ORBIT GENERATOR RUN
+!   DXDD     O         ACCELERATION DUE TO THIRD BODIES IN TRUE OF
+!                      INTEGRATION
+!   VMATRX  I/O        TRUE OF INTEGRATION STEP VMATRX WITHOUT THIRD
+!                      BODY EFFECTS AS INPUT
+!                      TRUE OF INTEGRATION STEP VMATRX WITH EFFECTS OF
+!                      THIRD BODIES SUMMED IN AS OUTPUT
+!
+! COMMENTS:
+!
+! RESTRICTIONS:  ROUTINE SHOULD BE CALLED FROM F AFTER PLANPO HAS
+!                CALLED
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION BDSAT(3),XLT(3,999),VMATRX(3,3),VM(6),KGPT(999)
+      DIMENSION DXDD(3),DXDDIO(3),X(3)
+      COMMON/CGRAV/GM,AE,AESQ,FE,FFSQ32,FSQ32,XK2,XK3,XLAM,SIGXK2,      &
+     &      SIGXK3,SIGLAM,RATIOM(2),AU,RPRESS
+      COMMON/CRM5OE/RM5OE(9)
+      COMMON/EPHMPT/NTOT,NTOTS,NNPDPR,NUTORD,IBODDG(8),IGRPDG(4),       &
+     &              NENPD,INRCD(2),KPLAN(11),NINEP,NEPHMR,NEPHEM,       &
+     &              IBHINT,NINTBH,NXEPHP
+      COMMON/EPHSET/EMFACT,DTENPD,DTINPD,FSC1EN,FSCENP(2),FSCINP(4),    &
+     &   FSDINP(4),XEPHST
+      COMMON/CBDSTA/BDSTAT(7,999),XBDSTA
+      COMMON/CBDTRU/BDTRUE(7,999)
+      COMMON/IBODPT/IBDCF(999),IBDSF(999),IBDGM(999),IBDAE(999),    &
+     &              IBDPF(999),                                     &
+     &              ICBDCF,ICBDSF,ICBDGM,ICBDAE,ICBDPF,             &
+     &              ITBDCF,ITBDSF,ITBDGM,ITBDAE,ITBDPF,NXBDPT
+      COMMON/IDUAL/IASTSN
+      COMMON/IEPHM2/ISUPL,ICBODY,ISEQB(2),MAXDEG,ITOTSE,IREPL(988), &
+     &              NXEPH2
+      COMMON/LCBODY/LEARTH,LMOON,LMARS
+      COMMON/LEPHM2/LXEPHM
+      COMMON/MNSNSP/XMNSNS(7,2)
+      COMMON/PLNETI/IPLNET(999),IPLNIN(999),MPLNGD(999),MPLNGO(999),   &
+     &              IPLNZ(999),NXPLNI
+      DATA ZERO/0.D0/,ONE/1.D0/,ONEP5/1.5D0/,THREE/3.D0/
+      DATA SQRT5/2.236067977499790D0/
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+!     WRITE(6,*)'**SUNGRV**RM5OE',RM5OE
+      DXDD(1)=ZERO
+      DXDD(2)=ZERO
+      DXDD(3)=ZERO
+      IF(ISAT.GT.1) GO TO 350
+!  CALCULATE  QUANTITIES NOT DEPENDENT UPON SATELLITE POSITION
+!   UPDATE THE REQUIRED PLANET POSITIONS TO TRUE OF STEP FROM MEAN 50
+      NBDG=0
+      DO 100 I=1,8
+      IF(ICBDGM.LT.12) THEN
+      IF(IPLNIN(ICBDGM).EQ.I) GO TO 100
+      ELSE
+      IF(IPLNIN(IREPL(ICBDGM-11)).EQ.I) GOTO 100
+      ENDIF
+      IF(IBODDG(I).LT.1) GO TO 100
+      NBDG=NBDG+1
+      KGPT(NBDG)=I
+      BDTRUE(1,I)=RM5OE(1)*BDSTAT(1,I)+RM5OE(4)*BDSTAT(2,I)             &
+     &           +RM5OE(7)*BDSTAT(3,I)
+      BDTRUE(2,I)=RM5OE(2)*BDSTAT(1,I)+RM5OE(5)*BDSTAT(2,I)             &
+     &           +RM5OE(8)*BDSTAT(3,I)
+      BDTRUE(3,I)=RM5OE(3)*BDSTAT(1,I)+RM5OE(6)*BDSTAT(2,I)             &
+     &           +RM5OE(9)*BDSTAT(3,I)
+      BDTRUE(4,I)=BDSTAT(7,I)
+      RK2=BDTRUE(1,I)*BDTRUE(1,I)+BDTRUE(2,I)*BDTRUE(2,I)               &
+     &   +BDTRUE(3,I)*BDTRUE(3,I)
+      RK=SQRT(RK2)
+      RK3=RK2*RK
+      XLT(1,NBDG)=BDTRUE(1,I)/RK3
+      XLT(2,NBDG)=BDTRUE(2,I)/RK3
+      XLT(3,NBDG)=BDTRUE(3,I)/RK3
+  100 END DO
+! SINCE SUN WAS  CALCULATED LAST
+      RS=RK
+      IM=11
+      IF(LMOON) IM=10
+      DO 200 I=9,IM
+      IF(IPLNIN(ICBDGM).EQ.I) GO TO 200
+      IF(IGRPDG(I-7).LT.1) GO TO 200
+      NBDG=NBDG+1
+      KGPT(NBDG)=I
+      BDTRUE(1,I)=RM5OE(1)*BDSTAT(1,I)+RM5OE(4)*BDSTAT(2,I)             &
+     &           +RM5OE(7)*BDSTAT(3,I)
+      BDTRUE(2,I)=RM5OE(2)*BDSTAT(1,I)+RM5OE(5)*BDSTAT(2,I)             &
+     &           +RM5OE(8)*BDSTAT(3,I)
+      BDTRUE(3,I)=RM5OE(3)*BDSTAT(1,I)+RM5OE(6)*BDSTAT(2,I)             &
+     &           +RM5OE(9)*BDSTAT(3,I)
+      BDTRUE(4,I)=BDSTAT(7,I)
+      RK2=BDTRUE(1,I)*BDTRUE(1,I)+BDTRUE(2,I)*BDTRUE(2,I)               &
+     &   +BDTRUE(3,I)*BDTRUE(3,I)
+      RK=SQRT(RK2)
+      RK3=RK2*RK
+      XLT(1,NBDG)=BDTRUE(1,I)/RK3
+      XLT(2,NBDG)=BDTRUE(2,I)/RK3
+      XLT(3,NBDG)=BDTRUE(3,I)/RK3
+  200 END DO
+!
+! SUPPLEMENTARY EPHEMERIS SECTION
+        IF(LXEPHM) THEN
+        KBD=11+IASTSN+ICBODY
+      DO 250 I=12+IASTSN,KBD
+      IF(IPLNIN(ICBDGM).EQ.I) GO TO 250
+      IF(IREPL(I-11-IASTSN).GT.0) GOTO 250
+      NBDG=NBDG+1
+      KGPT(NBDG)=I
+      BDTRUE(1,I)=RM5OE(1)*BDSTAT(1,I)+RM5OE(4)*BDSTAT(2,I)             &
+     &           +RM5OE(7)*BDSTAT(3,I)
+      BDTRUE(2,I)=RM5OE(2)*BDSTAT(1,I)+RM5OE(5)*BDSTAT(2,I)             &
+     &           +RM5OE(8)*BDSTAT(3,I)
+      BDTRUE(3,I)=RM5OE(3)*BDSTAT(1,I)+RM5OE(6)*BDSTAT(2,I)             &
+     &           +RM5OE(9)*BDSTAT(3,I)
+      BDTRUE(4,I)=BDSTAT(7,I)
+      RKB=BDTRUE(1,I)*BDTRUE(1,I)+BDTRUE(2,I)*BDTRUE(2,I)               &
+     &   +BDTRUE(3,I)*BDTRUE(3,I)
+      RB=SQRT(RKB)
+      RKB3=RKB*RB
+      XLT(1,NBDG)=BDTRUE(1,I)/RKB3
+      XLT(2,NBDG)=BDTRUE(2,I)/RKB3
+      XLT(3,NBDG)=BDTRUE(3,I)/RKB3
+  250 END DO
+       ENDIF
+      IF(IDSATS.EQ.-999) RETURN
+!
+! SINCE MOON WAS  CALCULATED LAST
+      RM2=RK2
+      RM=RK
+      RM3=RK3
+      IF(ICBDGM.NE.3) GO TO 300
+!
+!   INDIRECT OBLATION
+!
+      RMXYSQ=RM2-BDTRUE(3,11)*BDTRUE(3,11)
+      RMXY=SQRT(RMXYSQ)
+      RM4=RM2*RM2
+! GET TRANSFORM FOR R,PSI,LAMDA TO TRUE OF DATE XYZ
+      SINPSI=BDTRUE(3,11)/RM
+      COSPSI=RMXY/RM
+      CP1=BDTRUE(1,11)/RM
+      CP4=BDTRUE(2,11)/RM
+      CP7=SINPSI
+      TEMP=-BDTRUE(3,11)/(RM2*RMXY)
+      CP2=BDTRUE(1,11)*TEMP
+      CP5=BDTRUE(2,11)*TEMP
+      CP8=RMXY/RM2
+!   CALCULATE ACCEL IN R,PSI
+      TERM=BDTRUE(4,11)*AE*AE*C20*SQRT5
+      VR1=-ONEP5*TERM*(THREE*SINPSI*SINPSI-ONE)
+      VR1=VR1/RM4
+      VR2=THREE*TERM*SINPSI*COSPSI/RM3
+!   TRANSFORM ACCEL TO TRUE OF DATE XYZ
+      DXDDIO(1)=CP1*VR1+CP2*VR2
+      DXDDIO(2)=CP4*VR1+CP5*VR2
+      DXDDIO(3)=CP7*VR1+CP8*VR2
+  300 CONTINUE
+!   LOAD COMMON BLOCK MNSNSP
+      IF(.NOT.LMOON) THEN
+!
+!.. if the integrated body is Mars natural satellite (Phobos)..
+!
+         IF(IDSATS.EQ.401.OR.IDSATS.EQ.402)THEN
+         RM2=X(1)*X(1)+X(2)*X(2)+X(3)*X(3)
+         RM=SQRT(RM2)
+         XMNSNS(1,1)=X(1)/RM
+         XMNSNS(2,1)=X(2)/RM
+         XMNSNS(3,1)=X(3)/RM
+         XMNSNS(4,1)=RM
+         XMNSNS(5,1)=0.0D0
+         XMNSNS(6,1)=0.0D0
+         XMNSNS(7,1)=0.0D0
+!      WRITE(6,*) 'SUNGRV** RM (SATELLITE)', RM,IDSATS
+         GO TO 305
+!
+         ELSE
+         XMNSNS(1,1)=BDTRUE(1,11)/RM
+         XMNSNS(2,1)=BDTRUE(2,11)/RM
+         XMNSNS(3,1)=BDTRUE(3,11)/RM
+         XMNSNS(4,1)=RM
+         XMNSNS(5,1)=RM5OE(1)*BDSTAT(4,11)+RM5OE(4)*BDSTAT(5,11)        &
+     &              +RM5OE(7)*BDSTAT(6,11)
+         XMNSNS(6,1)=RM5OE(2)*BDSTAT(4,11)+RM5OE(5)*BDSTAT(5,11)        &
+     &              +RM5OE(8)*BDSTAT(6,11)
+         XMNSNS(7,1)=RM5OE(3)*BDSTAT(4,11)+RM5OE(6)*BDSTAT(5,11)        &
+     &              +RM5OE(9)*BDSTAT(6,11)
+!      WRITE(6,*) 'SUNGRV** RM (MOON)', RM,ICBDGM
+       ENDIF
+      ELSE
+        RM=SQRT(BDTRUE(1,9)*BDTRUE(1,9)+BDTRUE(2,9)*BDTRUE(2,9)        &
+     &     +BDTRUE(3,9)*BDTRUE(3,9))
+!      WRITE(6,*) 'SUNGRV** RM (EARTH)', RM
+         XMNSNS(1,1)=BDTRUE(1,9)/RM
+         XMNSNS(2,1)=BDTRUE(2,9)/RM
+         XMNSNS(3,1)=BDTRUE(3,9)/RM
+         XMNSNS(4,1)=RM
+         XMNSNS(5,1)=RM5OE(1)*BDSTAT(4,9)+RM5OE(4)*BDSTAT(5,9)          &
+     &              +RM5OE(7)*BDSTAT(6,9)
+         XMNSNS(6,1)=RM5OE(2)*BDSTAT(4,9)+RM5OE(5)*BDSTAT(5,9)          &
+     &              +RM5OE(8)*BDSTAT(6,9)
+         XMNSNS(7,1)=RM5OE(3)*BDSTAT(4,9)+RM5OE(6)*BDSTAT(5,9)          &
+     &              +RM5OE(9)*BDSTAT(6,9)
+      ENDIF
+!      WRITE(6,*) 'SUNGRV** RM (SUN)', RS
+  305 XMNSNS(1,2)=BDTRUE(1,8)/RS
+      XMNSNS(2,2)=BDTRUE(2,8)/RS
+      XMNSNS(3,2)=BDTRUE(3,8)/RS
+      XMNSNS(4,2)=RS
+      XMNSNS(5,2)=RM5OE(1)*BDSTAT(4,8)+RM5OE(4)*BDSTAT(5,8)             &
+     &           +RM5OE(7)*BDSTAT(6,8)
+      XMNSNS(6,2)=RM5OE(2)*BDSTAT(4,8)+RM5OE(5)*BDSTAT(5,8)             &
+     &           +RM5OE(8)*BDSTAT(6,8)
+      XMNSNS(7,2)=RM5OE(3)*BDSTAT(4,8)+RM5OE(6)*BDSTAT(5,8)             &
+     &           +RM5OE(9)*BDSTAT(6,8)
+  350 CONTINUE
+!   CALCULATE THIRD BODY PT MASS EFFECTS
+      DO 500 K=1,NBDG
+      BDSAT(1)=BDTRUE(1,KGPT(K))-X(1)
+      BDSAT(2)=BDTRUE(2,KGPT(K))-X(2)
+      BDSAT(3)=BDTRUE(3,KGPT(K))-X(3)
+      RKR2=BDSAT(1)*BDSAT(1)+BDSAT(2)*BDSAT(2)+BDSAT(3)*BDSAT(3)
+      RKR=SQRT(RKR2)
+      RKR3=RKR*RKR2
+!   CALCULATE ACCELERATION
+      DO 400 I=1,3
+      DXDD(I)=DXDD(I)+(BDSAT(I)/RKR3-XLT(I,K))*BDTRUE(4,KGPT(K))
+  400 END DO
+      IF(LORBIT) GO TO 500
+!   SUM THIRD BODY EFFECTS INTO VMATRX
+!     RKR5=RKR3*RKR2
+!     THREEX=THREE*BDTRUE(4,K)/RKR5
+! ABOVE CAN OVERFLOW;IFSO,REPLACE WITH
+      THREEX=(THREE/RKR2)*(BDTRUE(4,KGPT(K))/RKR3)
+      ONEX=BDTRUE(4,KGPT(K))/RKR3
+      VM(1)=THREEX*BDSAT(1)*BDSAT(1)-ONEX
+      VM(2)=THREEX*BDSAT(1)*BDSAT(2)
+      VM(3)=THREEX*BDSAT(1)*BDSAT(3)
+      VM(4)=THREEX*BDSAT(2)*BDSAT(2)-ONEX
+      VM(5)=THREEX*BDSAT(2)*BDSAT(3)
+      VM(6)=THREEX*BDSAT(3)*BDSAT(3)-ONEX
+      VMATRX(1,1)=VMATRX(1,1)+VM(1)
+      VMATRX(2,1)=VMATRX(2,1)+VM(2)
+      VMATRX(3,1)=VMATRX(3,1)+VM(3)
+      VMATRX(1,2)=VMATRX(1,2)+VM(2)
+      VMATRX(2,2)=VMATRX(2,2)+VM(4)
+      VMATRX(3,2)=VMATRX(3,2)+VM(5)
+      VMATRX(1,3)=VMATRX(1,3)+VM(3)
+      VMATRX(2,3)=VMATRX(2,3)+VM(5)
+      VMATRX(3,3)=VMATRX(3,3)+VM(6)
+  500 END DO
+      IF(ICBDGM.NE.3) RETURN
+      DXDD(1)=DXDD(1)+DXDDIO(1)
+      DXDD(2)=DXDD(2)+DXDDIO(2)
+      DXDD(3)=DXDD(3)+DXDDIO(3)
+      RETURN
+      END

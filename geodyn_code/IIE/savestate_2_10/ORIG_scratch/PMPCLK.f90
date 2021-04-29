@@ -1,0 +1,174 @@
+!$PMPCLK
+      SUBROUTINE PMPCLK(PMPA,NDIM1,NDIM2,NDXS,KLKS,OBSTIM,DTIME,PRMLBL, &
+     &   LNPNM)
+!********1*********2*********3*********4*********5*********6*********7**
+! PMPCLK           00/00/00            8902.00   PGMR - TVM
+!                                      8804.00   PGMR - TVM
+!
+! FUNCTION: COMPUTE THE CLOCK POLYNOMIAL PARTIALS AND LOAD INTO THE
+!           APPROPRIATE LOCATIONS IN THE A-MATRIX.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   PMPA    I/O   A    A-MATRIX = PARTIAL DERIVATIVES OF MEASUREMENTS
+!                      W.R.T. ADJUSTED PARAMETERS.
+!   NDIM1    I    S    FIRST  DIMENSION OF PMPA.
+!   NDIM2    I    S    SECOND DIMENSION OF PMPA.
+!   NDXS     I    A    INDICES INDICATING TO WHICH STATION THE CLOCK
+!                      PARAMETERS BELONG AND ALSO THE ALGEBRAIC SIGN.
+!   KLKS     I    A    INDICES IN PMPA OF THE LOCATIONS OCCUPIED BY THE
+!                      CLOCK POLYNOMIAL PARTIALS.
+!   OBSTIM   I    A    OBSERVATION TIME IN ELAPSED SECONDS FROM MJDSBL
+!                      (/CBLOKI/).
+!   DTIME    I    A    AVERAGING INTERVAL FOR AVERAGE RANGE RATE DATA.
+!   PRMLBL   I    A    PARAMETER LABELS. FOR BIASES, PRMLBL(2,*)
+!                      CONTAINS THE UTC START TIME IN MJDS FORM FOR
+!                      THE BIAS APPLICATION INTERVAL.
+!   LNPNM    I    S    .TRUE.  IF NDIM1 .EQ. NUMBER OF PARAMETERS.
+!                      .FALSE. IF NDIM1 .EQ. NUMBER OF MEASUREMENTS.
+!
+! COMMENTS:
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+      COMMON/CBLOKI/MJDSBL,MTYPE ,NM    ,JSTATS,NPSEG ,JSATNO(3),ITSYS ,&
+     &       NHEADB,NELEVS,ISTAEL(12),INDELV(3,4),JSTANO(3),ITARNO,     &
+     &       KTARNO
+      COMMON/CLIGHT/VLIGHT,ERRLIM,XCLITE
+      COMMON/IBODPT/IBDCF(999),IBDSF(999),IBDGM(999),IBDAE(999),    &
+     &              IBDPF(999),                                     &
+     &              ICBDCF,ICBDSF,ICBDGM,ICBDAE,ICBDPF,             &
+     &              ITBDCF,ITBDSF,ITBDGM,ITBDAE,ITBDPF,NXBDPT
+      COMMON/IRAMPS/INDRAM,KKRAMP
+!
+      DIMENSION OBSTIM(NM),DTIME(NM),PRMLBL(3,1)
+      DIMENSION PMPA(NDIM1,NDIM2)
+      DIMENSION NDXS  (2,35),KLKS  (4,2)
+!
+      DATA ONE/1.0D0/,TEN10/1.0D+10/,C3600/3.6D3/
+      DATA METRIX/37/
+      DATA LFIRST/.TRUE./
+!
+!**********************************************************************
+! START OF EXECUTABLE CODE ********************************************
+!**********************************************************************
+!
+      IF((INDRAM.GT.0).OR.((MTYPE.EQ.42).AND.(ICBDGM.NE.ITBDGM))) THEN
+         CALL PMPCLX(PMPA,NDIM1,NDIM2,NDXS,KLKS,OBSTIM,DTIME,PRMLBL,    &
+     &               LNPNM)
+       RETURN
+      ENDIF
+! COMPUTE INDEX INTO NDXS ARRAY
+!
+!CC   IF( LFIRST ) THEN
+!CC      WRITE(6,*) 'PMPCLK: NDXS ',((NDXS(I,J),I=1,2),J=1,35)
+!CC      WRITE(6,*) 'PMPCLK: KLKS ', KLKS
+!CC      LFIRST = .FALSE.
+!CC   ENDIF
+!
+      INDEXT=(MTYPE-31)/2+1
+      J1    =MOD(MTYPE-1,2)+1
+!CC   WRITE(6,*) 'PMPCLK: MTYPE, METRIX, INDEXT ', MTYPE, METRIX,
+!CC  1    INDEXT
+!CC   WRITE(6,*) 'PMPCLK: MTYPE, J1 ', MTYPE, J1
+      LRATE =J1.EQ.2
+!     WRITE(6,*) 'PMPCLK: LRATE   ', LRATE
+! LOOP OVER EACH POLYNOMIAL
+      DO 13000 I=1,2
+      MSIGNB=NDXS  (I,INDEXT)
+!     WRITE(6,*) 'PMPCLK: MSIGNB  ', MSIGNB
+      IF(MSIGNB.EQ.0) GO TO 13000
+!CCC  SCALEB=-ISIGN(1,MSIGNB)*VLIGHT*HALF
+      SCALEB=-SIGN(1,MSIGNB)*VLIGHT
+      ONESGN=SIGN(1,MSIGNB)*ONE
+!     WRITE(6,*) 'PMPCLK: I, ONESGN ', I, ONESGN
+      IF(LRATE) GO TO 4000
+      INDEXB=KLKS  (1,I)
+!     WRITE(6,*) 'PMPCLK: INDEXB ', INDEXB
+      IF(INDEXB.LE.0) GO TO 4000
+! LOAD PARTIALS FOR CONSTANT TERMS
+      IF(LNPNM) GO TO 2000
+      DO 1000 N=1,NM
+      PMPA  (N,INDEXB)=SCALEB
+      IF(MTYPE.EQ.31)  PMPA(N,INDEXB)=ONESGN
+!CC   WRITE(6,*) 'PMPCLK: CONSTANT N, PMPA ', N, SCALEB
+ 1000 END DO
+      GO TO 4000
+ 2000 CONTINUE
+      DO 3000 N=1,NM
+      PMPA  (INDEXB,N)=SCALEB
+      IF(MTYPE.EQ.31)  PMPA(INDEXB,N)=ONESGN
+ 3000 END DO
+ 4000 CONTINUE
+! LOOP OVER HIGHER ORDER TERMS
+      DO 12000 J=2,4
+      K     =J     -1
+      INDEXB=KLKS  (J,I)
+!     WRITE(6,*) 'PMPCLK: J,K, INDEXB ', J,K,INDEXB
+      IF(INDEXB.LE.0) GO TO 12000
+!C    WRITE(6,*) 'PMPCLK: PRMLBL(2,INDEXB), TEN10 ',
+!C   1                    PRMLBL(2,INDEXB), TEN10
+      T0    = MOD(PRMLBL(2,INDEXB),TEN10)
+      DT0   =MJDSBL-T0
+!C    WRITE(6,*) 'PMPCLK: J, T0, MJDSBL, DT0',
+!C   1                    J, T0, MJDSBL, DT0
+      IF(LRATE) GO TO 8000
+! LOAD PARTIALS FOR HIGHER ORDER RANGE TERMS
+      IF(LNPNM) GO TO 6000
+!CC   WRITE(6,*) 'PMPCLK: SCALEB ', SCALEB
+      DO 5000 N=1,NM
+      IF (MTYPE.EQ.31) SCALEB=ONESGN
+      PMPA  (N,INDEXB)=SCALEB*((OBSTIM(N)+DT0)/C3600)**K
+!CC   WRITE(6,*) 'PMPCLK: N, DT0, OBSTIM(N), K ',
+!CC  1                    N, DT0, OBSTIM(N), K
+!CC   WRITE(6,*) 'PMPCLK: N, PMPA ',
+!CC  1                    N, PMPA(N,INDEXB)
+ 5000 END DO
+      GO TO 12000
+ 6000 CONTINUE
+!CC   WRITE(6,*) 'PMPCLK: SCALEB ', SCALEB
+      DO 7000 N=1,NM
+      IF (MTYPE.EQ.31) SCALEB=ONESGN
+      PMPA  (INDEXB,N)=SCALEB*((OBSTIM(N)+DT0)/C3600)**K
+!CC   WRITE(6,*) 'PMPCLK: N, DT0, OBSTIM(N), K ',
+!CC  1                    N, DT0, OBSTIM(N), K
+!CC   WRITE(6,*) 'PMPCLK: N, PMPA ',
+!CC  1                    N, PMPA(INDEXB,N)
+ 7000 END DO
+      GO TO 12000
+ 8000 CONTINUE
+! LOAD PARTIALS FOR HIGHER ORDER RANGE RATE TERMS
+!CC   WRITE(6,*) 'PMPCLK: SCALEB ', SCALEB
+      IF(LNPNM) GO TO 10000
+      DO 9000 N=1,NM
+      DT    =OBSTIM(N)+DT0
+!CC   WRITE(6,*) 'PMPCLK: N, DT0, OBSTIM(N), K ',
+!CC  1                    N, DT0, OBSTIM(N), K
+!CC   WRITE(6,*) 'PMPCLK: N, DT, DTIME(N), K ',
+!CC  1                    N, DT, DTIME(N), K
+      PMPA  (N,INDEXB)=SCALEB*( ((DT+DTIME(N))/C3600)**K                &
+     &                         -((DT         )/C3600)**K )/DTIME(N)
+!CC   WRITE(6,*) 'PMPCLK: N, PMPA ',
+!CC  1                    N, PMPA(N,INDEXB)
+ 9000 END DO
+      GO TO 12000
+10000 CONTINUE
+      DO 11000 N=1,NM
+      DT    =OBSTIM(N)+DT0
+!CC   WRITE(6,*) 'PMPCLK: N, DT0, OBSTIM(N), K ',
+!CC  1                    N, DT0, OBSTIM(N), K
+!CC   WRITE(6,*) 'PMPCLK: N, DT, DTIME(N), K ',
+!CC  1                    N, DT, DTIME(N), K
+      PMPA  (INDEXB,N)=SCALEB*( ((DT+DTIME(N))/C3600)**K                &
+     &                         -((DT         )/C3600)**K )/DTIME(N)
+!CC   WRITE(6,*) 'PMPCLK: N, PMPA ',
+!CC  1                    N, PMPA(INDEXB,N)
+11000 END DO
+12000 END DO
+13000 END DO
+      RETURN
+      END

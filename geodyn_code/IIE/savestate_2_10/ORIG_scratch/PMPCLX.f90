@@ -1,0 +1,85 @@
+!$PMPCLX
+      SUBROUTINE PMPCLX(PMPA,NDIM1,NDIM2,NDXS,KLKS,OBSTIM,DTIME,PRMLBL, &
+     &   LNPNM)
+!********1*********2*********3*********4*********5*********6*********7**
+! PMPCLK           00/00/00            8902.00   PGMR - TVM
+!                                      8804.00   PGMR - TVM
+!
+! FUNCTION: COMPUTE THE CLOCK POLYNOMIAL PARTIALS AND LOAD INTO THE
+!           APPROPRIATE LOCATIONS IN THE A-MATRIX.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   PMPA    I/O   A    A-MATRIX = PARTIAL DERIVATIVES OF MEASUREMENTS
+!                      W.R.T. ADJUSTED PARAMETERS.
+!   NDIM1    I    S    FIRST  DIMENSION OF PMPA.
+!   NDIM2    I    S    SECOND DIMENSION OF PMPA.
+!   NDXS     I    A    INDICES INDICATING TO WHICH STATION THE CLOCK
+!                      PARAMETERS BELONG AND ALSO THE ALGEBRAIC SIGN.
+!   KLKS     I    A    INDICES IN PMPA OF THE LOCATIONS OCCUPIED BY THE
+!                      CLOCK POLYNOMIAL PARTIALS.
+!   OBSTIM   I    A    OBSERVATION TIME IN ELAPSED SECONDS FROM MJDSBL
+!                      (/CBLOKI/).
+!   DTIME    I    A    AVERAGING INTERVAL FOR AVERAGE RANGE RATE DATA.
+!   PRMLBL   I    A    PARAMETER LABELS. FOR BIASES, PRMLBL(2,*)
+!                      CONTAINS THE UTC START TIME IN MJDS FORM FOR
+!                      THE BIAS APPLICATION INTERVAL.
+!   LNPNM    I    S    .TRUE.  IF NDIM1 .EQ. NUMBER OF PARAMETERS.
+!                      .FALSE. IF NDIM1 .EQ. NUMBER OF MEASUREMENTS.
+!
+! COMMENTS:
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+      COMMON/CBLOKI/MJDSBL,MTYPE ,NM    ,JSTATS,NPSEG ,JSATNO(3),ITSYS ,&
+     &       NHEADB,NELEVS,ISTAEL(12),INDELV(3,4),JSTANO(3),ITARNO,     &
+     &       KTARNO
+      COMMON/CLIGHT/VLIGHT,ERRLIM,XCLITE
+      COMMON/RAMPA/SF1,SF2,FREQO,RBIAS
+!
+      DIMENSION OBSTIM(NM),DTIME(NM),PRMLBL(3,1)
+      DIMENSION PMPA(NDIM1,NDIM2)
+      DIMENSION NDXS  (2,35),KLKS  (4,2)
+!
+      DATA ONE/1.0D0/,TEN10/1.0D+10/,C3600/3.6D3/
+      DATA METRIX/37/
+      DATA LFIRST/.TRUE./
+!
+!**********************************************************************
+! SPART OF EXECUTABLE CODE ********************************************
+!**********************************************************************
+! LOOP OVER EACH POLYNOMIAL
+      SCALE1=0.D0
+      SCALE2=0.D0
+      IF(MTYPE.NE.42.AND.MTYPE.NE.54) RETURN
+      L2W=.FALSE.
+      IF(MTYPE.EQ.54.AND.(JSTANO(1).EQ.JSTANO(2))) L2W=.TRUE.
+      IF(MTYPE.EQ.42) SCALE1=(-11.D0*2297222222.D0)/3.D9
+      IF(MTYPE.EQ.54) THEN
+        SCALE1=(-FREQO*SF2)/1.D9
+        SCALE2=(FREQO*SF2)/1.D9
+      ENDIF
+      DO 13000 I=1,2
+      INDEXB=KLKS  (1,I)
+      IF(L2W.AND.I.EQ.1) INDEXB=KLKS(1,2)
+      IF(INDEXB.LE.0) GO TO 4000
+      SCALEB=SCALE1
+      IF(I.EQ.2) SCALEB=SCALE2
+! LOAD PARTIALS FOR CONSTANT TERMS
+      IF(LNPNM) GO TO 2000
+      DO 1001 N=1,NM
+      PMPA  (N,INDEXB)=PMPA(N,INDEXB)+SCALEB
+ 1001 END DO
+      GO TO 4000
+ 2000 CONTINUE
+      DO 3001 N=1,NM
+      PMPA  (INDEXB,N)=PMPA(INDEXB,N)+SCALEB
+ 3001 END DO
+ 4000 CONTINUE
+13000 END DO
+      RETURN
+      END

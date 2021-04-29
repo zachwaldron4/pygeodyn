@@ -1,0 +1,232 @@
+!$CONPT
+      SUBROUTINE CONPT(PMPP,RESID,WT,NP,NRMTOT,NM,ATPA,ATPL,SCRTCH,     &
+     &                  PARMVC,AA,LAVOID,ISATID,NSATA,IATSAT)
+!********1*********2*********3*********4*********5*********6*********7**
+! GA9PCN
+!
+! FUNCTION:  CALL SUMNM WITH THE RIGHT CONSTRAINT INFORMATION
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   PMPP     I         FULL ARRAY OF PARTIALS(INCLUDING ZEROS WHERE
+!                      NECCESSARY) FOR EACH MEASUREMENT.SOMETIMES A
+!                      INCLUDES ONLY ARC,SOMTIMES ARC&COMMON.
+!   RESID    I         RESIDUAL ARRAY
+!   WT       I         MEASUREMENT WEIGHT ARRAY
+!   NP       I         NUMPER OF PARAMETERS
+!   NRMTOT   I         MAXIMUM DIMENSION OF NORMAL MATRIX
+!   NM       I         NUMBER OF MEASUREMENTS
+!   ATPA     O         NORMAL MATRIX
+!   ATPL     O         RIGHT HAND SIDE OF NORMAL EQUATIONS
+!   SCRTCH       A     SCRATCH ARRAY
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION  (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+      PARAMETER(MAXTP=10)
+      COMMON/ATTCB /KPAT,MAXAT,MAXLAS,IBLAS,                            &
+     &              NASAT,IATCNT,NXATT
+      COMMON/NPCOM /NPNAME,NPVAL(92),NPVAL0(92),IPVAL(92),IPVAL0(92),   &
+     &              MPVAL(28),MPVAL0(28),NXNPCM
+      COMMON/NPCOMX/IXARC ,IXSATP,IXDRAG,IXSLRD,IXACCL,IXGPCA,IXGPSA,   &
+     &              IXAREA,IXSPRF,IXDFRF,IXEMIS,IXTMPA,IXTMPC,IXTIMD,   &
+     &              IXTIMF,IXTHTX,IXTHDR,IXOFFS,IXBISA,IXFAGM,IXFAFM,   &
+     &              IXATUD,IXRSEP,IXACCB,IXDXYZ,IXGPSBW,IXCAME,IXBURN,  &
+     &              IXGLBL,IXGPC ,IXGPS, IXTGPC,IXTGPS,IXGPCT,IXGPST,   &
+     &              IXTIDE,IXETDE,IXOTDE,IXOTPC,IXOTPS,IXLOCG,IXKF  ,   &
+     &              IXGM  ,IXSMA ,IXFLTP,IXFLTE,IXPLTP,IXPLTV,IXPMGM,   &
+     &              IXPMJ2,IXVLIT,IXEPHC,IXEPHT,IXH2LV,IXL2LV,IXOLOD,   &
+     &              IXPOLX,IXPOLY,IXUT1 ,IXPXDT,IXPYDT,IXUTDT,IXVLBI,   &
+     &              IXVLBV,IXXTRO,IXBISG,IXSSTF,IXFGGM,IXFGFM,IXLNTM,   &
+     &              IXLNTA,IX2CCO,IX2SCO,IX2GM ,IX2BDA,IXRELP,IXJ2SN,   &
+     &              IXGMSN,IXPLNF,IXPSRF,IXANTD,IXTARG,                 &
+     &              IXSTAP,IXSSTC,IXSSTS,IXSTAV,IXSTL2,                 &
+     &              IXSTH2,IXDPSI,IXEPST,IXCOFF,IXTOTL,NXNPCX
+      COMMON/OASAT/IOASAT(100),NOASAT
+!!
+      DIMENSION ISATID(NSATA)
+      DIMENSION IATSAT(NASAT)
+      DIMENSION PMPP(NP),RESID(1),WT(1),ATPA(1),ATPL(NP),SCRTCH(NP)
+      DIMENSION PARMVC(NP)
+      DIMENSION AA(1)
+      DIMENSION LAVOID(1)
+      DIMENSION IPTR(MAXTP),IPTP(MAXTP)
+      DIMENSION JPTR(MAXTP),JPTP(MAXTP)
+!
+!
+      DATA ZERO/0.0D0/,ONE/1.D0/
+!
+      DATA ARC/.00028D0/
+      DATA FACTR/4.0D0/
+      DATA FACTP/4.0D0/
+!
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+      NTP=MAXLAS+1
+      IF(NTP.GT.MAXTP) THEN
+        WRITE(6,6000)
+        WRITE(6,6001) NTP
+        WRITE(6,6002) MAXTP
+      ENDIF
+!
+!
+!
+      IF(NASAT.EQ.0) RETURN
+      NPT=NPVAL0(IXATUD)/NASAT
+!
+!
+      IF(NPT.EQ.0) RETURN
+!
+!
+      NPD=NPT/(NTP*15)
+      NPD1=NPD-1
+!
+!
+      IF(NPD1.LE.0) RETURN
+!
+!
+      DO 2000 ISAT=1,NSATA
+      DO I=1,NOASAT
+        IF(ISATID(ISAT).EQ.IOASAT(I)) THEN
+          GO TO 5
+        ENDIF
+      ENDDO
+      GO TO 2000
+  5   CONTINUE
+!
+!  CHECK SATELLITE ID TO SEE IF IT CARRIES ATITUDE PARAMETERS
+      CALL FNDNUM(ISATID(ISAT),IATSAT,NASAT,IRETB)
+      IF(IRETB.EQ.0) GO TO 2000
+      MAXBOD=MAXLAS+1
+      IADD=(MAXAT*MAXBOD*15)*(IRETB-1)
+      IAPLSC=IPVAL0(IXATUD)+IADD
+
+!
+!
+
+!
+!
+      IPTR(1)=IAPLSC
+      IPTP(1)=IAPLSC+5
+      JPTR(1)=IAPLSC
+      JPTP(1)=IAPLSC+5
+      INC=15*NTP
+      IF(NTP.GT.1) THEN
+        DO I=2,NTP
+          IPTR(I)=IPTR(I-1)+15
+          JPTR(I)=IPTR(I)
+          IPTP(I)=IPTP(I-1)+15
+          JPTP(I)=IPTP(I)
+        ENDDO
+      ENDIF
+!
+!
+      DO 1000 ICON=1,NPD1
+      DO  900 ICOM=1,NTP
+!
+      DO KK=1,NP
+        LAVOID(KK)=.TRUE.
+        PMPP(KK)=ZERO
+      ENDDO
+!
+!
+      IPT=IPTR(ICOM)
+      SIG=FACTR*ARC
+      SIG2=SIG*SIG
+      WT(1)=1.D0/SIG2
+
+
+      RESID(1)=PARMVC(IPT+INC)-PARMVC(IPT)
+      LAVOID(IPT+INC)=.FALSE.
+      LAVOID(IPT)=.FALSE.
+      PMPP(IPT+INC)=-ONE
+      PMPP(IPT)=ONE
+      CALL SUMNM(PMPP,RESID,WT,NP,NRMTOT,1,ATPA,ATPL,SCRTCH,LAVOID)
+!
+!
+      DO KK=1,NP
+        LAVOID(KK)=.TRUE.
+        PMPP(KK)=ZERO
+      ENDDO
+!
+!
+      IPT=IPTP(ICOM)
+      SIG=FACTP*ARC
+      SIG2=SIG*SIG
+      WT(1)=1.D0/SIG2
+      RESID(1)=PARMVC(IPT+INC)-PARMVC(IPT)
+      LAVOID(IPT+INC)=.FALSE.
+      LAVOID(IPT)=.FALSE.
+      PMPP(IPT+INC)=-ONE
+      PMPP(IPT)=ONE
+      CALL SUMNM(PMPP,RESID,WT,NP,NRMTOT,1,ATPA,ATPL,SCRTCH,LAVOID)
+!
+      IPTR(ICOM)=IPTR(ICOM)+INC
+      IPTP(ICOM)=IPTP(ICOM)+INC
+ 900  CONTINUE
+1000  CONTINUE
+!
+! Constrain first to last
+!
+      DO 1100 ICOM=1,NTP
+      DO KK=1,NP
+        LAVOID(KK)=.TRUE.
+        PMPP(KK)=ZERO
+      ENDDO
+!
+!
+      JPT=JPTR(ICOM)
+      IPT=IPTR(ICOM)
+      SIG=FACTR*ARC
+      SIG2=SIG*SIG
+      WT(1)=1.D0/SIG2
+
+
+      RESID(1)=PARMVC(JPT)-PARMVC(IPT)
+      LAVOID(JPT)=.FALSE.
+      LAVOID(IPT)=.FALSE.
+      PMPP(JPT)=-ONE
+      PMPP(IPT)=ONE
+      CALL SUMNM(PMPP,RESID,WT,NP,NRMTOT,1,ATPA,ATPL,SCRTCH,LAVOID)
+!
+!
+      DO KK=1,NP
+        LAVOID(KK)=.TRUE.
+        PMPP(KK)=ZERO
+      ENDDO
+!
+!
+      JPT=JPTP(ICOM)
+      IPT=IPTP(ICOM)
+      SIG=FACTP*ARC
+      SIG2=SIG*SIG
+      WT(1)=1.D0/SIG2
+      RESID(1)=PARMVC(JPT)-PARMVC(IPT)
+      LAVOID(JPT)=.FALSE.
+      LAVOID(IPT)=.FALSE.
+      PMPP(JPT)=-ONE
+      PMPP(IPT)=ONE
+      CALL SUMNM(PMPP,RESID,WT,NP,NRMTOT,1,ATPA,ATPL,SCRTCH,LAVOID)
+1100  CONTINUE
+!
+!
+2000  CONTINUE
+!
+!
+      RETURN
+!
+!
+!
+ 6000 FORMAT(' EXECUTTION TERMINATING IN CONPT')
+ 6001 FORMAT(' NUMBER OF ATITUD TRACKING PTS :',I12)
+ 6002 FORMAT(' EXCEEDS MAX ALLOWED :',I12)
+      END

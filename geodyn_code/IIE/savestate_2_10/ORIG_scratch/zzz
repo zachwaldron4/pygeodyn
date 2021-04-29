@@ -1,0 +1,1 @@
+gfortran *.o -o giie1810_gfortran -llapack -lblas 

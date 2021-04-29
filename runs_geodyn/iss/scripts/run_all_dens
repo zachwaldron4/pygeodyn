@@ -1,0 +1,45 @@
+# Created by Zach Waldron
+# on 1/12/21
+echo "This script runs the geodyn script for all different density models"
+
+
+
+
+FIND_DEN_LINE=DEN_DIR
+DEN_LINE="DEN_DIR=dtm87"
+sed -i "s/^${FIND_DEN_LINE}.*/${DEN_LINE}/"  geodyn_st
+FIND_GDYN_line=GDYN_version
+GDYN_line=""
+sed -i "s/^${FIND_GDYN_line}.*/${GDYN_line}/"  geodyn_st
+echo "Edit the script to run DTM87"
+bash geodyn_st 2> output_text.txt
+
+FIND_DEN_LINE=DEN_DIR
+DEN_LINE="DEN_DIR=msis86"
+sed -i "s/^${FIND_DEN_LINE}.*/${DEN_LINE}/"  geodyn_st
+FIND_GDYN_line=GDYN_version
+GDYN_line=""
+sed -i "s/^${FIND_GDYN_line}.*/${GDYN_line}/"  geodyn_st
+echo "Edit the script to run msis86"
+bash geodyn_st 2> output_text.txt
+
+FIND_DEN_LINE=DEN_DIR
+DEN_LINE="DEN_DIR=jaachia71"
+sed -i "s/^${FIND_DEN_LINE}.*/${DEN_LINE}/"  geodyn_st
+echo "Edit the script to run jaachia71"
+FIND_GDYN_line=GDYN_version
+GDYN_line=""
+sed -i "s/^${FIND_GDYN_line}.*/${GDYN_line}/"  geodyn_st
+bash geodyn_st 2> output_text.txt
+
+FIND_DEN_LINE=DEN_DIR
+DEN_LINE="DEN_DIR=msis2"
+FIND_GDYN_line=GDYN_version
+GDYN_line="_msis2"
+sed -i "s/^${FIND_DEN_LINE}.*/${DEN_LINE}/"  geodyn_st
+sed -i "s/^${FIND_GDYN_line}.*/${GDYN_line}/"  geodyn_st
+echo "Edit the script to run msis2"
+bash geodyn_st 2> output_text.txt
+
+
+

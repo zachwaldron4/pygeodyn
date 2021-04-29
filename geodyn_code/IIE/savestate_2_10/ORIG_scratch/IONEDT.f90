@@ -1,0 +1,87 @@
+!$IONEDT
+      SUBROUTINE IONEDT(LEDIT ,NM,XRELAY,XTARGT)
+!********1*********2*********3*********4*********5*********6*********7**
+! IONEDT           00/00/00            8803.0    PGMR - WFE
+!
+! FUNCTION:  TO DETERMINE IF SATELLITE TO SATELLITE MEASUREMENTS ARE TO
+!            BE EDITIED BECAUSE THE SIGNAL PATH BETWEEN THE TWO
+!            SATELLITES PASSED THROUGH THE IONOSPHERE.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   LEDIT   I/O   A    LOGICAL EDIT SWITCHES SET TO TRUE TO INDICATE A
+!                      POINT IS TO BE EDITED
+!   NM       I    S    NUMBER OF MEASUREMENTS
+!   XRELAY   I    A    ARRAY OF SATELLITE POSITIONS FOR THE RELAY
+!                      SATELLITE
+!   XTARGT   I    A    ARRAY OF SATELLITE POSITIONS FOR THE USER OR
+!                      TARGET SAT
+!
+!  COMMENTS:
+!             TWO TESTS ARE PERFORMED. FIRST A CHECK IS MADE TO ELIMINAT
+!             TIMES WHERE THE TARGET SAT IS DIRECTLY UNDER THE RELAY SAT
+!             SECOND, THE DISTANCE FROM THE CENTER OF EARTH TO THE LINE
+!             CONNECTING THE TWO SATELLITES IS COMPUTED. IF THIS DISTANC
+!             IS LESS THAN THE SPECIFIED IONOSPHERIC HEIGHT THE POINT IS
+!             EDITED.
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+      COMMON/CGRAV/GM,AE,AESQ,FE,FFSQ32,FSQ32,XK2,XK3,XLAM,SIGXK2,      &
+     &      SIGXK3,SIGLAM,RATIOM(2),AU,RPRESS
+      COMMON/CNIGLO/MINTIM,MSATG3,MEQNG ,MEQNG3,MSATG ,MSATOB,MSATA ,   &
+     &              MSATA3,MSETA ,MINTVL,MSORDR,MSORDV,NMXORD,          &
+     &       MCIPV ,MXBACK,MXI   ,MPXPF ,MAXAB ,MSETDG,MXSATD,          &
+     &       MXDEGS,MXDRP ,MXDRPA,MXSRP ,MXSRPA,MXGAP ,MSATDR,          &
+     &       MSATSR,MSATGA,MXDRPD,MXSRPD,MXGAPD,MXBCKP,MXTPMS,          &
+     &       NSTAIN,NXCNIG
+      COMMON/CORA02/KFSCTB,KFSCTC,KFSCTE,KDSECT,                        &
+     &              KFSECT,KS    ,KCIP  ,KCIV  ,                        &
+     &       KXTN  ,KXSM  ,KXTK  ,KXSJ  ,KXTI  ,KXTKP ,                 &
+     &       KVTN  ,KVSM  ,KVTK  ,KVSJ  ,KVTI  ,KVTKP ,                 &
+     &       KSATLT,KSATLN,KSATH ,KCOSTH,KSINTH,                        &
+     &       KPXPFM,KPXPFK,KPXPFJ,KTRBF ,KFSTRC,                        &
+     &       KFSTRE,KDSCTR,KFSCVS,KXSMBF,KXSKBF,KXSJBF,                 &
+     &       KRSSV1,KRSSV2,KRSSV3,KTPMES,KACOEF,KACTIM,                 &
+     &       KXTNPC,KXSMPC,KXTKPC,KXSJPC,KXTIPC,KXTKPP,                 &
+     &       KRLRNG,KASTO,KASTP,NXCA02
+!
+      DIMENSION LEDIT(NM), XRELAY(MINTIM,3),XTARGT(MINTIM,3)
+!
+!     DATA RIONHT/6978155.D0/
+!     ....set RIONHT to 1350 KM altitude for TOPEX
+      DATA RIONHT/7728155.D0/
+!
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+      IF(RIONHT.LE.AE) RETURN
+      DO 1000 N=1,NM
+! SKIP THIS OBSERVATION IF IT HAS ALREADY BEEN MARKED FOR EDITING
+      IF(LEDIT(N)) GO TO 1000
+! DETERMINE THE DISTANCE FROM THE RELAY SAT TO THE TARGET SAT. IF THE
+! DISTANCE IS LESS THAN THE DISTANCE FROM THE RELAY SAT TO THE CENTER
+! OF EARTH, THEN ASSUME THIS POINT IS NOT EDITED
+      RTR   =SQRT( (XRELAY(N,1)-XTARGT(N,1) )**2+                      &
+     &       (XRELAY(N,2)-XTARGT(N,2))**2+(XRELAY(N,3)-XTARGT(N,3))**2)
+      RRELAY=SQRT( XRELAY(N,1)*XRELAY(N,1)+XRELAY(N,2)*XRELAY(N,2)+    &
+     &              XRELAY(N,3)*XRELAY(N,3) )
+      RTARGT=SQRT( XTARGT(N,1)*XTARGT(N,1)+XTARGT(N,2)*XTARGT(N,2)+    &
+     &              XTARGT(N,3)*XTARGT(N,3) )
+      IF(RTR .LT. RRELAY) GO TO 1000
+! DETERMINE MINIMUM DISTANCE FROM THE CENTER OF EARTH TO THE LINE
+! CONNECTING THE RELAY AND TARGET SATELLITES
+      COSANG=(RRELAY*RRELAY+RTR*RTR-RTARGT*RTARGT)/(2.0D0*RRELAY*RTR)
+!CC      ANG=DARCOS(COSANG)
+      ANG=ACOS(COSANG)
+      DSTMIN=RRELAY*SIN(ANG)
+      LEDIT(N)=DSTMIN.LT.RIONHT
+ 1000 END DO
+      RETURN
+      END

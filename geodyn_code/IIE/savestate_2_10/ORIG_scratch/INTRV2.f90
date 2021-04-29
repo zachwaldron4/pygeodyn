@@ -1,0 +1,121 @@
+!$INTRV2
+      SUBROUTINE INTRV2(S,A,NM,NPV,CIPV,CIVV,IORDER,HV,INDH,NMH,        &
+     &   NINTVL,SUMPX,PXDDOT,NEQN3,NHV,NSTEPV,PXPF,IEQN3,               &
+     &   RNPPN,SCRTCH,NEQN)
+!********1*********2*********3*********4*********5*********6*********7**
+! INTRV2           08/27/82            8208.0    PGMR - TOM MARTIN
+!
+! FUNCTION:  INTERPOLATE FOR THE S/C VARIATIONAL EQUATIONS
+!            AT MULTIPLE TIMES
+!
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   S        I    A    VECTOR OF INTERPOLATION FRACTIONS
+!   A             A    SCRATCH USED FOR INTERMEDIATE SUMS
+!   NM       I    S    NUMBER OF TIMES FOR WHICH INTERPOLATION NEEDED
+!   NPV      I    S    = 1; INTERPOLATE FOR POSITION PARTIALS ONLY
+!                      = 2; INTERPOLATE FOR POS. & VEL. PARTIALS
+!   CIPV     I    A    COWELL COEFFICIENTS FOR INTERPOLATING A
+!                      VECTOR OF POSITIONAL PARTIALS
+!   CIVV     I    A    COWELL COEFFICIENTS FOR INTERPOLATING A
+!                      VECTOR OF VELOCITY PARTIALS
+!   IORDER   I    S    ORDER OF COWELL INTEGRATION
+!   HV       I    S    INTEGRATION STEPSIZE
+!   INDH     I    A    INDICES OF THE BACK VALUES USED FOR
+!                      INTERPOLATING A GROUP OF TIMES
+!   NMH      I    A    NUMBER OF THE LAST MEASUREMENT IN EACH
+!                      INTERPOLATION GROUP
+!   NINTVL   I    S    NUMBER OF INTERPOLATION GROUPS
+!   SUMPX    I    A    PARTIAL DERIVATIVE INTEGRATION SUMS
+!   PXDDOT   I    A    PARTIAL DERIVATIVE ACCELERATION BACK VALUES
+!   NEQN3    I    S    NUMBER OF SATELLITES TIMES NUMBER OF FORCE
+!                      MODEL PARAMETERS TIMES 3
+!   NHV      I    S    NUMBER OF PARTIAL DERIVATIVE ACCELERATION
+!                      BACK VALUES
+!   NSTEPV   I    S    NUMBER OF PARTIAL DERIVATIVE COWELL SUM
+!                      BACK VALUES
+!   PXPF     O    A    PARTIALS OF THE MEASUREMENT TIME STATES
+!                      W.R.T. THE INTEGRATED FORCE MODEL PARAMETERS
+!   IEQN3    I    S    3 TIMES THE NUMBER OF VARIATIONAL EQUATIONS
+!                      TIMES THE NUMBER OF SATELLITES TO BE STORED
+!                      IN THE OUTPUT ARRAY
+!   RNPPN    I    A    TEMPORARY STORAGE SPACE
+!   SCRTCH   I    A    TEMPORARY STORAGE SPACE
+!   NEQN     I    A    NUMBER OF SATELLITES TIMES NUMBER OF FORCE MODEL
+!                      PARAMETERS
+!
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION S(NM),A(NEQN3),CIPV(NM,IORDER),CIVV(NM,IORDER),         &
+     &          INDH(NINTVL),NMH(NINTVL),SUMPX(NEQN3,2,NHV),            &
+     &          PXDDOT(NEQN3,NSTEPV),PXPF(IEQN3,NM,NPV)
+      DIMENSION RNPPN(NM,3,3),SCRTCH(NM,3)
+      DATA ONE/1.0D0/
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+      LNOVEL=NPV.EQ.1
+      HV2=HV**2
+      IOL2=IORDER-2
+      IOL1=IOL2+1
+      NM1=1
+      DO 1000 INTVL=1,NINTVL
+      NM2=NMH(INTVL)
+      INDEX=INDH(INTVL)
+      IF(LNOVEL) GO TO 475
+      DO 450 NMI=NM1,NM2
+!
+      DO 100 N=1,IEQN3
+      A(N)=SUMPX(N,2,INDEX)
+  100 END DO
+!
+!
+      DO 300 K=1,IOL1
+      KK=IOL1-K+INDEX
+!
+      DO 200 N=1,IEQN3
+      A(N)=A(N)+CIVV(NMI,K)*PXDDOT(N,KK)
+  200 END DO
+!
+!
+  300 END DO
+      DO 400 N=1,IEQN3
+      PXPF(N,NMI,2)=A(N)*HV
+  400 END DO
+  450 END DO
+!
+  475 CONTINUE
+!
+      DO 900 NMI=NM1,NM2
+      DO 500 N=1,IEQN3
+      A(N)=SUMPX(N,1,INDEX)+SUMPX(N,2,INDEX)*(S(NMI)-ONE)
+  500 END DO
+!
+!
+      DO 700 K=1,IOL2
+      KK=IOL1-K+INDEX
+!
+      DO 600 N=1,IEQN3
+      A(N)=A(N)+CIPV(NMI,K)*PXDDOT(N,KK)
+  600 END DO
+!
+!
+  700 END DO
+      DO 800 N=1,IEQN3
+      PXPF(N,NMI,1)=A(N)*HV2
+  800 END DO
+  900 END DO
+      NM1=NM2+1
+ 1000 END DO
+      RETURN
+      END

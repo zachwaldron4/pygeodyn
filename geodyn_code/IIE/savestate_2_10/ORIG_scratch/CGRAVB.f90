@@ -1,0 +1,20 @@
+!$CGRAV
+!********1*********2*********3*********4*********5*********6*********7**
+! CGRAV            00/00/00            0000.0    PGMR - ?
+!
+!
+! FUNCTION:  BLOCK DATA INITIALIZATION OF COMMON BLOCK CGRAV.
+!
+! COMMENT:
+!
+!********1*********2*********3*********4*********5*********6*********7**
+       BLOCK DATA CGRAVB
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      COMMON/CGRAV/GM,AE,AESQ,FE,FFSQ32,FSQ32,XK2,XK3,XLAM,SIGXK2,      &
+     &      SIGXK3,SIGLAM,RATIOM(2),AU,RPRESS
+      COMMON/CLIGHT/VLIGHT,ERRLIM,XCLITE
+      COMMON/FLUXAU/FLX1AU,XFLUXA
+      DATA RATIOM/.1229997171006507D-1,.3329455619264376D6/
+      DATA AU/1.4959787066D11/
+      END

@@ -1,0 +1,33 @@
+      SUBROUTINE ANG2AX(RA,DEC,W,XAXIS)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      DIMENSION XAXIS(3,3)
+      DIMENSION XTOD(3)
+      DIMENSION YTOD(3)
+      DIMENSION FSEC(1),RAQ(1),DECQ(1),SCRTCH(4),ROTI(9)
+      DIMENSION RMB(9)
+
+!
+      DECQ(1)=DEC
+      RAQ(1)=RA
+!
+      CALL DXQN(MJDSC,FSEC,RAQ,DECQ,ROTI(1),ROTI(2),ROTI(3),            &
+     &                ROTI(4),ROTI(5),ROTI(6),ROTI(7),ROTI(8),          &
+     &                ROTI(9),SCRTCH,1)
+!
+      CW=COS(W)
+      SW=SIN(W)
+!
+      XAXIS(1,1)=ROTI(1)*CW+ROTI(2)*SW
+      XAXIS(2,1)=ROTI(4)*CW+ROTI(5)*SW
+      XAXIS(3,1)=ROTI(7)*CW+ROTI(8)*SW
+!
+      XAXIS(1,2)=-ROTI(1)*SW+ROTI(2)*CW
+      XAXIS(2,2)=-ROTI(4)*SW+ROTI(5)*CW
+      XAXIS(3,2)=-ROTI(7)*SW+ROTI(8)*CW
+!
+      XAXIS(1,3)=ROTI(3)
+      XAXIS(2,3)=ROTI(6)
+      XAXIS(3,3)=ROTI(9)
+!
+      RETURN
+      END

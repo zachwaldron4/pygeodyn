@@ -1,0 +1,70 @@
+!$DIFF
+      SUBROUTINE DIFF(IYMD1,IHMS1,IYMD2,IHMS2,IDAY,ISEC)
+!********1*********2*********3*********4*********5*********6*********7**
+! DIFF             00/00/00            0000.0    PGMR - WEIXIA
+!
+! FUNCTION:  TO CALCULATE THE DIFFERENCE BETWEEN ANY TWO TIME
+!            POINTS IN THE 20TH CENTURY
+!            CALLING SEQUENCE  CALL DIFF(IYMD1, IHMS1, IYMD2, IHMS2,
+!            IDAY, ISEC)
+!
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   IYMD1    I    S    DATE IN FORM YYMMDD
+!   IHMS1    I    S    TIME ON IYMD1 IN FORM HHMMSS
+!   IYMD2    I    S    SECOND DATE IN FORM YYMMDD
+!   IHMS2    I    S    TIME ON IYMD2 IN FORM HHMMSS
+!   IDAY     O    S    OUTPUT IS ELAPSED FULL DAY DIFFERENCE
+!                      IDAY IS NEGATIVE IF IYMD2,IHMS2 IS THE
+!                      EARLIER TIME
+!   ISEC     O    S    OUTPUT IS REMAINDER OF DIFFERENCE IN SECONDS
+!                      ISEC HAS THE SAME SIGN CONVENTION AS IDAY
+!
+! COMMENTS:
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION MONTH(13,2)
+      DATA MONTH/0,31,60,91,121,152,182,213,244,274,305,335,366,        &
+     &           0,31,59,90,120,151,181,212,243,273,304,334,365/
+!
+      ISUB(IY)=MIN(MOD(IY,4),1)+1
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+! CHECK FOR A DIFFERENCE OF LESS THAN ONE DAY
+      ISEC=0
+      IF(IYMD1.EQ.IYMD2) GOTO 4000
+! SEPARATE IYMD1 AND IYMD2 INTO THREE WORD EACH
+      IY1=IYMD1/10000
+      ID1=IYMD1-IY1*10000
+      IM1=ID1/100
+      ID1=ID1-IM1*100
+      IY2=IYMD2/10000
+      ID2=IYMD2-IY2*10000
+      IM2=ID2/100
+      ID2=ID2-IM2*100
+! COMPUTE THE ELAPSED DAY SINCE JAN 0,1900
+      IL1=ISUB(IY1)
+      IYEAR1=36525*(IY1-1)/100+MONTH(IM1,IL1)+ID1
+      IL2=ISUB(IY2)
+      IYEAR2=36525*(IY2-1)/100+MONTH(IM2,IL2)+ID2
+! CONVERT ELAPSED DAYS INTO ELAPSED SECONDS
+      ISEC=(IYEAR2-IYEAR1)*86400
+! CALCULATE ELAPSED SECONDS INTO EACH DAY
+ 4000 ISEC1=IHMS1-40*(IHMS1/100)-2400*(IHMS1/10000)
+      ISEC2=IHMS2-40*(IHMS2/100)-2400*(IHMS2/10000)
+! SUBTRACT THE TWO ELAPSED SECONDS VALUES
+      ISEC=ISEC+ISEC2-ISEC1
+! COMPUTE IDAY
+      IDAY=ISEC/86400
+! COMPUTE ISEC
+      ISEC=ISEC-IDAY*86400
+      RETURN
+      END

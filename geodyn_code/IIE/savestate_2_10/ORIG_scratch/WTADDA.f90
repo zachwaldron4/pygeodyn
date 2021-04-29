@@ -1,0 +1,115 @@
+!$WTADDA
+      SUBROUTINE WTADDA(JDIM,NSATA,NRMTOT,PARRSD,PARVAR,SATCOV,ATPA,    &
+     &                  ATPL)
+!********1*********2*********3*********4*********5*********6*********7**
+! WTADDA           00/00/00            0000.0    PGMR - ?
+!
+! FUNCTION:       ADD ARC PARAMETER VARIANCE-COVARIANCE INFORMATION
+!                 TO THE NORMAL MATRIX AND RHS OF THE NORMAL EQUATIONS
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   JDIM     I         NUMBER OF PARAMETERS
+!   NSATA    I         NUMBER OF SATELLITES IN ARC
+!   NRMTOT   I         ACTUAL LENGTH OF FIRST ROW IN NORMAL MATRIX
+!   PARRSD   I         DIFFERENCE BETWEEN LATEST ESTIMATE OF
+!                      PARAMETERS AND APRIORI ESTIMATE
+!   PARVAR   I         DIAGONAL POTION OF THE INVERTED APRIORI
+!                      PARAMETER VARIANCE COVARIANCE MATRIX
+!   SATCOV   I         SATELLITE COVARIANCE INFORMATION
+!   ATPA    I/O        NORMAL EQUATION MATRIX WITHOUT APRIORI
+!                      PARAMETER INFORMATION AS INPUT
+!                      NORMAL EQUATION MATRIX WITH APRIORI
+!                      PARAMETER INFORMATION AS OUTPUT
+!   ATPL    I/O        RHS OF NORMAL EQUATIONS WITHOUT APRIORI
+!                      PARAMETER INFORMATION AS INPUT
+!                      RHS OF NORMAL EQUATIONS WITH APRIORI
+!                      PARAMETER INFORMATION AS OUTPUT
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION PARRSD(1),PARVAR(1),SATCOV(15,NSATA),ATPA(1),ATPL(1)
+      COMMON/CITERL/LSTGLB,LSTARC,LSTINR,LNADJ ,LITER1,LSTITR,          &
+     &              LOBORB,LRESID,LFREEZ,LSAVEF,LHALT,LADJPI,LADJCI
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+!
+! ADD IN LEFT HAND SIDE DIAGONAL FIRST
+      IPT=1
+      IL=NRMTOT
+      DO 100 I=1,JDIM
+      IF(.NOT.LHALT) THEN
+        ATPA(IPT)=ATPA(IPT)+PARVAR(I)
+      ELSE
+        ATPA(IPT)=ATPA(IPT)+1.D60
+      ENDIF
+      IPT=IPT+IL
+      IL=IL-1
+  100 END DO
+!
+! ADD IN INFORMATION TO RIGHT HAND SIDE
+      DO 200 I=1,JDIM
+      IF(.NOT.LHALT) THEN
+         ATPL(I)=ATPL(I)+PARRSD(I)*PARVAR(I)
+      ELSE
+         ATPL(I)=ATPL(I)+PARRSD(I)*1.D60
+      ENDIF
+  200 END DO
+!
+! ADD IN COVARIANCE INFORMATION TO LEFT HAND SIDE
+      IPTA=1
+      ILA=NRMTOT
+      DO 300 I=1,NSATA
+      IPTS=0
+      ILS=5
+      DO 250 J=1,5
+      DO 220 JJ=1,ILS
+      ATPA(IPTA+JJ)=ATPA(IPTA+JJ)+SATCOV(IPTS+JJ,I)
+  220 END DO
+      IPTS=IPTS+ILS
+      ILS=ILS-1
+      IPTA=IPTA+ILA
+      ILA=ILA-1
+  250 END DO
+      IPTA=IPTA+ILA
+      ILA=ILA-1
+  300 END DO
+! ADD IN COVARIANCE INFO TO RIGHT HAND SIDE
+      DO 400 I=1,NSATA
+      IPTA=1+(I-1)*6
+! FIRST ROW OF COVAR MATRIX
+      ATPL(IPTA)=ATPL(IPTA)+SATCOV(1,I)*PARRSD(IPTA+1)                  &
+     &          +SATCOV(2,I)*PARRSD(IPTA+2)+SATCOV(3,I)*PARRSD(IPTA+3)  &
+     &          +SATCOV(4,I)*PARRSD(IPTA+4)+SATCOV(5,I)*PARRSD(IPTA+5)
+! SECOND ROW
+      ATPL(IPTA+1)=ATPL(IPTA+1)+SATCOV(1,I)*PARRSD(IPTA)                &
+     &          +SATCOV(6,I)*PARRSD(IPTA+2)+SATCOV(7,I)*PARRSD(IPTA+3)  &
+     &          +SATCOV(8,I)*PARRSD(IPTA+4)+SATCOV(9,I)*PARRSD(IPTA+5)
+! THIRD ROW
+      ATPL(IPTA+2)=ATPL(IPTA+2)+SATCOV(2,I)*PARRSD(IPTA)                &
+     &          +SATCOV(6,I)*PARRSD(IPTA+1)+SATCOV(10,I)*PARRSD(IPTA+3) &
+     &          +SATCOV(11,I)*PARRSD(IPTA+4)+SATCOV(12,I)*PARRSD(IPTA+5)
+! FOURTH ROW
+      ATPL(IPTA+3)=ATPL(IPTA+3)+SATCOV(3,I)*PARRSD(IPTA)                &
+     &          +SATCOV(7,I)*PARRSD(IPTA+1)+SATCOV(10,I)*PARRSD(IPTA+2) &
+     &          +SATCOV(13,I)*PARRSD(IPTA+4)+SATCOV(14,I)*PARRSD(IPTA+5)
+! FIFTH ROW
+      ATPL(IPTA+4)=ATPL(IPTA+4)+SATCOV(4,I)*PARRSD(IPTA)                &
+     &          +SATCOV(8,I)*PARRSD(IPTA+1)+SATCOV(11,I)*PARRSD(IPTA+2) &
+     &          +SATCOV(13,I)*PARRSD(IPTA+3)+SATCOV(15,I)*PARRSD(IPTA+5)
+! SIXTH ROW
+      ATPL(IPTA+5)=ATPL(IPTA+5)+SATCOV(5,I)*PARRSD(IPTA)                &
+     &          +SATCOV(9,I)*PARRSD(IPTA+1)+SATCOV(12,I)*PARRSD(IPTA+2) &
+     &          +SATCOV(14,I)*PARRSD(IPTA+3)+SATCOV(15,I)*PARRSD(IPTA+4)
+  400 END DO
+      RETURN
+      END

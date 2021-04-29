@@ -1,0 +1,68 @@
+!$ARGMA
+      SUBROUTINE ARGMA(VPMEEC,VPMOBE,VMASCE,ARMA,ARMN,EPSMM,RM)
+!********1*********2*********3*********4*********5*********6*********7
+! ARGMA            12/01/92            0000.0    PGMR - S.LUO
+!
+! FUNCTION:  CALCULATE THE ANGLE D BETWEEN MARS PERIHELION
+!            AND ITS VERNAL EQUINOX IN MARS ORBIT PLANE
+!
+! I/O PARAMETERS
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   VPMEEC   I    A    THE DIRECTION OF THE POLE OF MARS EQUATOR
+!   VPMOBE   I    A    THE DIRECTION OF THE POLE OF MARS ORBIT
+!   VMASCE   I    A    THE DIRECTION OF MARS ASCENDING NODE
+!
+!   AMRA     O    S    ANGLE BETWEEN MARS VERNAL EQUINOX AND
+!                      ITS PERIHELION
+!   EPSMM    O    S    MARS MEAN OBLIQUITY
+!
+!   ALL OF THESE  ARE IN ECLIPTIC FRAME
+!
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+!
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z), LOGICAL (L)
+      SAVE
+      COMMON/CONSTR/PI,TWOPI,DEGRAD,SECRAD,SECDAY
+      COMMON/ELEMTM/W(6),OM(6),DL(4),CI(3),DPERIM
+      DIMENSION VPMEEC(3), VPMOBE(3),RM(3),VMASCE(3)
+!
+!**********************************************************************
+! START OF EXECUTABLE CODE ********************************************
+!**********************************************************************
+!
+! CALCULATE THE DIRECTION OF MARS VERNAL EQUINOX
+!
+       CALL VCRSSP(VPMEEC,VPMOBE,RM)
+!
+!  CALCULATE THE ANGLE BETWEEN ASCENDING NODE OF MARS ORBIT ON
+!     ECLIPTIC AND ITS VERNAL EQUINOX, ARMN.
+!
+      CSRMN = RM(1)*VMASCE(1) + RM(2)*VMASCE(2) + RM(3)*VMASCE(3)
+      ARMN = ACOS(CSRMN)
+      ARMN = ARMN/DEGRAD
+!
+! OBTAIN THE ANGLE BETWEEN MARS PERIHELION AND ITS VERNAL EQUINOX
+!
+      ARMA=ARMN -(360.D0-DPERIM)
+!
+! ESTIMATE THE MARS MEAN OBLIQUITY AT T
+      CSOBL = VPMEEC(1)*VPMOBE(1) + VPMEEC(2)*VPMOBE(2) +               &
+     &        VPMEEC(3)*VPMOBE(3)
+      EPSMM = ACOS(CSOBL)
+      EPSMA =EPSMM/DEGRAD
+! .. DEBUG
+!     WRITE(6,100)ARMA,ARMN,DPERIM,EPSMA
+! 100 FORMAT(1X,'ARMA =',2F10.3, ' DPERIM =', F10.3 ,' EPSMA=',F10.4)
+!
+! CONVERT THE ANGLE FROM DEGREES TO IN RANDIANS
+!
+      ARMA=ARMA*DEGRAD
+!
+      RETURN
+      END

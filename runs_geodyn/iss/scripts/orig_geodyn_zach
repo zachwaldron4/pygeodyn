@@ -1,0 +1,257 @@
+set -x
+SATELLITE=st
+MATPRE=40
+SERIES=goco05s_1810
+G2SDIR=/users/geodyn/EXECUTABLES
+G2EDIR=/users/geodyn/EXECUTABLES
+EMATUDIR=/users/jmccarth/bin
+COMMONDIR=/Volumes/PODA/system/COMMON
+COMMONHD4DIR=/Volumes/PODA/system/COMMON
+STATIONDIR=/Volumes/PODA/system/stations 
+SYSDIR=/users/flemoine/bin
+#ORISMBIASDIR=/Volumes/HD4/jwbeall/dor/j2/g2b/mbias 
+DIRGRAV=/Volumes/PODA/system/gravity/goco05s
+FTN05DIR=/Volumes/PODA/flemoine/slr/$SATELLITE/results/$SERIES/IISSET
+DELDIR=/Volumes/PODA/flemoine/deletes/$SATELLITE
+G2BDIR=/Volumes/PODA/slr/$SATELLITE/g2b
+ATGRAVDIR=/Volumes/PODA/system/ATGRAV/AODl1/GRACE_RL06
+OUTPUTDIR=/Volumes/PODA/flemoine/slr/$SATELLITE/results/$SERIES
+mkdir $OUTPUTDIR
+INPUTDIR=$FTN05DIR/new 
+BINDIR=/users/flemoine/bin
+mkdir /Volumes/PODA/flemoine/slr/$SATELLITE
+mkdir /Volumes/PODA/flemoine/slr/$SATELLITE/results
+mkdir $OUTPUTDIR
+
+
+### INPUT FILES
+### UNIT5 for GEODYN
+ARC=${1:-st080113_2wk}
+SATID=${2-7501001}
+ARCFIL=$ARC
+SOLRADFIL=${ARCFIL}.goco05s
+
+### GEODYN DATA FILE (GEODYN2 BINARY FILE FOR OBSERVATIONS)
+G2BFIL=${3:-starlette_08_slrg2b.rm0} 
+
+### GRAVITY FIELD
+GRAVITY=goco05s 
+
+### ATMOSPHERIC GRAVITY
+ATGRAVFIL=${4:-ATGRAV.glo-3HR_20080101-20130205_1862_AOD1B_0006.0090}
+
+mkdir /Volumes/GPSRAID/flemoine/tmp/$SATELLITE
+TMPDIR=/Volumes/GPSRAID/flemoine/tmp/$SATELLITE/$SERIES 
+mkdir $TMPDIR
+echo $TMPDIR
+echo $PWD
+
+###Create temporary directory to do GEODYN runs
+mkdir $TMPDIR
+chmod 777 $TMPDIR
+echo "fichier grav " $ATGRAVDIR/$ATGRAVFIL
+
+if  test -r $INPUTDIR/${ARCFIL}.bz2; then
+  echo " INPUT file is " ${INPUTDIR}/${ARCFIL}.bz2
+ else
+  echo " INPUT FILE ${INPUTDIR}/${ARCFIL} not found."
+  exit
+fi
+
+if test -r $G2BDIR/${G2BFIL}; then
+  echo " FORT.40 file is "$G2BDIR/${G2BFIL}
+ else
+ echo " FORT.40 file" $G2BFIL "not found."
+ exit
+fi
+date
+##
+rm -r $TMPDIR/${ARC}.$GRAVITY
+mkdir $TMPDIR/${ARC}.$GRAVITY
+chmod 777 $TMPDIR/${ARC}.$GRAVITY
+cd $TMPDIR/${ARC}.$GRAVITY
+echo $PWD
+echo $ARC | cut -c 3-8 > YMD
+YMD=`cat YMD`
+echo $ARC |cut -c 3-4 > yr
+YR=`cat yr`
+
+
+rm -f EXAT01
+rm -f iieout iisout ftn* phobos.ephem deimos.ephem
+rm -f giie.* iieerr iiserr ftn* template1 template2
+rm -f pin* res*  ht* *.ps *.pxy doppler.* del*  FTN19.${1}
+rm -f SAVE.*
+mkdir $OUTPUTDIR/
+mkdir $OUTPUTDIR/XYZOUT/
+mkdir $OUTPUTDIR/PREPRO/
+mkdir $OUTPUTDIR/sumry/
+mkdir $OUTPUTDIR/orbits/
+mkdir $OUTPUTDIR/FTN19/
+mkdir $OUTPUTDIR/PUNCH/
+mkdir $OUTPUTDIR/IIEOUT/
+mkdir $OUTPUTDIR/TELEM
+mkdir $OUTPUTDIR/EMAT
+mkdir $OUTPUTDIR/EMAT/scans
+mkdir $OUTPUTDIR/IISSET
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/orbits/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/orbits/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/orbits/${ARC}.${GRAVITY}.gz
+rm -f $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}.bz2
+rm -f $OUTPUTDIR/sumry/${ARC}.${GRAVITY} 
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}.bz2 
+rm -f $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}.gz
+
+rm -f $OUTPUTDIR/IISSET/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/IISSET/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/IISSET/${ARC}.${GRAVITY}.gz
+rm -f $OUTPUTDIR/IISSET/${ARC}.${GRAVITY}.bz2
+
+rm -f $OUTPUTDIR/PUNCH/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/TELEM/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/EMAT/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}.Z
+#
+#
+rm -f dum2 dum1 dum3
+cp $INPUTDIR/${ARCFIL}.bz2 inputfile.bz2 
+bunzip2 inputfile.bz2
+### Construct Common Setup
+######################
+ln -s  ${G2BDIR}/${G2BFIL} ftn40
+
+# get the gravity field
+cp ${DIRGRAV}/grvfld.${GRAVITY} ftn12
+head ftn12
+if [ $YR -ge 0  -a $YR -lt 18 ]; then 
+ln -s  /Users/geodyn/SUPPORT/ephem1421.data ftn01
+fi
+if [ $YR -ge 18 -a $YR -le 25 ]; then 
+ln -s  /Users/geodyn/SUPPORT/ephem1430.data_2025 ftn01
+fi
+if [ $YR -ge 51  ]; then 
+ln -s /Users/geodyn/SUPPORT/ephem1421.data ftn01
+fi
+
+##
+cp /Users/geodyn/SUPPORT/DAILY_TABLES/gdntable.data ftn02
+##
+mv inputfile giis.input
+cp giis.input ftn05
+#
+##ATGRAV information goes on unit18
+echo "voila le fichier" $ATGRAVDIR/$ATGRAVFIL
+
+ln -s $ATGRAVDIR/$ATGRAVFIL fort.18
+
+date
+#
+$G2SDIR/giis2002_i64 > iisout 2>iiserr
+
+date
+##Save the Interface files from 2s. Then cleanup temporary files.
+mv ftn41 giie.ft12
+mv ftn11 giie.ft11
+rm -f ftn* fort.*
+echo " #"
+echo " #		End of IIS"
+echo " #"
+echo " #		Run IIE"
+echo " #"
+#
+##Interface files in 2e must be ftn11, ftn12
+cp giie.ft11 ftn11
+cp giie.ft12 ftn12
+# ramp load module (2e)
+date
+$G2EDIR/giie2002_i64 >iieout 2>iieerr
+date
+
+
+### PERL utility to get updated punch from geodyn output
+#####Does not update EPOCH cards. Use GEODYN punch file (ftn07)
+#####To get updated EPOCH cards and Elements.
+##### This turn_arc_params.pl utility works on the entire setup;
+##### -It will not work on the arc setup only.
+##
+/users/flemoine/bin/turn_arc_params.pl giis.input iieout 0 -1
+cat iieerr iieout > blob
+date
+rm -f fort.11 fort.12 fort.13 fort.14
+cat iisout iiserr iieout iieerr > IIEOUT.${ARC}.${GRAVITY}
+mv fort.9 sumry
+mv fort.19 resid
+cat fort.7 ftn07 > punch.gdn
+fgrep EPOCH punch.gdn > sumry1
+cat sumry1 sumry > blob
+mv blob sumry
+mv fort.30 orbit
+mv fort.71 emat
+mv ftn97 telem
+mv ftn08 xyzout
+mv ftn10 aeiout
+rm -f slvtmp* ftn* fort.*
+$EMATUDIR/ematu <<EOF 2>err >output
+emat
+2
+EOF
+cat err output > blob
+mv blob output.scan
+
+
+rm -r WORK
+rm -f $OUTPUTDIR/orbits/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/orbits/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/orbits/${ARC}.${GRAVITY}.gz
+
+rm -f  $OUTPUTDIR/sumry/${ARC}.${GRAVITY} 
+rm -f  $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}
+rm -f  $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}.Z
+rm -f  $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}.gz
+
+
+rm -f  $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}
+rm -f  $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}.Z
+rm -f  $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}.bz2
+rm -f  $OUTPUTDIR/PUNCH/${ARC}.${GRAVITY}
+rm -f  $OUTPUTDIR/EMAT/${ARC}.${GRAVITY}
+rm -f  $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}
+rm -f  $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}.Z
+rm -f  $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}.bz2
+
+##
+cp giis.input  $OUTPUTDIR/IISSET/${ARC}.${GRAVITY}
+bzip2          $OUTPUTDIR/IISSET/${ARC}.${GRAVITY}
+
+cp output.scan $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}
+bzip2          $OUTPUTDIR/EMAT/scans/scan.${ARC}.${GRAVITY}
+cp emat  $OUTPUTDIR/EMAT/${ARC}.${GRAVITY}
+cp sumry $OUTPUTDIR/sumry/${ARC}.${GRAVITY} 
+cp resid $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}
+gzip $OUTPUTDIR/FTN19/${ARC}.${GRAVITY}
+cp punch $OUTPUTDIR/PUNCH/${ARC}.${GRAVITY}
+cp punch.gdn   $OUTPUTDIR/PUNCH/${ARC}.${GRAVITY}.gdn
+mv IIEOUT.${ARC}.${GRAVITY} $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}
+bzip2 $OUTPUTDIR/IIEOUT/${ARC}.${GRAVITY}
+cp orbit $OUTPUTDIR/orbits/${ARC}.${GRAVITY}
+gzip     $OUTPUTDIR/orbits/${ARC}.${GRAVITY}
+mv telem   $OUTPUTDIR/TELEM/${ARC}.${GRAVITY}
+gzip       $OUTPUTDIR/orbits/${ARC}.${GRAVITY}
+
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}.Z
+rm -f $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}.bz2
+#v xyzout  $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}
+#v aeiout  $OUTPUTDIR/AEIOUT/${ARC}.${GRAVITY}
+#ompress $OUTPUTDIR/XYZOUT/${ARC}.${GRAVITY}
+##
+cd ..
+rm -r $TMPDIR/${ARC}.${GRAVITY}

@@ -1,0 +1,382 @@
+!$IFRAD7
+      SUBROUTINE IFRAD7(AA,II,LL,IARCNO,LRDIFF,LOAD,IFFHDR,FFBUF)
+!********1*********2*********3*********4*********5*********6*********7**
+! IFRAD7           00/00/00            0000.0    PGMR - B. EDDY
+!                                                PGMR - D. PAVLIS
+!
+! FUNCTION:  CONTROL MOVEMENT OF ARC DYNAMIC ARRAY INFORMATION
+!            FOR GROUP #7 - SIMULATED DATA ARRAYS AS FOLLOWS:
+!            1. FROM INTERFACE FILE TO EXTENDED VIRTUAL MEMORY(VM)
+!            2. FROM EXTENDED VIRTUAL MEMORY TO ARC DYNAMIC ARRAYS
+!            3. FROM ARC DYNAMIC ARRAYS TO EXTENDED VITUAL MEMORY
+!
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   AA      I/O   A    REAL DYNAMIC ARRAY
+!   II      I/O   A    INTEGER DYNAMIC ARRAY
+!   LL      I/O   A    LOGICAL DYNAMIC ARRAY
+!   IARCNO   I    S    CURRENT ARC NUMBER
+!   LRDIFF   I    S    FLAG USED TO CONTROL READING/LOADING
+!                      = T READ IFF & STORE IN VIRTUAL MEMORY
+!                      = F MOVE FROM EXTENDED VIRTUAL MEMORY TO
+!                          ARC DYNAMIC ARRAYS OR VICE VERSA AS
+!                          INDICATED BY "LOAD"
+!   LOAD     I    S    CONTROLS LOADING/UNLOADING OF INFORMATION
+!                      = T LOAD FROM EXT. VM TO ARC DYNAMIC ARRAYS
+!                      = F UNLOAD FROM DYNAMIC ARRAYS TO EXT. VM
+!   IFFHDR   I    A    SCRATCH ARRAY USED FOR HEADER INFORMATION
+!   FFBUF    I    A    SCRATCH ARRAY USED TO HOLD REAL DATA PRIOR
+!                      TO CONVERSION TO PROPER IIE REPRESENTATION
+!
+! COMMENTS:     INTERFACE FORMAT #2 USED:
+!
+! INTEGER  HEADER RECORD  - WITH IFFHDR(5)=0 INDICATING LENGTHS RECORDS
+!                           FOLLOWS
+! INTEGER LENGTHS RECORD  - CONTAINING IFFHDR(4) WORDS. THE FIRST
+!                           IFFHDR(4)-1 WORDS ARE LENGTHS OF DATA
+!                           RECORDS. THE LAST WORD IS THE SUM OF LENGTHS
+!            DATA RECORDS - IFFHDR(4)-1  DATA RECORDS. DATA RECORDS ARE
+!                           OF THE TYPE INDICATED IN IFFHDR(3)
+!
+! COMMENTS:   TO OUTPUT ADDITIONAL RECORDS IN THIS ROUTINE
+!             1. INCREMENT NRECS AND CALCULATE LENGTH OF RECORD TO BE
+!                OUTPUT
+!             2. ADD WRITE STATEMENT FOR OUTPUTTING DATA RECORDS
+!                (IF LENGTH IS ZERO A  RECORD CONTAINING A ZERO MUST
+!                BE OUTPUT)
+!             3. FOR INTEGER AND LOGICAL DATA SUBROUTINE CYBINT MUST
+!                BE CALLED TO CONVERT INTEGERS (AND LOGICALS) TO THE
+!                CORRECT REPRESENTATION FOR THE COMPUTER IIE WILL
+!                BE RUNNING ON
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+      COMMON/CIFF  /IFHEAD,IFLNTH,IFBUFL,IFBUFR,KDYNHD,KDYNLN,          &
+     &              KDYNIF,KDYNFF,NXCIFF
+      COMMON/CORA07/KELEVT,KSRFEL,KTINT,KFSCSD,KXTIM,KFSDM,             &
+     & KSGM1,KSGM2,KNOISE,KEPHMS,NXCA07
+      COMMON/CORI07/KSMSA1,KSMSA2,KSMSA3,KSMST1,KSMST2,KSMST3,KSMTYP,   &
+     &              KSMT1,KSMT2,KMSDM,KIOUT,KISUPE,NXCI07
+      COMMON/CORL07/KLPTS,NXCL07
+      COMMON/CVIEW /IOUT6 ,ILINE6,IPAGE6,MLINE6,                        &
+     &              IOUT8 ,ILINE8,IPAGE8,MLINE8,                        &
+     &              IOUT9 ,ILINE9,IPAGE9,MLINE9,                        &
+     &              IOUT10,ILIN10,IPAG10,MLIN10,                        &
+     &              IOUT15,ILIN15,IPAG15,MLIN15,                        &
+     &              IOUT16,ILIN16,IPAG16,MLIN16,                        &
+     &              IOUT7 ,NXCVUE
+      COMMON/DYNPTR/KDEPHM,KDEPH2,KDAHDR(3,9),KDYNAP(3,9,2),KDNEXT(3),  &
+     &NXDYNP
+      COMMON/UNITS/IUNT11,IUNT12,IUNT13,IUNT19,IUNT30,IUNT71,IUNT72,    &
+     &             IUNT73,IUNT05,IUNT14,IUNT65,IUNT88,IUNT21,IUNT22,    &
+     &             IUNT23,IUNT24,IUNT25,IUNT26
+!
+      DIMENSION AA(1)
+      DIMENSION FFBUF(IFBUFR)
+      DIMENSION IFFHDR(IFHEAD)
+      DIMENSION II(1)
+      DIMENSION LL(1)
+!
+      DATA IBLOCK/60/,IGROUP/7/
+!
+!
+!**********************************************************************
+! START OF EXECUTABLE CODE ********************************************
+!**********************************************************************
+      IGP1=IGROUP+1
+! DETERMINE IF READING DATA FROM INTERFACE FILE
+      IF(.NOT.LRDIFF) GO TO 5000
+!**********************************************************************
+! READ HEADER RECORD FOR REAL DATA
+!**********************************************************************
+      ITYPE=1
+      CALL BINRD(IUNT11,IFFHDR,IFHEAD)
+! VERIFY BLOCK NO.,GROUP NUMBER AND DATA TYPE
+      IF(IFFHDR(1).NE.IBLOCK .OR.IFFHDR(2).NE.IGROUP .OR.               &
+     &   IFFHDR(3).NE.ITYPE) GO TO 60150
+      NRECS1=IFFHDR(4)
+      NRECS =NRECS1-1
+! STORE NRECS1 IN VIRTUAL MEMORY
+      IPTHDR=KDAHDR(ITYPE,IGP1)
+      II(IPTHDR)=NRECS1
+!**********************************************************************
+! READ LENGTHS RECORD FOR REAL DATA-STORE IN VIRTUAL MEMORY
+!**********************************************************************
+      CALL BINRD(IUNT11,II(IPTHDR+1),NRECS1)
+! LAST WORD READ IS SUM OF THE LENGTHS OF THE DATA RECORDS
+      NWORDS=II(IPTHDR+NRECS1)
+!**********************************************************************
+! READ REAL DATA RECORDS AND STORE IN VIRTUAL MEMORY
+!**********************************************************************
+      IF(NRECS.EQ.0) GO TO 1000
+      IPTR=KDYNAP(ITYPE,IGP1,1)+(IARCNO-1)*KDYNAP(ITYPE,IGP1,2)
+      IPTSTR=IPTR
+      DO 200 IREC=1,NRECS
+      NX=II(IPTHDR+IREC)
+      IF(NX.GT.IFBUFR) GO TO 60300
+      CALL BINRD2(IUNT11,FFBUF,NX )
+      ISTAT=0
+      IF(NX.GT.0) CALL Q9ICLA(FFBUF,AA(IPTR),NX,ISTAT)
+      IF(ISTAT.NE.0) GO TO 60350
+      IPTR=IPTR+NX
+  200 END DO
+!
+! TEST IF CORRECT NUMBER OF WORDS READ
+!
+      IF(NWORDS.NE. IPTR-IPTSTR) GO TO 60220
+!**********************************************************************
+! READ HEADER RECORD FOR INTEGER DATA
+!**********************************************************************
+ 1000 ITYPE=2
+      CALL BINRD(IUNT11,IFFHDR,IFHEAD)
+! VERIFY BLOCK NO.,GROUP NUMBER AND DATA TYPE
+      IF(IFFHDR(1).NE.IBLOCK .OR.IFFHDR(2).NE.IGROUP .OR.               &
+     &   IFFHDR(3).NE.ITYPE) GO TO 60150
+      NRECS1=IFFHDR(4)
+      NRECS = NRECS1-1
+! STORE NRECS1 IN VIRTUAL MEMORY
+      IPTHDR=KDAHDR(ITYPE,IGP1)
+      II(IPTHDR)=NRECS1
+!**********************************************************************
+! RAAD LENGTHS RECORD FOR INTEGER DATA-STORE IN VIRTUAL MEMORY
+!**********************************************************************
+      CALL BINRD(IUNT11,II(IPTHDR+1),NRECS1)
+      NWORDS=II(IPTHDR+NRECS1)
+!**********************************************************************
+! READ INTEGER DATA RECORDS AND STORE IN VIRTUAL MEMORY
+!**********************************************************************
+      IF(NRECS.EQ.0) GO TO 2000
+      IPTR=KDYNAP(ITYPE,IGP1,1)+(IARCNO-1)*KDYNAP(ITYPE,IGP1,2)
+      IPTSTR=IPTR
+      DO 1200 IREC=1,NRECS
+      NX=II(IPTHDR+IREC)
+      CALL BINRD(IUNT11,II(IPTR),NX)
+      IPTR=IPTR+NX
+ 1200 END DO
+!
+! TEST IF CORRECT NUMBER OF WORDS READ
+!
+      IF(NWORDS.NE.IPTR-IPTSTR) GO TO 60220
+!**********************************************************************
+! READ HEADER RECORD FOR LOGICAL DATA
+!**********************************************************************
+ 2000 ITYPE=3
+      CALL BINRD(IUNT11,IFFHDR,IFHEAD)
+! VERIFY BLOCK NO.,GROUP NUMBER AND DATA TYPE
+      IF(IFFHDR(1).NE.IBLOCK .OR.IFFHDR(2).NE.IGROUP .OR.               &
+     &   IFFHDR(3).NE.ITYPE) GO TO 60150
+      NRECS1=IFFHDR(4)
+      NRECS = NRECS1-1
+! STORE NRECS1 IN VIRTUAL MEMORY
+      IPTHDR=KDAHDR(ITYPE,IGP1)
+      II(IPTHDR)=NRECS1
+!**********************************************************************
+! READ LENGTHS RECORD FOR LOGICAL DATA-STORE IN VIRTUAL MEMORY
+!**********************************************************************
+      CALL BINRD(IUNT11,II(IPTHDR+1),NRECS1)
+      NWORDS=II(IPTHDR+NRECS1)
+!**********************************************************************
+! READ LOGICAL DATA RECORDS AND STORE IN VIRTUAL MEMORY
+!**********************************************************************
+      IF(NRECS.EQ.0) GO TO 3000
+      IPTR=KDYNAP(ITYPE,IGP1,1)+(IARCNO-1)*KDYNAP(ITYPE,IGP1,2)
+      IPTSTR=IPTR
+      DO 2200 IREC=1,NRECS
+      NX=II(IPTHDR+IREC)
+      CALL BINRDL(IUNT11,LL(IPTR),NX)
+      IPTR=IPTR+NX
+ 2200 END DO
+! TEST IF CORRECT NUMBER OF WORDS READ
+      IF(NWORDS.NE. IPTR-IPTSTR) GO TO 60220
+ 3000 CONTINUE
+!**********************************************************************
+      RETURN
+!**********************************************************************
+!**********************************************************************
+! LOAD INFORMATION FROM EXTENDED VIRTUAL MEMORY TO DYNAMIC ARRAYS OR
+! UNLOAD INFORMATION FROM DYNAMIC ARRAYS TO EXTENDED VIRTUAL MEMORY
+!**********************************************************************
+!**********************************************************************
+!
+!**********************************************************************
+! LOAD/UNLOAD REAL DATA
+!**********************************************************************
+ 5000 ITYPE=1
+      IPTHDR=KDAHDR(ITYPE,IGP1)
+      NRECS1=II(IPTHDR)
+      NRECS =NRECS1-1
+      NWORDS=II(IPTHDR+NRECS1)
+      IPTR=KDYNAP(ITYPE,IGP1,1)+(IARCNO-1)*KDYNAP(ITYPE,IGP1,2)
+      IPTSTR=IPTR
+      IREC=0
+! POINTER
+!     IREC=IREC+1
+!     NX=II(IPTHDR+IREC)
+!     CALL MOVER(AA(IPTR),AA(POINTR),NX,LOAD)
+!     IPTR=IPTR+NX
+!
+! KELEVT
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVER(AA(IPTR),AA(KELEVT),NX,LOAD)
+      IPTR=IPTR+NX
+! KSRFEL
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVER(AA(IPTR),AA(KSRFEL),NX,LOAD)
+      IPTR=IPTR+NX
+! KTINT
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVER(AA(IPTR),AA(KTINT),NX,LOAD)
+      IPTR=IPTR+NX
+! KFSCSD
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVER(AA(IPTR),AA(KFSCSD),NX,LOAD)
+      IPTR=IPTR+NX
+! KSGM1
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVER(AA(IPTR),AA(KSGM1),NX,LOAD)
+      IPTR=IPTR+NX
+! KSGM2
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVER(AA(IPTR),AA(KSGM2),NX,LOAD)
+      IPTR=IPTR+NX
+!
+! TEST IF CORRECT NUMBER OF DATA RECORDS RELOADED
+!
+      IF(IREC.NE.NRECS) GO TO 60200
+! TEST IF CORRECT NUMBER OF WORDS RELOADED
+      IF(NWORDS.NE.IPTR-IPTSTR) GO TO 60220
+!**********************************************************************
+! LOAD/UNLOAD INTEGER DATA
+!**********************************************************************
+      ITYPE=2
+      IPTHDR=KDAHDR(ITYPE,IGP1)
+      NRECS1=II(IPTHDR)
+      NRECS =NRECS1-1
+      NWORDS=II(IPTHDR+NRECS1)
+      IPTR=KDYNAP(ITYPE,IGP1,1)+(IARCNO-1)*KDYNAP(ITYPE,IGP1,2)
+      IPTSTR=IPTR
+      IREC=0
+! KSMSA1 - KSST1
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMSA1),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMSA2 - KSST2
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMSA2),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMSA3 - KSST3
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMSA3),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMST1 - KSSTA1
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMST1),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMST2 - KSSTA1
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMST2),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMST3 - KSSTA3
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMST3),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMTYP - KSDTYP
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMTYP),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMT1 - KSDT1
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMT1),NX,LOAD)
+      IPTR=IPTR+NX
+! KSMT2 - KSDT2
+      IREC=IREC+1
+      NX=II(IPTHDR+IREC)
+      CALL MOVEI(II(IPTR),II(KSMT2),NX,LOAD)
+      IPTR=IPTR+NX
+!
+! TEST IF CORRECT NUMBER OF DATA RECORDS RELOADED
+!
+      IF(IREC.NE.NRECS) GO TO 60200
+! TEST IF CORRECT NUMBER OF WORDS RELOADED
+      IF(NWORDS .NE. IPTR-IPTSTR) GO TO 60220
+!**********************************************************************
+! LOAD/UNLOAD LOGICAL DATA RECORDS
+!**********************************************************************
+      ITYPE=3
+      IPTHDR=KDAHDR(ITYPE,IGP1)
+      NRECS1=II(IPTHDR)
+      NRECS =NRECS1-1
+      NWORDS=II(IPTHDR+NRECS1)
+      IPTR=KDYNAP(ITYPE,IGP1,1)+(IARCNO-1)*KDYNAP(ITYPE,IGP1,2)
+      IPTSTR=IPTR
+      IREC=0
+! KLORBT - KLORB
+!     IREC=IREC+1
+!     NX=II(IPTHDR+IREC)
+!     CALL MOVEL(LL(IPTR),LL(KLORBT),NX,LOAD)
+!     IPTR=IPTR+NX
+!
+! TEST IF CORRECT NUMBER OF DATA RECORDS RELOADED
+!
+      IF(IREC.NE.NRECS) GO TO 60200
+! TEST IF CORRECT NUMBER OF WORDS RELOADED
+      IF(NWORDS.NE. IPTR-IPTSTR ) GO TO 60220
+!**********************************************************************
+! NORMAL END OF ROUTINE
+!**********************************************************************
+      RETURN
+!**********************************************************************
+! ERROR PROCESSING
+!**********************************************************************
+! NUMBER OF OUTPUT RECORDS EXCEEDS LENGTHS RECORD
+60150 WRITE(IOUT6,80150) IBLOCK,IGROUP,ITYPE,(IFFHDR(J),J=1,10)
+      WRITE(IOUT6,89999)
+      STOP
+! NUMBER OF RECORDS READ/RELOADED DISAGREES WITH NUMBER EXPECTED
+60200 WRITE(IOUT6,80200) IARCNO,ITYPE,IREC,NRECS
+      WRITE(IOUT6,89999)
+      STOP
+! NUMBER OF WORDS READ/RELOADED DISAGREES WITH NUMBER OF WORDS EXPECTED
+60220 WRITE(IOUT6,80220) IARCNO,ITYPE,NWORDS,IPTR,IPTSTR
+      WRITE(IOUT6,89999)
+      STOP
+! INTEGER OR LOGICAL RECORD EXCEEDS BUFFER SPACE AVAILABLE
+60300 WRITE(IOUT6,80300) IARCNO,ITYPE,IREC,NX,IFBUFR
+      WRITE(IOUT6,89999)
+      STOP
+! FLOATING POINT CONVERSION PROBLEM
+60350 WRITE(IOUT6,80350) ISTAT
+      WRITE(IOUT6,89999)
+      STOP
+80150 FORMAT(1X,'BLOCK NUMBER,GROUP NUMBER OR TYPE IS INCORRECT ',      &
+     & 13I5)
+80200 FORMAT(1X,'NUMBER OF RECORDS READ/RELOADED DISAGREES WITH NUMBER',&
+     &'EXPECTED. ARC NO.,RECORD TYPE,RECORD NUMBER, AND NO. OF RECORDS',&
+     &'FOLLOWS'/5X,4I8)
+80220 FORMAT(1X,'NUMBER OF WORDS READ/RELOADED DISAGREES WITH NUMBER',&
+     &'EXPECTED. '/1X,'ARC NUMBER,RECORD TYPE,NUMBER OF WORDS,STARTING',&
+     &'POINTER,AND ENDING POINTER FOLLOW'/1X,6I8)
+80300 FORMAT(1X,'INPUT RECORD EXCEEDS BUFFER SPACE - (ARC NO.,RECORD',&
+     &'TYPE,RECORD NUMBER,NO. OF WORDS,BUFFER SPACE )'/10X,5I8)
+80350 FORMAT(1X,'FLOATING POINT CONVERSION PROBLEM - ISTAT = ',I5)
+89999 FORMAT(1X,'EXECUTION TERMINATING IN SUBROUTINE IFRAD7 ')
+      END

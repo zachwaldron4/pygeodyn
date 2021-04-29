@@ -1,0 +1,9 @@
+!$OPFIL2
+      SUBROUTINE OPFIL2
+      OPEN(7,FILE='ftn07',STATUS='NEW',FORM='FORMATTED')
+! units 11 and 12 are opened in DETINT
+      OPEN(14,FILE='ftn14',STATUS='NEW',FORM='FORMATTED',  &
+     &BLANK='ZERO')
+      OPEN(97,FILE='ftn97',STATUS='NEW',FORM='UNFORMATTED')
+      RETURN
+      END

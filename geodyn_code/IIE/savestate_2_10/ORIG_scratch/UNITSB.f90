@@ -1,0 +1,25 @@
+!$UNITS
+!********1*********2*********3*********4*********5*********6*********7**
+! UNITS            00/00/00            0000.0    PGMR - ?
+!
+!
+! FUNCTION:
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+       BLOCK DATA UNITSB
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+      COMMON/UNITS/IUNT11,IUNT12,IUNT13,IUNT19,IUNT30,IUNT71,IUNT72,    &
+     &             IUNT73,IUNT05,IUNT14,IUNT65,IUNT88,IUNT21,IUNT22,    &
+     &             IUNT23,IUNT24,IUNT25,IUNT26
+!
+      DATA IUNT11/11/,IUNT12,IUNT13/12,13/
+      DATA IUNT19,IUNT30,IUNT71,IUNT72,IUNT73/19,30,71,72,73/
+      DATA IUNT05,IUNT14/05,14/
+      DATA IUNT65,IUNT88/65,88/
+      DATA IUNT21,IUNT22,IUNT23,IUNT24,IUNT25,IUNT26/21,22,23,24,25,26/
+      END

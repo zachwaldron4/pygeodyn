@@ -1,0 +1,126 @@
+!$PLNPCX
+      SUBROUTINE PLNPCX(MJDSEC,FSEC,BDSTAT,ISUPE,LVELP)
+!********1*********2*********3*********4*********5*********6*********7**
+! PLNPCX          99/07/26                      PGMR - D. PAVLIS
+!
+! FUNCTION:  COMPUTE BDSTAT FOR CELESTIAL BODIES IN THE SUPPLEMENTARY
+!            PLANETARY EPHEMERIS
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   BDSTAT   I/O  A    PLANET STATE VECTORS
+!   ISUPE    I    A    SCHEDULING ARRAY FOR CELESTIAL BODIES
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      COMMON/CENACC/DGCEN,TCEN,BMACEN,CCHEBV(50),EPCEN(50,3),           &
+     &              DGEAR,TEAR,BMAEAR,ECHEBV(50),EPEAR(50,3),           &
+     &              DGMON,TMON,BMAMON,SCHEBV(50),EPMON(50,3)
+      COMMON/CEPHEP/FSCEPC(1),EPHBFC(1016),                             &
+     &              FSCEPT(1),EPHBFT(1016),                             &
+     &              SEPBFC(75),SEPBFT(75),XEPHEP
+      COMMON/CHCOFX/ COEFX(3,25),COEFXX(3,25,988),RLVAL(988)
+      COMMON/EPHMX/FSECSE(10,2)
+      COMMON/IEPHM2/ISUPL,ICBODY,ISEQB(2),MAXDEG,ITOTSE,IREPL(988), &
+     &              NXEPH2
+      COMMON/IBODPT/IBDCF(999),IBDSF(999),IBDGM(999),IBDAE(999),    &
+     &              IBDPF(999),                                     &
+     &              ICBDCF,ICBDSF,ICBDGM,ICBDAE,ICBDPF,             &
+     &              ITBDCF,ITBDSF,ITBDGM,ITBDAE,ITBDPF,NXBDPT
+      COMMON/PLNETI/IPLNET(999),IPLNIN(999),MPLNGD(999),MPLNGO(999),   &
+     &              IPLNZ(999),NXPLNI
+      DIMENSION ISUPE(ICBODY,5)
+      DIMENSION CHB(25),CHBV(25)
+      DIMENSION BDSTAT(7,10)
+      DATA CHB(1)/1.D0/,CHBV(1)/0.D0/,CHBV(2)/1.D0/
+      DATA DAYSEC/86400.D0/
+      DATA TWO/2.D0/,ONE/1.D0/
+      DATA ZERO/0.D0/
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+! FOR ALL CELESTIAL BODIES DO
+      DO I=1,ICBODY
+      IWHOLE=I+11
+!
+! FIND LENGTH OF VALIDITY
+      ILOV=ISUPE(I,3)
+      RLOV=ILOV*DAYSEC
+      RLVAL(I)=RLOV
+! FIND NUMBER OF GROUPS FOR THIS BODY
+      IGRP=ISUPE(I,1)
+! FSECSE MIGHT BE WRONG FOR THIS OBS
+      J=1
+      FSECS1=FSECSE(I,1)
+      TTEST=DBLE(MJDSEC)+FSEC-FSECSE(I,1)
+      IF(TTEST.GT.RLVAL(I)) THEN
+!     WRITE(6,*)' CROSSING A BLOCK ',TTEST,MJDSEC,FSEC,FSECSE(I,1)
+      TTEST=DBLE(MJDSEC)+FSEC-FSECSE(I,2)
+      FSECS1=FSECSE(I,2)
+      J=2
+      ENDIF
+! FIGURE OUT IN WHICH GROUP IS THE TIME MJDSEC FSEC
+!   MAP MJDSEC,FSEC INTO INTERVAL  -1,1
+      IGRPT=TTEST/RLOV
+      IF(IGRPT.GE.ISUPE(I,1)) THEN
+      WRITE(6,*)' ERROR IN PLNPCX '
+      STOP 16
+      ENDIF
+      FSECC=FSECS1+IGRPT*RLOV
+      DT=((MJDSEC-FSECC)+FSEC)/RLOV
+!     write(6,*)' dbg PLNPCX ',MJDSEC,FSECS1,IGRPT,ISUPE(I,1),DT
+      DT=DT*TWO-ONE
+      BMA=TWO/RLOV
+!
+      CALL CHEBPL(CHB,CHBV,DT,25,LVELP)
+      BDSTAT(1,I)=ZERO
+      BDSTAT(2,I)=ZERO
+      BDSTAT(3,I)=ZERO
+      IB=ISUPE(I,2)/3
+      DO 120 K=1,IB
+      IBK2=IB+1-K
+      IBK11=1+IBK2-1
+      IBK12=(1+IB)+IBK2-1
+      IBK13=(1+2*IB)+IBK2-1
+      BDSTAT(1,I)=BDSTAT(1,I)+SEPBFC(IBK11)*CHB(IBK2)
+      BDSTAT(2,I)=BDSTAT(2,I)+SEPBFC(IBK12)*CHB(IBK2)
+      BDSTAT(3,I)=BDSTAT(3,I)+SEPBFC(IBK13)*CHB(IBK2)
+  120 END DO
+      IF(LVELP.AND.IPLNIN(ICBDGM).EQ.IWHOLE) THEN
+         TCEN=DT
+         DGCEN=DBLE(IB)
+         BMACEN=BMA
+         DO 130 K=1,IB
+         CCHEBV(K)=CHBV(K)
+         EPCEN(K,1)=SEPBFC(IBK11-1+K)
+         EPCEN(K,2)=SEPBFC(IBK12-1+K)
+         EPCEN(K,3)=SEPBFC(IBK13-1+K)
+  130    CONTINUE
+      ENDIF
+      IF(.NOT.LVELP) GO TO 200
+      IBM1=IB-1
+      BDSTAT(4,I)=ZERO
+      BDSTAT(5,I)=ZERO
+      BDSTAT(6,I)=ZERO
+      DO 140 K=1,IBM1
+      IBK2=IB+1-K
+      IBK11=1+IBK2-1
+      IBK12=(1+IB)+IBK2-1
+      IBK13=(1+2*IB)+IBK2-1
+      BDSTAT(4,I)=BDSTAT(4,I)+SEPBFC(IBK11)*CHBV(IBK2)
+      BDSTAT(5,I)=BDSTAT(5,I)+SEPBFC(IBK12)*CHBV(IBK2)
+      BDSTAT(6,I)=BDSTAT(6,I)+SEPBFC(IBK13)*CHBV(IBK2)
+  140 END DO
+      BDSTAT(4,I)=BDSTAT(4,I)*BMA
+      BDSTAT(5,I)=BDSTAT(5,I)*BMA
+      BDSTAT(6,I)=BDSTAT(6,I)*BMA
+      ENDDO
+  200 CONTINUE
+!
+      RETURN
+      END

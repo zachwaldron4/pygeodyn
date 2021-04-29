@@ -1,0 +1,265 @@
+++ SATELLITE=st
+++ MATPRE=40
+++ DEN_DIR=msis00
+++ SETUP_DEN_DIR=msis
+++ GDYN_version=_msis00_f90
+++ ACCELS=acceloff
+++ SpecialRun_name=_drhodzOrig
+++ ARC_name=st031221_2wk
+++ ARC=st031221_2wk
+++ FTN05DIR=/data/geodyn_proj/runs_geodyn/st/setups/msis_acceloff
+++ INPUTDIR=/data/geodyn_proj/runs_geodyn/st/setups/msis_acceloff
+++ SERIES=msis00_acceloff_drhodzOrig
+++ G2SDIR=/data/geodyn_proj/geodyn_code/IIS/ORIG
+++ G2EDIR=/data/geodyn_proj/geodyn_code/IIE/MODS_msis00_f90
+++ EMATUDIR=/data/data_geodyn/extra_dirs/
+++ COMMONDIR=/data/data_geodyn/extra_dirs/
+++ COMMONHD4DIR=/data/data_geodyn/extra_dirs/
+++ DIRGRAV=/data/data_geodyn/inputs/st/gravity
+++ DELDIR=/data/data_geodyn/extra_dirs/deletes/st
+++ G2BDIR=/data/data_geodyn/inputs/st/g2b
+++ ATGRAVDIR=/data/data_geodyn/inputs/st/atgrav
+++ EPHEMDIR=/data/data_geodyn/inputs/st/ephem
+++ OUTPUTDIR=/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig
+++ mkdir /data/data_geodyn/results/st/msis00
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig’: File exists
+++ mkdir /data/data_geodyn/extra_dirs
+mkdir: cannot create directory ‘/data/data_geodyn/extra_dirs’: File exists
+++ BINDIR=/data/data_geodyn/extra_dirs/bin
+++ mkdir /data/data_geodyn/results
+mkdir: cannot create directory ‘/data/data_geodyn/results’: File exists
+++ mkdir /data/data_geodyn/results/st
+mkdir: cannot create directory ‘/data/data_geodyn/results/st’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig’: File exists
+++ SATID=7501001
+++ ARCFIL=st031109_2wk
+++ SOLRADFIL=st031109_2wk.goco05s
+++ G2BFIL=starlette_03_slrg2b.rm0
+++ GRAVITY=goco05s
+++ ATGRAVFIL=ATGRAV.glo-3HR_20030101-20080204_1860_AOD1B_0006.0090
+++ echo '    Density Model:     ' msis00
+++ echo '    GEODYN Version:    ' _msis00_f90
+++ echo '    Estimate GenAccel: ' acceloff
+++ echo '    ARC run:           ' st031109_2wk
+++ echo '    Output directory:  ' /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig
+++ mkdir /data/data_geodyn/extra_dirs/tmp/
+mkdir: cannot create directory ‘/data/data_geodyn/extra_dirs/tmp/’: File exists
+++ mkdir /data/data_geodyn/extra_dirs/tmp/st
+mkdir: cannot create directory ‘/data/data_geodyn/extra_dirs/tmp/st’: File exists
+++ TMPDIR=/data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig
+++ mkdir /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig
+mkdir: cannot create directory ‘/data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig’: File exists
+++ mkdir /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig
+mkdir: cannot create directory ‘/data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig’: File exists
+++ chmod 777 /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig
+++ test -r /data/geodyn_proj/runs_geodyn/st/setups/msis_acceloff/st031109_2wk.bz2
+++ echo '    INPUT file:        ' /data/geodyn_proj/runs_geodyn/st/setups/msis_acceloff/st031109_2wk.bz2
+++ test -r /data/data_geodyn/inputs/st/g2b/starlette_03_slrg2b.rm0
+++ echo ' '
+++ date
+++ rm -rf /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig/st031109_2wk.goco05s
+++ mkdir /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig/st031109_2wk.goco05s
+++ chmod 777 /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig/st031109_2wk.goco05s
+++ cd /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig/st031109_2wk.goco05s
+++ echo st031109_2wk
+++ cut -c 3-8
++++ cat YMD
+++ YMD=031109
+++ cut -c 3-4
+++ echo st031109_2wk
++++ cat yr
+++ YR=03
+++ rm -f EXAT01
+++ rm -f iieout iisout 'ftn*' phobos.ephem deimos.ephem
+++ rm -f 'giie.*' iieerr iiserr 'ftn*' template1 template2
+++ rm -f 'pin*' 'res*' 'ht*' '*.ps' '*.pxy' 'doppler.*' 'del*' RESIDS.
+++ rm -f 'SAVE.*'
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/sumry/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/sumry/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/PUNCH/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/PUNCH/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/TELEM
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/TELEM’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/’: File exists
+++ mkdir /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/
+mkdir: cannot create directory ‘/data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/’: File exists
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031109_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031109_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031109_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031109_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031109_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031109_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031109_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031109_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031109_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031109_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031109_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031109_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031109_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031109_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031109_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031109_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031109_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031221_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031221_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031221_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031221_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/sumry/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031123_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031123_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET/st031221_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET/st031221_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET/st031221_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/PUNCH/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/TELEM/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans/scan.st031221_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans/scan.st031221_2wk.goco05s.Z
+++ rm -f dum2 dum1 dum3
+++ cp /data/geodyn_proj/runs_geodyn/st/setups/msis_acceloff/st031221_2wk.bz2 inputfile.bz2
+++ bunzip2 inputfile.bz2
+++ ln -s /data/data_geodyn/inputs/st/g2b/starlette_03_slrg2b.rm0 ftn40
+++ cp /data/data_geodyn/inputs/st/gravity/grvfld.goco05s ftn12
+++ '!head' ftn12
+./script_runs/script_st031109_2wk_msis00_drhodzOrig.sh: line 194: !head: command not found
+++ '[' 03 -ge 0 -a 03 -lt 18 ']'
+++ ln -s /data/data_geodyn/inputs/st/ephem/ephem1421.data ftn01
+++ cp /data/geodyn_proj/geodyn_code/RUNS/INPUTS/gdntable.data ftn02
+++ mv inputfile giis.input
+++ cp giis.input ftn05
+++ ln -s /data/data_geodyn/inputs/st/atgrav/ATGRAV.glo-3HR_20030101-20080204_1860_AOD1B_0006.0090 fort.18
+++ /data/geodyn_proj/geodyn_code/IIS/ORIG/giis2002_gfortran
+++ date
+++ mv ftn41 giie.ft12
+++ mv ftn11 giie.ft11
+++ rm -f ftn01 ftn02 ftn05 ftn12 ftn15 ftn16 ftn40 ftn42 ftn50 fort.18 fort.30 fort.43 fort.52 fort.53 fort.60 fort.88 fort.89 fort.90 fort.91
+++ echo ' #'
+++ echo ' #		End of IIS'
+++ echo ' #'
+++ echo ' #		Run IIE'
+++ echo ' #'
+++ cp giie.ft11 ftn11
+++ cp giie.ft12 ftn12
+++ date
+++ /data/geodyn_proj/geodyn_code/IIE/MODS_msis00_f90/giie2002_gfortran
+++ echo ' #                End of IIE'
+++ date
+++ /users/flemoine/bin/turn_arc_params.pl giis.input iieout 0 -1
+./script_runs/script_st031207_2wk_msis00_drhodzOrig.sh: line 249: /users/flemoine/bin/turn_arc_params.pl: No such file or directory
+++ cat iieerr iieout
+++ date
+++ rm -f fort.11 fort.12 fort.13 fort.14
+++ cat iisout iiserr iieout iieerr
+++ mv fort.9 sumry
+++ mv fort.19 Resid
+++ cat fort.7 ftn07
+cat: fort.7: No such file or directory
+++ fgrep EPOCH punch.gdn
+++ cat sumry1 sumry
+++ mv blob sumry
+++ mv fort.71 emat
+mv: cannot stat ‘fort.71’: No such file or directory
+++ mv ftn97 telem
+++ mv ftn08 xyzout
+mv: cannot stat ‘ftn08’: No such file or directory
+++ mv ftn10 aeiout
+mv: cannot stat ‘ftn10’: No such file or directory
+++ mv fort.8 ascii_xyz
+++ mv fort.10 ascii_kep
+++ mv fort.30 orbfil
+mv: cannot stat ‘fort.30’: No such file or directory
+++ mv fort.31 orbfil2
+++ mv fort.99 densityfil
+++ mv fort.98 msis_in_file
+mv: cannot stat ‘fort.98’: No such file or directory
+++ mv fort.101 msis_out_file
+mv: cannot stat ‘fort.101’: No such file or directory
+++ mv fort.103 msis_SWI_file
+mv: cannot stat ‘fort.103’: No such file or directory
+++ rm -f 'slvtmp*' ftn07 ftn11 ftn12 ftn13 ftn14 ftn37 fort.88
+++ /data/data_geodyn/extra_dirs//ematu
+++ cat err output
+++ mv blob output.scan
+++ echo ' #               Finished renaming files'
+++ rm -r WORK
+rm: cannot remove ‘WORK’: No such file or directory
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031207_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/sumry/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031207_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031207_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/PUNCH/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans/scan.st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans/scan.st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans/scan.st031207_2wk.goco05s.bz2
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/all_outputs/st031207_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031207_2wk.goco05s.gz
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031207_2wk.goco05s
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031207_2wk.goco05s.Z
+++ rm -f /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031207_2wk.goco05s.gz
+++ echo ' #               Finished removing files'
+++ cp giis.input /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IISSET/st031207_2wk.goco05s
+++ cp output.scan /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/scans/scan.st031207_2wk.goco05s
+++ cp emat /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/EMAT/st031207_2wk.goco05s
+cp: cannot stat ‘emat’: No such file or directory
+++ cp sumry /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/sumry/st031207_2wk.goco05s
+++ cp Resid /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/RESIDS/st031207_2wk.goco05s
+++ cp punch /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/PUNCH/st031207_2wk.goco05s
+cp: cannot stat ‘punch’: No such file or directory
+++ cp punch.gdn /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/PUNCH/st031207_2wk.goco05s.gdn
+++ mv IIEOUT.st031207_2wk.goco05s /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/IIEOUT/st031207_2wk.goco05s
+++ cp orbfil /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031207_2wk.goco05s_orb1
+cp: cannot stat ‘orbfil’: No such file or directory
+++ cp orbfil2 /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/orbits/st031207_2wk.goco05s_orb2
+++ mv telem /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/TELEM/st031207_2wk.goco05s
+++ cp densityfil /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s
+++ cp msis_in_file /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s_msisin
+cp: cannot stat ‘msis_in_file’: No such file or directory
+++ cp msis_out_file /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s_msisout
+cp: cannot stat ‘msis_out_file’: No such file or directory
+++ cp msis_SWI_file /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/DENSITY/st031207_2wk.goco05s_msisSWI
+cp: cannot stat ‘msis_SWI_file’: No such file or directory
+++ cp ascii_xyz /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/XYZ_TRAJ/st031207_2wk.goco05s
+++ cp ascii_xyz /data/data_geodyn/results/st/msis00/msis00_acceloff_drhodzOrig/KEP_TRAJ/st031207_2wk.goco05s
+++ echo ' #               Finished copying files to outputdir'
+++ cd ..
+++ rm -rf /data/data_geodyn/extra_dirs/tmp/st/msis00_acceloff_drhodzOrig/st031207_2wk.goco05s
+++ echo ' #***************End of Script'

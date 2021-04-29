@@ -1,0 +1,81 @@
+!$XRFRAC
+      SUBROUTINE XRFRAC(AA,TROP,XION,DXDE,KOBCOR,LPRE,LSWTCH,NM)
+!********1*********2*********3*********4*********5*********6*********7**
+! XRFRAC           00/00/00            8804.0    PGMR - TVM
+!
+! FUNCTION: COMPUTE THE X-ANGLE REFRACTION AND LOAD INTO APPROPRIATE
+!           LOCATIONS IN THE OBSERVATION CORRECTIONS RECORD.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   AA      I/O        BASE ADDRESS OF DYNAMIC ARRAY SPACE. WHEN USED
+!                      WITH APPROPRIATE OFFSET (KOBCOR) PROVIDES
+!                      ACCESS TO OBSERVATION CORRECTIONS RECORDS.
+!   TROP               WET AND DRY TERMS OF THE TROPOSPHERIC REFRACTION
+!                      CORRECTION FOR ELEVATION.
+!   XION               IONOSPHERIC REFRACTION ELEVATION CORRECTION.
+!   DXDE               PARTIAL OF X-ANGLE W.R.T. ELEVATION
+!   KOBCOR             POINTERS INTO THE OBSERVATION CORRECTIONS RECORD
+!   LPRE               SWITCHES INDICATING WHICH CORRECTIONS ARE TO BE
+!                      COMPUTED
+!   LSWTCH             SWITCHES INDICATING PRESENCE OF SPACE IN
+!                      OBSERVATION CORRECTIONS RECORD FOR THESE
+!                      CORRECTIONS
+!   NM                 NUMBER OF OBSERVATIONS TO BE CORRECTED.
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION AA(1)
+      DIMENSION TROP  (NM,1),XION  (NM),DXDE  (NM)
+      DIMENSION KOBCOR(   9),LPRE  (24),LSWTCH(10)
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+!...LOOP THRU 4000 FOR DRY AND WET TROPO
+      DO 4000 I1=3,5,2
+      I=I1/4
+      IF(LPRE  (I1)) GO TO 4000
+      IF(.NOT.LSWTCH(I1)) GO TO 2000
+!...CHAIN DX/DE * DELTA E TROPO AND STORE IN OBSERVATION BUFFER
+      JOBCOR=KOBCOR(I1)
+      DO 1000 N=1,NM
+      AA(JOBCOR)=TROP  (N,I)*DXDE (N)
+      JOBCOR=JOBCOR+1
+ 1000 END DO
+ 2000 CONTINUE
+      I2=I1+1
+      IF(.NOT.LSWTCH(I2)) GO TO 4000
+! SAVE TROPO. ELEV. CORR. FOR CHAINING WITH DY/DE
+      JOBCOR=KOBCOR(I2)
+      DO 3000 N=1,NM
+      AA(JOBCOR)=TROP(N,I)
+      JOBCOR=JOBCOR+1
+ 3000 END DO
+ 4000 END DO
+      IF(LPRE  (7)) GO TO 8000
+      IF(.NOT.LSWTCH(7)) GO TO 6000
+!...CHAIN DX/DE * DELTA E IONO AND STORE IN OBSERVATION BUFFER
+      JOBCOR=KOBCOR(7)
+      DO 5000 N=1,NM
+      AA(JOBCOR)=XION  (N)*DXDE (N)
+      JOBCOR=JOBCOR+1
+ 5000 END DO
+ 6000 CONTINUE
+      IF(.NOT.LSWTCH(8)) GO TO 8000
+! SAVE IONO. ELEV. CORR. FOR CHAINING WITH DY/DE
+      JOBCOR=KOBCOR(8)
+      DO 7000 N=1,NM
+      AA(JOBCOR)=XION  (N)
+      JOBCOR=JOBCOR+1
+ 7000 END DO
+ 8000 CONTINUE
+      RETURN
+      END

@@ -1,0 +1,81 @@
+#!/bin/bash
+# Created by Zach Waldron
+# on 1/21/21  ( a palindrome day!)
+echo "This script edits the input files (fort5) for GEODYN. "
+set -x
+
+
+########################
+# STEP INPUT RUN PARAMETERS:
+########################
+
+SATELLITE=st
+SERIES=goco05s
+#ARC=${1:-st030914_2wk}
+ARC=${1:-st030928_2wk}
+ARCFIL=$ARC
+
+strttime=030928000000.0
+end_time=031012
+
+###  
+# This script accesses the setup files and edits them to have the correct input cards with proper parameters.
+###
+
+
+## The setup files are each stored in their own directories respective to density model.
+
+DEN_DIR=msis86
+DEN_MODEL=86
+FIND_DEN_LINE=ATMDEN
+DEN_LINE="ATMDEN  ${DEN_MODEL}    0"
+
+
+find_residfil_card=RESID
+find_residprint_card=OBSVU
+find_orbfil_card=ORBFIL
+find_orbprint_card=ORBTVU
+find_printformat_card=PRNTVU
+
+
+residfil_line="RESIDU12  "                                                                               
+residprint_line="OBSVU 4   "                     
+orbfil_line="ORBFIL2 31       7501001     ${strttime}  ${end_time} 24200.00 .100000D+01"
+orbprint_line="ORBTVU1021       7501001     ${strttime}  ${end_time} 24200.00 .100000D+01"
+printformat_line="PRNTVU55212222    22122 "
+
+#"ORBFIL2 31       7501001      030914000000.0  030928 24200.00 .100000D+01"
+#"ORBTVU1021       7501001      030914000000.0  030928 24200.00 .100000D+01"                                                                                       
+
+
+
+
+#### First, unzip the files
+bunzip2 ${DEN_DIR}/${ARCFIL}.bz2
+
+# The following codes edit the scripts according to the below format
+#sed -i "s/^${SEARCH_FOR_THIS}.*/${REPLACE_WHOLE_LINE_WITH_THIS}/"  ${DEN_DIR}/${ARCFIL}
+
+sed -i "s/^${FIND_DEN_LINE}.*/${DEN_LINE}/"  ${DEN_DIR}/${ARCFIL}
+sed -i "s/^${find_residfil_card}.*/${residfil_line}/"  ${DEN_DIR}/${ARCFIL}
+sed -i "s/^${find_residprint_card}.*/${residprint_line}/"  ${DEN_DIR}/${ARCFIL}
+
+#sed -i \
+#    -e "s/^${find_residprint_card}.*/${residprint_line}/" \
+#    -e "/^${find_residfil_card}.*/a ${residprint_line}"  ${DEN_DIR}/${ARCFIL}
+
+grep -q ${find_orbfil_card} ${DEN_DIR}/${ARCFIL} && sed -i "s/^${find_orbfil_card}.*/${orbfil_line}/"  ${DEN_DIR}/${ARCFIL} || sed -i "/^${find_residfil_card}.*/a ${orbfil_line}"  ${DEN_DIR}/${ARCFIL}
+grep -q ${find_orbprint_card} ${DEN_DIR}/${ARCFIL} && sed -i "s/^${find_orbprint_card}.*/${orbfil_line}/"  ${DEN_DIR}/${ARCFIL} || sed -i "/^${find_residfil_card}.*/a ${orbprint_line}"  ${DEN_DIR}/${ARCFIL}
+
+#sed -i "s/^${find_orbfil_card}.*/${orbfil_line}/"  ${DEN_DIR}/${ARCFIL}
+#sed -i "s/^${find_orbprint_card}.*/${orbprint_line}/"  ${DEN_DIR}/${ARCFIL}
+sed -i "s/^${find_printformat_card}.*/${printformat_line}/"  ${DEN_DIR}/${ARCFIL}
+
+
+### Re-zip the files
+bzip2 ${DEN_DIR}/${ARCFIL}
+
+
+
+
+

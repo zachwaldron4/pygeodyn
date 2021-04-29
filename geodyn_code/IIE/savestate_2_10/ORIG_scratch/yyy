@@ -1,0 +1,1 @@
+gfortran -c -std=legacy -fdefault-integer-8 -fcray-pointer -O2 *.f90>err 2>err2

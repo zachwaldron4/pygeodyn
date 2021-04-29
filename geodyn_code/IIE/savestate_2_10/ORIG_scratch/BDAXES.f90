@@ -1,0 +1,133 @@
+!$BDAXES
+      SUBROUTINE BDAXES(PSAT,VECT,XAXIS,YAXIS,ZAXIS,SIGNZ,              &
+     &                  VMATX,VMATY,NDIMVM,LNVMTX,LNVMTY)
+!********1*********2*********3*********4*********5*********6*********7**
+! BDAXES           00/00/00            8804.00   PGMR - TVM
+!
+! FUNCTION: COMPUTE THE INERTIAL UNIT VECTORS FOR THE THREE BODY-FIXED
+!           AXES ORIENTED W.R.T. THE S/C POSITION VECTOR AND AN
+!           INERTIALLY ORIENTED REFERENCE VECTOR.
+!           COMPUTE THE VARIATIONAL PARTIALS OF THE X-AXIS AND Y-AXIS.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   PSAT               S/C INERTIAL POSITION VECTOR.
+!   VECT               INERTIAL REFERENCE VECTOR.
+!   XAXIS              BODY FIXED X-AXIS.
+!   YAXIS              BODY FIXED Y-AXIS. NORMAL TO SUN REFERENCE VECTOR
+!   ZAXIS              BODY FIXED Z-AXIS. EARTH POINTING IF SIGNZ IS NEG
+!   SIGNZ              SIGN OF ZAXIS: +1 = RADIAL, -1 = EARTH POINTING.
+!   VMATX              PARTIALS OF XAXIS W.R.T. PSAT (& W.R.T. VECT IF V
+!   VMATY              PARTIALS OF YAXIS W.R.T. PSAT (& W.R.T. VECT IF V
+!   NDIMVM             3RD DIMENSION OF V-MATRIX ARRAYS.
+!   LNVMTX             .TRUE. IF X-AXIS V-MATRIX COMPUTATIONS ARE TO BE
+!   LNVMTY             .TRUE. IF Y-AXIS V-MATRIX COMPUTATIONS ARE TO BE
+!
+! COMMENTS:
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      DIMENSION PSAT(3),VECT(3),XAXIS(3),YAXIS(3),ZAXIS(3)
+      DIMENSION XVECT(3),VMATX(3,3,NDIMVM)
+      DIMENSION YVECT(3),VMATY(3,3,NDIMVM)
+      DIMENSION PVPX(3,3),PV(3,3)
+      DATA ZERO/0.0D0/,ONE/1.0D0/,ONENEG/-1.0D0/,TWO/2.0D0/
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+! Z-AXIS IS EITHER + OR - S/C POSITION VECTOR; UNITIZE
+      OPOSIT=-SIGNZ
+      ZMAG     =PSAT  (1)**2 + PSAT  (2)**2 + PSAT  (3)**2
+      ZMAG     =SQRT(ZMAG)
+      DO 1000 I=1,3
+      ZAXIS (I)=SIGNZ *PSAT  (I)/ZMAG
+ 1000 END DO
+! Y-AXIS IS Z-AXIS CROSS REF VECTOR; ALWAYS NORMAL TO REF VECTOR
+! Y VECTOR IS PSAT CROSS VECT
+      CALL CROSSP(PSAT,VECT,YVECT,1,1,1)
+      YMAG  =YVECT (1)**2 + YVECT (2)**2 + YVECT (3)**2
+      YM    =ZERO
+      IF(YMAG.LE.ZERO) GO TO 2000
+! UNITIZE Y-AXIS
+      YMAG     =SQRT(YMAG)
+      YM=ONE/YMAG
+ 2000 CONTINUE
+      DO 3000 I=1,3
+      YAXIS (I)=SIGNZ *YVECT (I)*YM
+ 3000 END DO
+! X-AXIS IS Y-AXIS CROSS Z-AXIS
+      CALL CROSSP(YVECT,PSAT ,XVECT,1,1,1)
+      XMAG  =XVECT (1)**2 + XVECT (2)**2 + XVECT (3)**2
+      XM    =ZERO
+      IF(XMAG.LE.ZERO) GO TO 4000
+! UNITIZE X-AXIS
+      XMAG     =SQRT(XMAG)
+      XM=ONE/XMAG
+ 4000 CONTINUE
+      DO 5000 I=1,3
+      XAXIS (I)=       XVECT (I)*XM
+ 5000 END DO
+      IF(LNVMTX) GO TO 9000
+! COMPUTE VARIATIONAL PARTIALS OF X-AXIS W.R.T. POSITION
+      DO 6000 J=1,3
+      DO 6000 I=1,3
+      PV(I,J)=PSAT(I)*VECT(J)
+ 6000 CONTINUE
+      PVPX(1,1)=  -(PV(3,3)+PV(2,2))
+      PVPX(2,1)=TWO*PV(1,2)-PV(2,1)
+      PVPX(3,1)=TWO*PV(1,3)-PV(3,1)
+      PVPX(1,2)=TWO*PV(2,1)-PV(1,2)
+      PVPX(2,2)=  -(PV(1,1)+PV(3,3))
+      PVPX(3,2)=TWO*PV(2,3)-PV(3,2)
+      PVPX(1,3)=TWO*PV(3,1)-PV(1,3)
+      PVPX(2,3)=TWO*PV(3,2)-PV(2,3)
+      PVPX(3,3)=  -(PV(1,1)+PV(2,2))
+      CALL VAXIS (XVECT,PVPX,XM,VMATX(1,1,1),ONE   )
+      IF(NDIMVM.LT.2) GO TO 9000
+! COMPUTE VARIATIONAL PARTIALS OF X-AXIS W.R.T. VELOCITY
+      DO 7000 J=1,3
+      DO 7000 I=1,3
+      PV(I,J)=PSAT(I)*PSAT(J)
+ 7000 CONTINUE
+      PVPX(1,1)= PV(3,3)+PV(2,2)
+      PVPX(2,1)=-PV(2,1)
+      PVPX(3,1)=-PV(3,1)
+      PVPX(1,2)=-PV(1,2)
+      PVPX(2,2)= PV(1,1)+PV(3,3)
+      PVPX(3,2)=-PV(3,2)
+      PVPX(1,3)=-PV(1,3)
+      PVPX(2,3)=-PV(2,3)
+      PVPX(3,3)= PV(1,1)+PV(2,2)
+      CALL VAXIS (XVECT,PVPX,XM,VMATX(1,1,2),ONE   )
+ 9000 CONTINUE
+      IF(LNVMTY) RETURN
+! COMPUTE VARIATIONAL PARTIALS OF Y-AXIS W.R.T. POSITION
+      PVPX(1,1)= ZERO
+      PVPX(2,1)=-VECT(3)
+      PVPX(3,1)=+VECT(2)
+      PVPX(1,2)=+VECT(3)
+      PVPX(2,2)= ZERO
+      PVPX(3,2)=-VECT(1)
+      PVPX(1,3)=-VECT(2)
+      PVPX(2,3)=+VECT(1)
+      PVPX(3,3)= ZERO
+      CALL VAXIS (YVECT,PVPX,YM,VMATY(1,1,1),SIGNZ )
+      IF(NDIMVM.LT.2) RETURN
+! COMPUTE VARIATIONAL PARTIALS OF Y-AXIS W.R.T. VELOCITY
+      PVPX(1,1)= ZERO
+      PVPX(2,1)=+PSAT(3)
+      PVPX(3,1)=-PSAT(2)
+      PVPX(1,2)=-PSAT(3)
+      PVPX(2,2)= ZERO
+      PVPX(3,2)=+PSAT(1)
+      PVPX(1,3)=+PSAT(2)
+      PVPX(2,3)=-PSAT(1)
+      PVPX(3,3)= ZERO
+      CALL VAXIS (YVECT,PVPX,YM,VMATY(1,1,2),SIGNZ )
+      RETURN
+      END

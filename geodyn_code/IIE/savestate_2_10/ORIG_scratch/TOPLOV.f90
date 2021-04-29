@@ -1,0 +1,65 @@
+!$TOPLOV
+      SUBROUTINE TOPLOV(ACMAGS,VECT,ACCEL,NSTLOV,IDSATS,ISLVID)
+!*******************************************************************
+!  ROUTINE NAME:   TOPLOV   DATE: 12/31/91      PGMR: A. MARSHALL
+!
+!   FUNCTION - TO COMPUTE AND APPLY ACCELERATION DUE TO THERMAL
+!              EMISSIONS FROM THE LOUVERS ON THE TOPEX SPACECRAFT.
+!
+!  I/O PARAMETERS:
+!
+!   NAME    A/S    I/O   DESCRIPTION OF I/O PARAMETERS IN ARGUMENT LIST
+!   -----  ------ -----  -----------------------------------------------
+!   ACCMAG   S      I    MAGNITUDE OF ACCLERATION(M/S**2)
+!   VECT     A      I    DIRECTION OF ACCEL. IN TOD FRAME
+!   ACCEL    A      O    ACCELERATION IN TOD FRAME (M/S**2)
+!   NTPLOV   S      I    NUMBER OF LOUVER ACCELERATIONS REQUESTED
+!
+!   MODIFY FOR MULTI-SATELLITE OPTION - S. LUO     2-3-95
+!
+!   ACMAGS   A      I    MAGNITUDE OF ACCLERATION(M/S**2)
+!   VECT     A      I    DIRECTION OF ACCEL. IN TOD FRAME
+!   ACCEL    A      O    ACCELERATION IN TOD FRAME (M/S**2)
+!   NSTLOV   A      I    NUMBER OF LOUVER ACCELERATIONS REQUESTED
+!*******************************************************************
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+!
+!
+      COMMON/TOPOVR/NMTPAT,MXTPAT,NOVRID,NGCATT,NTPBIA,NSTLVS,          &
+     &              NISLV, NYWBIA,MSATYW,MAXYWB,NSATTP,NXTOPO
+      DIMENSION ISLVID(NISLV),VECT(NSTLVS,3),ACCEL(3)
+      DIMENSION ACMAGS(NSTLVS),NSTLOV(NISLV)
+!
+      DATA ZERO/0.0D0/,ONE/1.0D0/,TWO/2.0D0/
+!
+!********1*********2*********3*********4*********5*********6*********7**
+! START OF EXECUTABLE CODE
+!********1*********2*********3*********4*********5*********6*********7**
+!
+      ACCEL(1) = ZERO
+      ACCEL(2) = ZERO
+      ACCEL(3) = ZERO
+!
+      CAll FNDNUM(IDSATS,ISLVID,NISLV,IRET)
+      IF(IRET.LE.0) GOTO 1001
+!     IF(IRET.LE.0) GOTO 999
+      KST=NSTLOV(IRET)
+      KNST0=0
+      DO 50 K=1,IRET
+      KNST0=KNST0+NSTLOV(K)
+   50 END DO
+      DO 1000 INLV=1,KST
+      KNST=KNST0+INLV-KST
+      ACCEL(1) = ACCEL(1) + ACMAGS(KNST)*VECT(INLV,1)
+      ACCEL(2) = ACCEL(2) + ACMAGS(KNST)*VECT(INLV,2)
+      ACCEL(3) = ACCEL(3) + ACMAGS(KNST)*VECT(INLV,3)
+ 1000 END DO
+ 1001 CONTINUE
+!      if( iret .le. 0 ) then
+!999     WRITE(6,*)'SAT ID DOES NOT MATCH ANY ID in ISLVID ARRAY-TOPLOV'
+!        STOP
+!      else
+        RETURN
+!      endif
+      END

@@ -1,0 +1,272 @@
+      SUBROUTINE GETBCR(LX2S,XMIDX,XMIDS,BASEX,BASES,DXMDN,DXBDN)
+!SDOC*******************************************************************
+!
+!   PURPOSE:    CONVERT BACK AND FORTH BETWEEN CARTESIAN AND SPHERICAL
+!               REPRESENTATIONS OF THE BASELINE REPRESENTATION OF
+!               THE (12) INITIAL STATE VECTOR PARAMETERS OF TWO
+!               SATELLITES. COMPUTE THE PARTIALS OF THE CARTESIAN
+!               REPRESENTATION WITH RESPECT TO THE SPHERICA
+!               REPRESENTATION.
+!
+!   ARGUMENTS:  LX2S   - IF TRUE, THEN CARTESIAN REPRSENTATION IS INPUT
+!                        AND SPHERICAL REPRESENTATION IS OUTPUT. IF
+!                        FALSE, THEN OTHER WAY AROUND.
+!               XMIDX  - THE CARTESIAN REPRESENTATION OF THE BASELINE
+!                        MIDPOINT (POSITION AND VELOCITY)
+!               XMIDS  - THE SPHERICAL REPRESENTATION OF THE BASELINE
+!                        MIDPOINT (POSITION AND VELOCITY ALTHOUGH
+!                        VELOCITY REMAINS CARTESIAN)
+!               BASEX  - THE CARTESIAN REPRESENTATION OF THE BASELINE
+!                        VECTOR
+!               BASES  - THE SPHERICAL REPRESENTATION OF THE BASELINE
+!                        VECTOR
+!               DXMDN  - THE DERIVATIVES OF THE CARTESIAN MIDPOINT
+!                        COORDINATES WRT THE SPHERICAL MIDPOINT
+!                        CORDINATES. DXMDN(I,J,1) IS THE DERIVATIVE
+!                        OF THE JTH CARTESIAN POSITIION COORDINATE
+!                        WRT THE ITH POSITION SPHERICAL COORDINATE.
+!                        DXMDN(I,J,2) IS THE SAME THING FOR VELOCITY.
+!               DXBDN  - THE DERIVATIVES OF THE CARTESIAN BASELINE
+!                        COORDINATES WRT THE SPHERICAL BASELINE
+!                        CORDINATES. SAME INDEXING AS FOR DXMDN.
+!
+!
+!EDOC*******************************************************************
+
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      DIMENSION BASEX(6),BASES(6),DXBDN(3,3,2),DXMDN(3,3,2)
+      DIMENSION XMIDX(6),XMIDS(6)
+      DIMENSION XLOCV(3,3)
+      DIMENSION BASEL(6),BLP(3)
+!
+      IF(.NOT.LX2S) THEN
+         PHI=ACOS(-1.D0)*XMIDS(2)/180.D0
+         XLAM=ACOS(-1.D0)*XMIDS(3)/180.D0
+         XMIDX(1)=XMIDS(1)*COS(PHI)*COS(XLAM)
+         XMIDX(2)=XMIDS(1)*COS(PHI)*SIN(XLAM)
+         XMIDX(3)=XMIDS(1)*SIN(PHI)
+         XMIDX(4)=XMIDS(4)
+         XMIDX(5)=XMIDS(5)
+         XMIDX(6)=XMIDS(6)
+      ENDIF
+!
+      RXY2=XMIDX(1)*XMIDX(1)+XMIDX(2)*XMIDX(2)
+      RXY=SQRT(RXY2)
+      R=SQRT(RXY2+XMIDX(3)*XMIDX(3))
+!
+      SLATM=XMIDX(3)/R
+      CLATM=SQRT(1.D0-SLATM*SLATM)
+      CLONM=XMIDX(1)/RXY
+      SLONM=XMIDX(2)/RXY
+!
+      IF(LX2S) THEN
+         XMIDS(1)=R
+         XMIDS(2)=180.D0*ASIN(SLATM)/ACOS(-1.D0)
+         XMIDS(3)=180.D0*ATAN2(SLONM,CLONM)/ACOS(-1.D0)
+         XMIDS(4)=XMIDX(4)
+         XMIDS(5)=XMIDX(5)
+         XMIDS(6)=XMIDX(6)
+      ENDIF
+!
+! LOCAL COORDINATE SYSTEM
+      XLOCV(1,3)=CLATM*CLONM
+      XLOCV(2,3)=CLATM*SLONM
+      XLOCV(3,3)=SLATM
+      XLOCV(1,2)=-SLATM*CLONM
+      XLOCV(2,2)=-SLATM*SLONM
+      XLOCV(3,2)=CLATM
+      XLOCV(1,1)=-SLONM
+      XLOCV(2,1)=CLONM
+      XLOCV(3,1)=0.D0
+!
+!
+      IF(.NOT.LX2S) GO TO 100
+!
+!     START OFF KNOWING CARTESIAN TOR COORDINATES OF BASELINE
+!
+!
+! LOCAL CARTESIAN COORDINATES
+      BASEL(1)=BASEX(1)*XLOCV(1,1)+BASEX(2)*XLOCV(2,1)                  &
+     &        +BASEX(3)*XLOCV(3,1)
+      BASEL(2)=BASEX(1)*XLOCV(1,2)+BASEX(2)*XLOCV(2,2)                  &
+     &        +BASEX(3)*XLOCV(3,2)
+      BASEL(3)=BASEX(1)*XLOCV(1,3)+BASEX(2)*XLOCV(2,3)                  &
+     &        +BASEX(3)*XLOCV(3,3)
+      BASEL(4)=BASEX(4)*XLOCV(1,1)+BASEX(5)*XLOCV(2,1)                  &
+     &        +BASEX(6)*XLOCV(3,1)
+      BASEL(5)=BASEX(4)*XLOCV(1,2)+BASEX(5)*XLOCV(2,2)                  &
+     &        +BASEX(6)*XLOCV(3,2)
+      BASEL(6)=BASEX(4)*XLOCV(1,3)+BASEX(5)*XLOCV(2,3)                  &
+     &        +BASEX(6)*XLOCV(3,3)
+!
+! LOCAL SPHERICAL COORDINATES  [LENGTH, LAT (DEG), LON (DEG)]
+      RXY2=BASEL(1)*BASEL(1)+BASEL(2)*BASEL(2)
+      RXY=SQRT(RXY2)
+      BASES(1)=SQRT(RXY2+BASEL(3)*BASEL(3))
+      BASES(2)=180.D0*ASIN(BASEL(3)/BASES(1))/ACOS(-1.D0)
+      BASES(3)=180.D0*ATAN2(BASEL(2),BASEL(1))/ACOS(-1.D0)
+      RXY2=BASEL(4)*BASEL(4)+BASEL(5)*BASEL(5)
+      RXY=SQRT(RXY2)
+      BASES(4)=SQRT(RXY2+BASEL(6)*BASEL(6))
+      BASES(5)=180.D0*ASIN(BASEL(6)/BASES(4))/ACOS(-1.D0)
+      BASES(6)=180.D0*ATAN2(BASEL(5),BASEL(4))/ACOS(-1.D0)
+!
+!
+      GO TO  200
+!
+!
+  100 CONTINUE
+!
+!
+!     START OFF KNOWING LOCAL SPHERICAL COORDINATES OF BASELINE
+!
+!
+! LOCAL CARTESIAN COORDINATES
+      PITCH=BASES(2)*ACOS(-1.D0)/180.D0
+      YAW=BASES(3)*ACOS(-1.D0)/180.D0
+      CP=COS(PITCH)
+      SP=SIN(PITCH)
+      CY=COS(YAW)
+      SY=SIN(YAW)
+      BASEL(1)=BASES(1)*CP*CY
+      BASEL(2)=BASES(1)*CP*SY
+      BASEL(3)=BASES(1)*SP
+      PITCH=BASES(5)*ACOS(-1.D0)/180.D0
+      YAW=BASES(6)*ACOS(-1.D0)/180.D0
+      CP=COS(PITCH)
+      SP=SIN(PITCH)
+      CY=COS(YAW)
+      SY=SIN(YAW)
+      BASEL(4)=BASES(4)*CP*CY
+      BASEL(5)=BASES(4)*CP*SY
+      BASEL(6)=BASES(4)*SP
+!
+! TOR COORDINATES OF BASELINE
+      BASEX(1)=BASEL(1)*XLOCV(1,1)+BASEL(2)*XLOCV(1,2)                  &
+     &        +BASEL(3)*XLOCV(1,3)
+      BASEX(2)=BASEL(1)*XLOCV(2,1)+BASEL(2)*XLOCV(2,2)                  &
+     &        +BASEL(3)*XLOCV(2,3)
+      BASEX(3)=BASEL(1)*XLOCV(3,1)+BASEL(2)*XLOCV(3,2)                  &
+     &        +BASEL(3)*XLOCV(3,3)
+      BASEX(4)=BASEL(4)*XLOCV(1,1)+BASEL(5)*XLOCV(1,2)                  &
+     &        +BASEL(6)*XLOCV(1,3)
+      BASEX(5)=BASEL(4)*XLOCV(2,1)+BASEL(5)*XLOCV(2,2)                  &
+     &        +BASEL(6)*XLOCV(2,3)
+      BASEX(6)=BASEL(4)*XLOCV(3,1)+BASEL(5)*XLOCV(3,2)                  &
+     &        +BASEL(6)*XLOCV(3,3)
+!
+!
+  200 CONTINUE
+!
+!
+!     COMPUTE PARTIAL DERIVATIVES OF CARTESIAN TOR BASELINE
+!     WRT SPHERICAL COORDINATES
+!
+!  POSITION
+!
+      PITCH=BASES(2)*ACOS(-1.D0)/180.D0
+      YAW=BASES(3)*ACOS(-1.D0)/180.D0
+      CP=COS(PITCH)
+      SP=SIN(PITCH)
+      CY=COS(YAW)
+      SY=SIN(YAW)
+!
+!  WRT L
+      DXBDN(1,1,1)=BASEX(1)/BASES(1)
+      DXBDN(1,2,1)=BASEX(2)/BASES(1)
+      DXBDN(1,3,1)=BASEX(3)/BASES(1)
+!  WRT P
+      BLP(1)=-BASES(1)*SP*CY*ACOS(-1.D0)/180.D0
+      BLP(2)=-BASES(1)*SP*SY*ACOS(-1.D0)/180.D0
+      BLP(3)= BASES(1)*CP*ACOS(-1.D0)/180.D0
+      DXBDN(2,1,1)=BLP(1)*XLOCV(1,1)+BLP(2)*XLOCV(1,2)                  &
+     &           +BLP(3)*XLOCV(1,3)
+      DXBDN(2,2,1)=BLP(1)*XLOCV(2,1)+BLP(2)*XLOCV(2,2)                  &
+     &           +BLP(3)*XLOCV(2,3)
+      DXBDN(2,3,1)=BLP(1)*XLOCV(3,1)+BLP(2)*XLOCV(3,2)                  &
+     &           +BLP(3)*XLOCV(3,3)
+!  WRT Y
+      BLP(1)=-BASES(1)*CP*SY*ACOS(-1.D0)/180.D0
+      BLP(2)= BASES(1)*CP*CY*ACOS(-1.D0)/180.D0
+      BLP(3)= 0.D0
+      DXBDN(3,1,1)=BLP(1)*XLOCV(1,1)+BLP(2)*XLOCV(1,2)                  &
+     &           +BLP(3)*XLOCV(1,3)
+      DXBDN(3,2,1)=BLP(1)*XLOCV(2,1)+BLP(2)*XLOCV(2,2)                  &
+     &           +BLP(3)*XLOCV(2,3)
+      DXBDN(3,3,1)=BLP(1)*XLOCV(3,1)+BLP(2)*XLOCV(3,2)                  &
+     &           +BLP(3)*XLOCV(3,3)
+!
+!  VELOCITY
+!
+      PITCH=BASES(5)*ACOS(-1.D0)/180.D0
+      YAW=BASES(6)*ACOS(-1.D0)/180.D0
+      CP=COS(PITCH)
+      SP=SIN(PITCH)
+      CY=COS(YAW)
+      SY=SIN(YAW)
+!
+!  WRT L
+      DXBDN(1,1,2)=BASEX(4)/BASES(4)
+      DXBDN(1,2,2)=BASEX(5)/BASES(4)
+      DXBDN(1,3,2)=BASEX(6)/BASES(4)
+!  WRT P
+      BLP(1)=-BASES(4)*SP*CY*ACOS(-1.D0)/180.D0
+      BLP(2)=-BASES(4)*SP*SY*ACOS(-1.D0)/180.D0
+      BLP(3)= BASES(4)*CP*ACOS(-1.D0)/180.D0
+      DXBDN(2,1,2)=BLP(1)*XLOCV(1,1)+BLP(2)*XLOCV(1,2)                  &
+     &           +BLP(3)*XLOCV(1,3)
+      DXBDN(2,2,2)=BLP(1)*XLOCV(2,1)+BLP(2)*XLOCV(2,2)                  &
+     &           +BLP(3)*XLOCV(2,3)
+      DXBDN(2,3,2)=BLP(1)*XLOCV(3,1)+BLP(2)*XLOCV(3,2)                  &
+     &           +BLP(3)*XLOCV(3,3)
+!  WRT Y
+      BLP(1)=-BASES(4)*CP*SY*ACOS(-1.D0)/180.D0
+      BLP(2)= BASES(4)*CP*CY*ACOS(-1.D0)/180.D0
+      BLP(3)= 0.D0
+      DXBDN(3,1,2)=BLP(1)*XLOCV(1,1)+BLP(2)*XLOCV(1,2)                  &
+     &           +BLP(3)*XLOCV(1,3)
+      DXBDN(3,2,2)=BLP(1)*XLOCV(2,1)+BLP(2)*XLOCV(2,2)                  &
+     &           +BLP(3)*XLOCV(2,3)
+      DXBDN(3,3,2)=BLP(1)*XLOCV(3,1)+BLP(2)*XLOCV(3,2)                  &
+     &           +BLP(3)*XLOCV(3,3)
+!
+!
+!
+!     COMPUTE PARTIAL DERIVATIVES OF CARTESIAN TOR MIDPOINT
+!     WRT SPHERICAL COORDINATES
+!
+         PHI=ACOS(-1.D0)*XMIDS(2)/180.D0
+         XLAM=ACOS(-1.D0)*XMIDS(3)/180.D0
+         CP=COS(PHI)
+         SP=SIN(PHI)
+         CL=COS(XLAM)
+         SL=SIN(XLAM)
+!
+!  WRT R
+      DXMDN(1,1,1)=XMIDX(1)/XMIDS(1)
+      DXMDN(1,2,1)=XMIDX(2)/XMIDS(1)
+      DXMDN(1,3,1)=XMIDX(3)/XMIDS(1)
+!
+!  WRT PHI
+      DXMDN(2,1,1)=-XMIDS(1)*SP*CL*ACOS(-1.D0)/180.D0
+      DXMDN(2,2,1)=-XMIDS(1)*SP*SL*ACOS(-1.D0)/180.D0
+      DXMDN(2,3,1)=+XMIDS(1)*CP*ACOS(-1.D0)/180.D0
+!
+!  WRT LAMDA
+      DXMDN(3,1,1)=-XMIDS(1)*CP*SL*ACOS(-1.D0)/180.D0
+      DXMDN(3,2,1)=+XMIDS(1)*CP*CL*ACOS(-1.D0)/180.D0
+      DXMDN(3,3,1)=0.D0
+!
+!  THE VELOCITY PORTION IS NOT SPHERICAL
+      DXMDN(1,1,2)=1.D0
+      DXMDN(1,2,2)=0.D0
+      DXMDN(1,3,2)=0.D0
+      DXMDN(2,1,2)=0.D0
+      DXMDN(2,2,2)=1.D0
+      DXMDN(2,3,2)=0.D0
+      DXMDN(3,1,2)=0.D0
+      DXMDN(3,2,2)=0.D0
+      DXMDN(3,3,2)=1.D0
+!
+      RETURN
+      END

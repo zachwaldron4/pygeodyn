@@ -1,0 +1,63 @@
+!$ARGMN
+      SUBROUTINE ARGMN(T,SL,SLMD,EPSMM)
+!********1*********2*********3*********4*********5*********6*********7
+! ARGMN          05/30/92            0000.0    PGMR - S.LUO
+!
+! FUNCTION:  CALCULATE MARS MEAN ANOMLY AND THE ANGLE BETWEEN
+!            PERIHELION AND VERNAL EQUINOX OF MARS IN MARS
+!            ORBIT PLANE REFRENCE FRAME FOR MARS NUTATION
+!
+! I/O PARAMETERS
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   T        I         INTERVAL TIME IN DAY FROM J2000.0(JD2451545)
+!   SL       O         MARS MEAN ANOMLY AT EPOCH T
+!   SLMD     O         THE ANGLE BETWEEM PERIHELION AND VERNAL
+!                      EQUINOX OF MARS
+!   EPSMA    O         MARS MEAN OBLIQUITY AT T
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+!
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z), LOGICAL (L)
+      SAVE
+      DIMENSION VPMEEC(3),VMASCE(3),VPMOBE(3),VPMEJ2(3),RM(3)
+      COMMON/CONSTR/PI,TWOPI,DEGRAD,SECRAD,SECDAY
+!
+!**********************************************************************
+! START OF EXECUTABLE CODE ********************************************
+!**********************************************************************
+!
+! CALL SUBROUTINE MOTMAR(T,SL) TO GET MARS ANOMLY,SL
+!
+      CALL MOTMAR(T,SL)
+!
+! CALL SUBROUTINE PMEQJ2 TO GET THE DIRECTION OF
+!      THE NORTH POLE OF MARS EQUATOR PLANE IN ECLIPTIC
+!
+!     CALL PMEQJ2(T,VPMEJ2,VPMEEC,AL,DL)
+      CALL PMEQJ2(T,VPMEJ2,VPMEEC)
+!
+! CALL SUBROUTINE PMASCE TO GET THE DIRECTIONS OF MARS ASCENDING NODE
+!      AND THE POLE OF MARS ORBIT IN ECLIPLIC
+!
+      CALL PMASCE(T,VMASCE,VPMOBE)
+!
+!
+! CALL ARGMA TO GET THE ANGLE BETWEEN MARS VERNAL EQUINOX AND ITS
+!     PERIHELION
+!
+      CALL ARGMA(VPMEEC,VPMOBE,VMASCE,SLMD,ARMN,EPSMM,RM)
+!
+! CONVERT THE UNIT FOR SL AND SLMD FROM RADIAN TO DEGREE TO BE
+!     CHECKED.
+!
+!
+      SL1 = SL / DEGRAD
+      SLMD1 = SLMD /DEGRAD
+!     WRITE(6,5)SL1,SLMD1
+!   5 FORMAT(1X,'SL= ',F10.1, 'SLMD= ',F10.1)
+      RETURN
+      END

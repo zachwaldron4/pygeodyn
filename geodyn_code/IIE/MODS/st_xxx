@@ -1,0 +1,9 @@
+chmod a+w *mod *.o
+rm *mod *.o
+cp ../ORIG/*mod .
+chmod a+w *mod *.o
+gfortran -c -std=legacy -fdefault-integer-8 -fcray-pointer -O2 *.f90>err 2>err2
+gfortran -O3 -cpp -o *.F90>err 2>err3
+ln -s ../ORIG/*.o .
+gfortran *.o -o giie2002_gfortran -llapack -lblas 
+rm *mod *.o

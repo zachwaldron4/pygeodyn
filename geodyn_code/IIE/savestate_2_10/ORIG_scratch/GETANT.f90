@@ -1,0 +1,112 @@
+!$GETANT
+      SUBROUTINE GETANT(MT,JSTANO,JSATNO)
+!********1*********2*********3*********4*********5*********6*********7**
+! GETANT            00/00/00            0000.0    PGMR -  DAVE ROWLANDS
+!
+! FUNCTION:  IDENTIFY ANTENNA INFORMATION FOR ALL
+!            SATELLITES IN MEASUREMENT BLOCK.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   MT       I    S    MEASURMENT TYPE
+!   JSTANO   I    A    STATION IDS OF THE UP TO 3 STATIONS
+!   JSATNO   I    A    SATELLITE IDS OF THE UP TO 3 SATELLITES
+!
+! COMMENTS:  ANTENNA INFORMATION IS ONLY CALCULATED FOR METRIC
+!            MEASUREMENT TYPES
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      DIMENSION JSTANO(3),JSATNO(3)
+      SAVE
+      COMMON/ANTID/ISATAN(3),ISTAN1(3),ISATN1(3),ISTAN2(3),ISATN2(3),   &
+     &             IANNB1(3),IANNB2(3)
+      COMMON/CLPRNR/LPR9NR(24),LPRNRM(24,3)
+      COMMON/MROGER/NEIGHB(2,3,30)
+!
+      DO I=1,3
+      IANNB1(I)=0
+      IANNB2(I)=0
+      ENDDO
+!
+!  SPECIAL CASE ALTIMETRY
+!
+      IF(MT.EQ.99.OR.MT.EQ.100.OR.MT.EQ.101) THEN
+        J=1
+         IF(.NOT.LPRNRM(11,J).AND..NOT.LPRNRM(12,J)) THEN
+           IANNB1(J)=1
+           RETURN
+         ENDIF
+         IF(LPRNRM(11,J).AND..NOT.LPRNRM(12,J)) THEN
+           IANNB1(J)=2
+           RETURN
+         ENDIF
+         IF(.NOT.LPRNRM(11,J).AND.LPRNRM(12,J)) THEN
+           IANNB1(J)=3
+         RETURN
+         ENDIF
+         IANNB1(J)=4
+         RETURN
+      ENDIF
+!
+! PROCEED WITH OTHER MEASUREMENT TYPES
+!
+      MTM=(MT-37)/2+1
+      IF(MTM.LE.0.OR.MTM.GT.30) RETURN
+!
+      DO 100 J=1,3
+      ISATAN(J)=JSATNO(J)
+      IF(ISATAN(J).LE.0) ISATAN(J)=-99
+  100 END DO
+!
+      DO 200 J=1,3
+      ISTAN1(J)=0
+      ISATN1(J)=0
+      IF(NEIGHB(1,J,MTM).LE.0) GO TO 200
+      IF(NEIGHB(1,J,MTM).GT.10) ISTAN1(J)=JSTANO(NEIGHB(1,J,MTM)-10)
+      IF(NEIGHB(1,J,MTM).LT.10) ISATN1(J)=JSATNO(NEIGHB(1,J,MTM))
+  200 END DO
+!
+      DO 300 J=1,3
+      ISTAN2(J)=0
+      ISATN2(J)=0
+      IF(NEIGHB(2,J,MTM).LE.0) GO TO 300
+      IF(NEIGHB(2,J,MTM).GT.10) ISTAN2(J)=JSTANO(NEIGHB(2,J,MTM)-10)
+      IF(NEIGHB(2,J,MTM).LT.10) ISATN2(J)=JSATNO(NEIGHB(2,J,MTM))
+  300 END DO
+!
+      DO 400 J=1,3
+      IF(.NOT.LPRNRM(11,J).AND..NOT.LPRNRM(12,J)) THEN
+        IANNB1(J)=1
+        GO TO 400
+      ENDIF
+      IF(LPRNRM(11,J).AND..NOT.LPRNRM(12,J)) THEN
+        IANNB1(J)=2
+        GO TO 400
+      ENDIF
+      IF(.NOT.LPRNRM(11,J).AND.LPRNRM(12,J)) THEN
+        IANNB1(J)=3
+         GO TO 400
+      ENDIF
+      IANNB1(J)=4
+  400 END DO
+!
+      DO 500 J=1,3
+      IF(.NOT.LPRNRM(13,J).AND..NOT.LPRNRM(14,J)) THEN
+        IANNB2(J)=1
+        GO TO 500
+      ENDIF
+      IF(LPRNRM(13,J).AND..NOT.LPRNRM(14,J)) THEN
+        IANNB2(J)=2
+        GO TO 500
+      ENDIF
+      IF(.NOT.LPRNRM(13,J).AND.LPRNRM(14,J)) THEN
+        IANNB2(J)=3
+         GO TO 500
+      ENDIF
+      IANNB2(J)=4
+  500 END DO
+      RETURN
+      END

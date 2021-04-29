@@ -1,0 +1,4 @@
+include README
+include pymsis/msis2.0.parm
+include tools/*
+include src/**/*.pyf

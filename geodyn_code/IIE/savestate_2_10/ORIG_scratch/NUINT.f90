@@ -1,0 +1,86 @@
+!
+!$NUINT
+      SUBROUTINE NUINT(EPHM,DT,MJDSEC,FSEC,DPSI,EPST,EPSM,DPSIR,EPSTR, &
+     &    SCRTCH,NM)
+!********1*********2*********3*********4*********5*********6*********7**
+! NUINT            83/03/29            8303.0    PGMR - D. ROWLANDS
+!
+! FUNCTION:  USE CHEBYCHEV POLYNOMIAL EVALUATION TOGETHER
+!            WITH EPHEMERIS TO FIND NUTATION ELEMENTS
+!            DPSI,DEPS;EVALUATE MEAN OBLIQUITY ANALYTICALLY
+!            AND TO EVALUATE TRUE OBLIQUITY.
+!
+! I/O PARAMETERS:
+!
+!   NAME    I/O  A/S   DESCRIPTION OF PARAMETERS
+!   ------  ---  ---   ------------------------------------------------
+!   EPHM     I    A    CURRENT NUTATION EPHEMERIS RECORD
+!   DT       I    A    ARRAY OF INPUT TIMES EXPRESSED IN
+!                      RELATIONSHIP TO INTERVAL -1,1
+!   MJDSEC   I    S    NUMBER OF EPHEMERIS SECONDS SINCE
+!                      GEODYN REFERENCE TIME
+!   FSEC     I    A    NUMBER OF SECONDS SINCE MJDSEC
+!   DPSI     O    A    ARRAY OF NUTATION IN LONGITUDE
+!   EPST     O    A    ARRAY OF TRUE OBLIQUITIES
+!   EPSM     O    A    ARRAY OF MEAN OBLIQUITIES
+!   SCRTCH   I    A    WORK ARRAY
+!   NM       I    S    NUMBER OF TIMES AT WHICH NUTATION
+!                      IS REQUESTED
+!
+! RESTRICTIONS:  ALL TIMES AT WHICH NUTATIONS ARE REQUESTED
+!                MUST FALL WHITHIN ONE EPHEMERIS INTERVAL.
+!
+! COMMENTS:
+!
+!
+!********1*********2*********3*********4*********5*********6*********7**
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
+      SAVE
+      COMMON/CORL04/KLEDIT,KLBEDT,KLEDT1,KLEDT2,KNSCID,KEXTOF,KLSDAT,   &
+     &              KLRDED,KLAVOI,KLFEDT,KLANTC,NXCL04
+      COMMON/EPHMPT/NTOT,NTOTS,NNPDPR,NUTORD,IBODDG(8),IGRPDG(4),       &
+     &              NENPD,INRCD(2),KPLAN(11),NINEP,NEPHMR,NEPHEM,       &
+     &              IBHINT,NINTBH,NXEPHP
+      COMMON/EPHSET/EMFACT,DTENPD,DTINPD,FSC1EN,FSCENP(2),FSCINP(4),    &
+     &   FSDINP(4),XEPHST
+      COMMON/LNUTAT/LSPNUT,NXLNUT
+      COMMON/NUTCON/CNUT(3)
+
+      DIMENSION CHB(NUTORD),CHBV(NUTORD)
+      DIMENSION DT(NM),DPSI(NM),EPST(NM),EPSM(NM),FSEC(NM), &
+     &          SCRTCH(NM,4),EPHM(4)
+      DIMENSION DPSIR(500),EPSTR(500)
+!
+!***********************************************************************
+! START OF EXECUTABLE CODE *********************************************
+!***********************************************************************
+!
+      CHB(1) = 1.D0
+      CHBV(1) = 0.D0
+      CHBV(2) = 1.D0
+
+      DO 5 I=1,NM
+      DPSI(I)=0.D0
+      EPST(I)=0.D0
+ 5    CONTINUE
+
+      DO 10 I=1,NM
+      CALL CHEBPL(CHB,CHBV,DT(I),NUTORD,.TRUE.)
+      DO 10 J=1,NUTORD
+      DPSI(I)=DPSI(I)+CHB(J)*EPHM(J)
+      EPST(I)=EPST(I)+CHB(J)*EPHM(NUTORD+J)
+      DPSIR(I)=DPSIR(I)+CHBV(J)*EPHM(J)
+      EPSTR(I)=EPSTR(I)+CHBV(J)*EPHM(NUTORD+J)
+10    CONTINUE
+
+      IF(LSPNUT) CALL SPNU(MJDSEC,FSEC,NM,DPSI,EPST)
+      OFFSET=MJDSEC-FSCINP(1)
+      DO 200 I=1,NM
+ 200  SCRTCH(I,1)=OFFSET+FSEC(I)
+      DO 300 I=1,NM
+      EPSM(I)=CNUT(1)+(CNUT(3)*SCRTCH(I,1)+CNUT(2)) &
+     &   *SCRTCH(I,1)
+      EPST(I)=EPST(I)+EPSM(I)
+ 300  CONTINUE
+      RETURN
+      END
