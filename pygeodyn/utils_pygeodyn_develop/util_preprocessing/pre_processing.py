@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 from collections import namedtuple
 import time
+# Fortran calls
+import subprocess
+import os
 
 class pygeodyn_PreProcessing:
     
@@ -540,3 +543,39 @@ class pygeodyn_PreProcessing:
         ##### Save as a txt file with pandas built-in function
         df_traj_txt.to_csv(self.path_preprocessing + '/TRAJ.txt', sep=' ', index = False, header=False)
 
+        
+        
+    def call_fortran_pce_converter(self):
+        
+        path_to_data = self.path_preprocessing
+        path_to_PCE_fortran ='/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_preprocessing/'
+        in_filename  = 'TRAJ.txt'
+        out_filename = 'g2b_pce'
+        ### CHANGE DIRECTORY to where the fortran code is hosted
+        os.chdir(path_to_PCE_fortran)
+
+        #### Write the inputs to the fortran code to a file to be read in variably:
+        
+        file_FTN_opts = open(path_to_PCE_fortran +"options_fortrancode.txt","w+")
+        file_FTN_opts.writelines(path_to_data+'/'+ '\n') 
+        file_FTN_opts.writelines(in_filename +'\n')
+        file_FTN_opts.writelines(out_filename+'\n')
+        file_FTN_opts.close()        
+        
+        #### Compile the pce code:
+        command_1 = './compile_pce_f.sh'
+        subprocess.run(command_1, shell = True)
+        print('pce_fortran.f compiled')
+        
+        #### Execute the pce code
+        command_2 = './ExecutePCE.exe > out_pce 2> err_execute'
+        subprocess.run(command_2, shell = True)
+        print('pce_fortran.f executed')
+        print('')
+        print('The G2B binary file has been saved to: ',path_to_data,'/',out_filename, sep='')
+        
+        
+        
+        
+        
+        
