@@ -58,8 +58,14 @@ class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
         self.set_acceleration_params( self.empirical_accels )
             
             
+        self.tabtab = '       '
+            
     def setup_directories_and_geodyn_input(self):
-        self.verboseprint('setup_directories_and_geodyn_input', os.getcwd())
+        self.verboseprint('=================================================')
+        self.verboseprint('                VERBOSE OPTION ON                ')
+        self.verboseprint('=================================================')
+        self.verboseprint('')
+        self.verboseprint(self.tabtab,'Current DIR: ', os.getcwd())
         ####-------------------------------------------------------------
         ####       Setup Directory Structure 
         ####-------------------------------------------------------------
@@ -162,25 +168,18 @@ class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
             self._grav_field_filename = DIRGRAV +'/grvfld.'+self.GRAVITY
             self._INPUT_filename = INPUTDIR +'/'+ ARCFIL+'.bz2'
 
-        else:
+        elif self.satellite == 'icesat2':
             self._grav_field_filename = DIRGRAV +'/'+self.gravfield_file
             self._INPUT_filename = INPUTDIR +'/'+ ARCFIL+''
-
+            self._EXTATTITUDE_filename = path_run_inputs + '/external_attitude/' +self.external_attitude
+            
+            
         self._ephem_filename      = EPHEMDIR+'/'+ self.ephem_file
         self._gdntable_filename   = '/data/data_geodyn/inputs/common/gdntable.data'
         self._ATGRAV_filename     = ATGRAVDIR +'/'+ ATGRAV_filename
         ##### TODO Add an if statement to choose correct ephemeris file.
 
         
-        if os.path.exists(self._INPUT_filename):
-            self.verboseprint("    FORT.5  (input) file:  ", self._INPUT_filename)
-        else:
-            print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
-
-        if os.path.exists(self._G2B_filename):
-            self.verboseprint("    FORT.40 (g2b)   file:  ", self._G2B_filename)
-        else:
-            print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
 
         # #### Make the GEODYN output directories to be saved later
 
@@ -210,12 +209,23 @@ class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
         print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
         print(self.run_ID,"    ARC run:           " ,self.ARC)
         print(self.run_ID,"    Output directory:  " ,self.OUTPUTDIR)
-        print(self.run_ID,"    Call Options:     ",self.options_in)
+        print(self.run_ID,"    Call Options:      " ,self.options_in)
 
-        
-        
+        if self.satellite == 'icesat2':
+            print(self.run_ID,"    EXAT File:    " ,self._EXTATTITUDE_filename)
+
+        if os.path.exists(self._INPUT_filename):
+            self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
+        else:
+            print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
+
+        if os.path.exists(self._G2B_filename):
+            self.verboseprint(self.tabtab,"FORT.40 (g2b)   file:  ", self._G2B_filename)
+        else:
+            print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
+
     def prepare_tmpdir_for_geodyn_run(self):
-        self.verboseprint('prepare_tmpdir_for_geodyn_run-- current working dir:',os.getcwd())
+        self.verboseprint(self.tabtab,'Current DIR: ',os.getcwd())
      
         #### Navigate TO the TMPDIR
         os.chdir(self.TMPDIR_arc)
@@ -236,82 +246,98 @@ class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
         ####-------------------------------------------------------------
         ####     Construct Common Setup of a GEODYN RUN
         ####-------------------------------------------------------------
+        self.verboseprint('-------------------------------------------------')
+        self.verboseprint('       Linking files with the command line       ')
+        self.verboseprint('-------------------------------------------------')
+        
+        self.verboseprint(self.tabtab,'Current DIR',os.getcwd())
 
+        if self.satellite == 'icesat2':
+            #### make symlink to the G2B file and save as ftn40
+            if not os.path.exists(self.TMPDIR_arc +'/EXAT01'):
+                shutil.copyfile(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
+#                 os.symlink(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
+#                 self.verboseprint(self.tabtab,'EXAT01:',self._EXTATTITUDE_filename)
+                self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01')
+            else:
+                self.verboseprint(self.tabtab,'symlink is set up: EXAT01 file')
 
+        
         #### make symlink to the G2B file and save as ftn40
         if not os.path.exists(self.TMPDIR_arc +'/ftn40'):
-            os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
+#             os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
+            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
+            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40')
         else:
-            self.verboseprint('symlink is set up: g2b file')
+            self.verboseprint(self.tabtab,'symlink:  g2b file')
 
         #### make symlink to the gravity field and save as ftn12
         if not os.path.exists(self.TMPDIR_arc +'/ftn12'):
-#             os.symlink(self._grav_field_filename, self.TMPDIR_arc +'/ftn12')
             shutil.copyfile(self._grav_field_filename, self.TMPDIR_arc +'/ftn12')
+            self.verboseprint(self.tabtab,'gravfield:',self._grav_field_filename)
+            self.verboseprint(self.tabtab,'copied:   grav field > ftn12')
         else:
-            self.verboseprint('symlink is set up: grav_field file')
+            self.verboseprint(self.tabtab,'symlink is set up: grav_field file')
 
         #### make symlink to the ephemerides and save as ftn01
         if not os.path.exists(self.TMPDIR_arc +'/ftn01'):
-            os.symlink(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
-            self.verboseprint('linked:   ephem file > ftn01')
+#             os.symlink(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
+            shutil.copyfile(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
+            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01')
         else:
-            self.verboseprint('symlink is set up: ephem file')
+            self.verboseprint(self.tabtab,'symlink is set up: ephem file')
 
         #### make symlink to the gdntable and save as ftn02
         if not os.path.exists(self.TMPDIR_arc +'/ftn02'):
-#             os.symlink(self._gdntable_filename, self.TMPDIR_arc +'/ftn02')
             shutil.copyfile(self._gdntable_filename, self.TMPDIR_arc +'/ftn02')
-
-            self.verboseprint('linked:   gdntable  > ftn02')
+            self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02')
         else:
-            self.verboseprint('symlink is set up: gdntable file')
+            self.verboseprint(self.tabtab,'symlink is set up: gdntable file')
 
 
         #### make symlink to the ATGRAVFIL and save as fort.18
         if not os.path.exists(self.TMPDIR_arc +'/fort.18'):
-            os.symlink(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
-            self.verboseprint('linked:   atgrav  > fort.18')
+#             os.symlink(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
+            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
+            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/ftn18')
+            self.verboseprint(self.tabtab,'ATGRAV:',self._ATGRAV_filename)
+            self.verboseprint(self.tabtab,'copied:   atgrav     > fort.18')
         else:
-            self.verboseprint('symlink is set up: atgrav file')
+            self.verboseprint(self.tabtab,'symlink is set up: atgrav file')
 
         if self.satellite =='starlette':
             if not os.path.exists(self.TMPDIR_arc+'/ftn05.bz2'):
                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint('copying          : iieout file')
+                self.verboseprint(self.tabtab,'copying          : iieout file')
             else:
-                self.verboseprint('copied           : iieout file')
+                self.verboseprint(self.tabtab,'copied           : iieout file')
 
             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
                 os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint('file not zipped  : iieout file')
+                self.verboseprint(self.tabtab,'file not zipped  : iieout file')
             else:
-                self.verboseprint('file not zipped  : iieout file')
+                self.verboseprint(self.tabtab,'file not zipped  : iieout file')
         else:
             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05')
-                self.verboseprint('copying          : iieout file')
+                self.verboseprint(self.tabtab,'copying          : iieout file')
             else:
-                self.verboseprint('copied           : iieout file')
-
-            if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
-#                 os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint('unzip            : iieout file')
-            else:
-                self.verboseprint('unzipped         : iieout file')
+                self.verboseprint(self.tabtab,'copied           : iieout file')
 
         if not os.path.exists(self.TMPDIR_arc+'/giis.input'):
             os.system('cp  '+self.TMPDIR_arc+'/ftn05 '+self.TMPDIR_arc+'/giis.input')
-            self.verboseprint('copy             : giis.input file')
+            self.verboseprint(self.tabtab,'copying          : giis.input file')
         else:
-            self.verboseprint('copied           : giis.input file')   
+            self.verboseprint(self.tabtab,'copied              : giis.input file')   
 
-        self.verboseprint('prepare_tmpdir_for_geodyn_run',os.getcwd())
+        
+        self.verboseprint('-------------------------------------------------------------------------')
+        self.verboseprint('-------------------------------------------------------------------------')
 
             
             
     def run_geodyn_in_tmpdir(self):
-        self.verboseprint('run_geodyn_in_tmpdir',os.getcwd())    
+        self.verboseprint(self.tabtab,'Current DIR',os.getcwd())    
         ####-------------------------------------
         ####     RUN GEODYN IIS
         ####-------------------------------------

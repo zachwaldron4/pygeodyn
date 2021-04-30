@@ -49,11 +49,12 @@ class UtilSetInputs:
             self.YR            = 2018
             self.DATA_TYPE     = 'PCE'
             self.grav_id = '' 
+#             self.g2b_file = 'g2b_pce'
             self.g2b_file = 'icesat2_g2b_PCE_gpstraj'
             self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
             self.ephem_file = 'ephem1430.data_2025'
             self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
-
+            self.external_attitude = 'EXAT01.2018.287'
         else:
             print('Satellites that are currently available: [starlette, icesat2]')
             
