@@ -32,54 +32,54 @@ class UtilSetInputs:
         pass
            
         
-    def set_satellite_params(self, satellite):
-        if satellite == 'starlette':
-            self.SATELLITE_dir = 'st'
-            self.SATID         = '7501001'
-            self.YR            = 2003
-            self.DATA_TYPE     = 'SLR'
-            self.grav_id  = 'goco05s'
-            self.g2b_file = 'starlette_03_slrg2b.rm0'
-            self.atgrav_file = 'ATGRAV.glo-3HR_20030101-20080204_1860_AOD1B_0006.0090'
-            self.ephem_file = 'ephem1421.data'
+#     def set_satellite_params(self, satellite):
+#         if satellite == 'starlette':
+#             self.SATELLITE_dir = 'st'
+#             self.SATID         = '7501001'
+#             self.YR            = 2003
+#             self.DATA_TYPE     = 'SLR'
+#             self.grav_id  = 'goco05s'
+#             self.g2b_file = 'starlette_03_slrg2b.rm0'
+#             self.atgrav_file = 'ATGRAV.glo-3HR_20030101-20080204_1860_AOD1B_0006.0090'
+#             self.ephem_file = 'ephem1421.data'
             
-        elif satellite == 'icesat2':
-            self.SATELLITE_dir = 'icesat2'
-            self.SATID         = '1807001'
-            self.YR            = 2018
-            self.DATA_TYPE     = 'PCE'
-            self.grav_id = '' 
-#             self.g2b_file = 'g2b_pce'
-            self.g2b_file = 'icesat2_g2b_PCE_gpstraj'
-            self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
-            self.ephem_file = 'ephem1430.data_2025'
-            self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
-            self.external_attitude = 'EXAT01.2018.287'
-        else:
-            print('Satellites that are currently available: [starlette, icesat2]')
+#         elif satellite == 'icesat2':
+#             self.SATELLITE_dir = 'icesat2'
+#             self.SATID         = '1807001'
+#             self.YR            = 2018
+#             self.DATA_TYPE     = 'PCE'
+#             self.grav_id = '' 
+# #             self.g2b_file = 'g2b_pce'
+#             self.g2b_file = 'icesat2_g2b_PCE_gpstraj'
+#             self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+#             self.ephem_file = 'ephem1430.data_2025'
+#             self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
+#             self.external_attitude = 'EXAT01.2018.287'
+#         else:
+#             print('Satellites that are currently available: [starlette, icesat2]')
             
         
     def set_density_model_setup_params(self, den_model):
         if den_model == 'msis86':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
-            self.GDYN_version  = 'pygeodyn_MODS'
+#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'msis00':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
-            self.GDYN_version  = 'pygeodyn_MODS'
+#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'msis2':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
-            self.GDYN_version  = 'pygeodyn_MODS'
+#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'dtm87':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'dtm87'
-            self.GDYN_version  = 'pygeodyn_MODS'
+#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'jaachia71':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
-            self.GDYN_version  = 'pygeodyn_MODS'
+#             self.GDYN_version  = 'pygeodyn_MODS'
         else:
             print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
     
