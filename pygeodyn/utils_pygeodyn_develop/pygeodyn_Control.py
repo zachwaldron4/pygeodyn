@@ -35,8 +35,10 @@ import plotly.express       as px
 ### Import the Classes from the Tools
 from util_Set_Inputs            import UtilSetInputs
 from util_ControlTools          import UtilControl_Tools
+# from Clean_IISSET_File import clean_iisset_file
 
-            
+
+
 class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
 
     def __init__(self, params):  
@@ -127,8 +129,6 @@ class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
         self.EXATDIR = path_run_inputs + '/external_attitude'
 
         
-        #---- Input iisset file (fort.05)
-        self._INPUT_filename      = self.INPUTDIR  +'/'+ self.ARC
         #---- Planetary Ephemeris
         self._ephem_filename      = EPHEMDIR  +'/'+ self.ephem_file
         #---- Atmospheric Gravity
@@ -145,8 +145,17 @@ class pygeodyn_CONTROL(UtilControl_Tools, UtilSetInputs):
         #          done in the satellite class
 #         self._EXTATTITUDE_filename = self.EXATDIR +'/'
             
-           
     
+    
+        ### Construct the setup file for the Arc of Choice
+        #---- Input iisset file (fort.05)
+        self._INPUT_filename      = self.INPUTDIR  +'/'+ self.ARC
+        print(self.run_ID,"    Cleaning iisset:   ", self._INPUT_filename)
+        self.clean_iisset_file()
+        self._INPUT_filename      = self.INPUTDIR  +'/'+'cleaned_setup_file'
+        print(self.run_ID,"    This run's iisset: ", self._INPUT_filename)
+
+        
     def make_output_and_temprun_directories(self):
         '''
         This function builds the output directory structure and the temporary run directory

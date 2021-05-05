@@ -39,6 +39,13 @@ class UtilSetInputs:
             self.YR            = 2003
             self.DATA_TYPE     = 'SLR'
             self.grav_id = 'goco05s' 
+            
+        elif satellite == 'icesat2':
+            self.SATELLITE_dir = 'icesat2'
+            self.SATID         = '1807001'
+            self.YR            = 2018
+            self.DATA_TYPE     = 'PCE'
+            self.grav_id = ''
         else:
             print('Satellites that are currently available: [starlette, ...]')
             

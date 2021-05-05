@@ -63,22 +63,27 @@ class UtilSetInputs:
         if den_model == 'msis86':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
+            self.iisset_den = '86'
 #             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'msis00':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
+            self.iisset_den = '86'
 #             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'msis2':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
+            self.iisset_den = '86'
 #             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'dtm87':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'dtm87'
+            self.iisset_den = '87'
 #             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'jaachia71':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
+            self.iisset_den = '71'
 #             self.GDYN_version  = 'pygeodyn_MODS'
         else:
             print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
