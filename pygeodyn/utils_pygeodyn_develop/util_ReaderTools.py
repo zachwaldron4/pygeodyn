@@ -136,8 +136,16 @@ class UtilReader_Tools:
                 if 'CONVERGENCE' in line:
                     line_text = line
                     # print(line)
-        num_iters = float(line_text[39:42])-1
-        return(num_iters)
+        num_iters = float(line_text[38:42])-1
+        self.total_iterations = int(num_iters)
+
+        if len(str(self.total_iterations)) == 1:
+             self.str_iteration = ' '+str(self.total_iterations)  # add a space if the iteration number is not double digit
+        else:
+             self.str_iteration =     str(self.total_iterations)
+        return(self.total_iterations, self.str_iteration)
+    
+    
     
     def organize_output_object_keys(self, data_keys):    
         ''' 

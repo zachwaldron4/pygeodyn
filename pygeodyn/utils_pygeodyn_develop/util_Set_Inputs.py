@@ -114,22 +114,22 @@ class UtilSetInputs:
 
         
 
-    def set_file_paths_for_multiple_arcs(self, arc_val):
-#             self.arc = arc_val
+#     def set_file_paths_for_multiple_arcs(self, arc_val):
+# #             self.arc = arc_val
             
-            self.path_to_model = ('/data/data_geodyn/results/'+
-                                       self.SATELLITE_dir +'/'+
-                                       self.den_model+'/'+  
-                                       self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
-            file_name =  str(self.SATELLITE_dir) + str(arc_val) + '.'+ str(self.grav_id)        
-            print('        ')
-            print('     File path: ')
-            print('     Loading ', self.path_to_model ,'.../',file_name,' ' ,sep = '')
+#             self.path_to_model = ('/data/data_geodyn/results/'+
+#                                        self.SATELLITE_dir +'/'+
+#                                        self.den_model+'/'+  
+#                                        self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
+#             file_name =  str(self.SATELLITE_dir) + str(arc_val) + '.'+ str(self.grav_id)        
+#             print('        ')
+#             print('     File path: ')
+#             print('     Loading ', self.path_to_model ,'.../',file_name,' ' ,sep = '')
 
-            ####  save the specific file names as "private members" with the _filename convention
-            self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
-            self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
-            self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
+#             ####  save the specific file names as "private members" with the _filename convention
+#             self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
+#             self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
+#             self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
         
         
 #     def set_global_params(self, RunParams ):    

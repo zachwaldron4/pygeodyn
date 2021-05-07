@@ -47,7 +47,7 @@ col1, col2, col3 = help_plot_colors()
 def get_geomag_and_solarflux_data(obj_m1):
 
     
-    arc_list = obj_m1.__dict__['run_parameters']['arc']
+    arc_list = obj_m1.__dict__['run_parameters']['arc_input']
     f107a =[]
     f107d =[]
     date = []
@@ -167,7 +167,7 @@ def Calc_Cd_percent_diff_apriori(obj_m1):
     all_cd_m1    = []
     all_dates_m1 = []
 
-    for ii,arc in enumerate(obj_m1.__dict__['run_parameters']['arc']):
+    for ii,arc in enumerate([obj_m1.__dict__['run_parameters']['arc_input']]):
         i_arc = ii+1
         last_iter = list(obj_m1.AdjustedParams[arc].keys())[-1]
         labels = list(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'].keys())
@@ -240,7 +240,7 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
 #         vertical_spacing = 0.1,
 #         )
 
-    for ii,arc in enumerate(obj_m1.__dict__['run_parameters']['arc']):
+    for ii,arc in enumerate([obj_m1.__dict__['run_parameters']['arc_input']]):
         i_arc = ii+1
         last_iter = list(obj_m1.AdjustedParams[arc].keys())[-1]
         labels = list(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'].keys())
@@ -314,7 +314,7 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
 
 
 
-    fig = add_arc_background_w_text(fig, 9.5, obj_m1.__dict__['run_parameters']['arc'], True)
+#     fig = add_arc_background_w_text(fig, 9.5, obj_m1.__dict__['run_parameters']['arc_input'], True)
 #     fig = legend_as_annotation(fig)
 
     # fix layout info:
@@ -880,7 +880,7 @@ def plot_composite_density_cd_fluxes(fig, obj_m1, plot_num):
 def plot_residuals_observed(fig, obj_m1, plot_num):
 #     fig = go.Figure()
     
-    arc_list = obj_m1.__dict__['run_parameters']['arc']
+    arc_list = [obj_m1.__dict__['run_parameters']['arc_input']]
     model_m1 = obj_m1.__dict__['run_parameters']['den_model']
     if plot_num == 0:
         col = col1
@@ -907,7 +907,7 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  showlegend=False,
                                  ),
                                  )
-    fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ), arc_list, False)
+#     fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ), arc_list, False)
 
     fig.add_annotation(
                 x = x_annot,
