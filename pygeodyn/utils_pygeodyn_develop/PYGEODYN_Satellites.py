@@ -1,6 +1,8 @@
 #### ===============
 #### Import modules:
 #### ===============
+import pandas as pd
+
 
 #### Computer/CL functions
 import os
@@ -38,166 +40,49 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     '''
     def __init__(self,params):
         super().__init__(params)
+        
 
         #### HARD CODE the satellite properties
         self.SATELLITE_dir = 'icesat2'
         self.SATID         = '1807001'
-        self.YR            = 2018
+        self.YR            =  2018
         self.DATA_TYPE     = 'PCE'
         self.grav_id = '' 
         #                  self.g2b_file = 'g2b_pce'
-        self.g2b_file = 'icesat2_g2b_PCE_gpstraj.gz'
+        self.g2b_file = 'icesat2_g2b_PCE_gpstraj.gz'   # fort.40
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
         self.ephem_file = 'ephem1430.data_2025.gz'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
-        self.external_attitude = 'EXAT01.2018.287.gz'
         
+
         ### Modifications that are ICESat2 Specific:
         self.ARC =   self.arc_input
         
-#     def clean_iisset_file(self):
-#         '''
-#         Overwrite the file cleaner with the ICESAT specific run parameters.
-        
-#         If one wants to make more major changes to this file, IE implemement a NON-PCE based run, then one may want to construct a new class to inherit this one, and overwrite this method in that class. 
-#         '''
-       
-#         (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.ARC, self.SATID, self.iisset_den)
-        
+        # we want the string after the first occurance of the period.
+        index = self.ARC.find('.')
+        arc_name_id = self.ARC[index:]
+
+        # The setup files and the external attitutde files have the same naming convention
+        self.external_attitude = 'EXAT01'+arc_name_id+'.gz'
+
         
         
-#         ORIG_iisset_file = path_to_setupfiles + '/' + setup_file_arc
-
-#         shutil.copyfile(ORIG_iisset_file, path_to_setupfiles +'/'+'cleaned_setup_file')
-#         iisset_file =       path_to_setupfiles +'/'+'cleaned_setup_file'
-
-
-#         cards_to_remove = [ 'ACCEL9',
-#                             'XEPHEM',
-#                             'REFRAC',
-#                             'GPSMOD',
-#                             'OFFSET',
-#                             'OFFADJ',
-#                             'ANTPHC',
-#                             'ANTPH2',
-#                             'CGMASS',
-#                           ] 
-
-#         ##### Grab the EPOCH start and end times
-#         EPOCH_lines = []
-#         with open(iisset_file, 'r') as f:
-#             for line_no, line_text in enumerate(f):
-#                 if 'EPOCH         ' in line_text:
-#                     EPOCH_lines.append(line_no) 
-
-#         ##### Identify and save the EPOCH start and end times
-#         for i,val in enumerate(EPOCH_lines):
-#             satpar_line = linecache.getline(iisset_file,val) # Check the above SATPAR line get the correct satellite ID (i.e. NOT GPS)
-
-#             ##### only do this for the main satellite, so look for the correct SATID in the SATPAR card above EPOCH
-#             if SAT_ID in satpar_line:
-#                 epoch_start = linecache.getline(iisset_file,val + 1)[20:40].strip() #181013210000.0000000
-#                 epoch_start_YYMMDD = linecache.getline(iisset_file,val + 1)[20:26].strip()       # 181013
-#                 epoch_start_HHMM = linecache.getline(iisset_file,val + 1)[26:30].strip()         # 210000.0000000
-#                 epoch_start_SS_SSSSSSS = linecache.getline(iisset_file,val + 1)[30:40].strip()   # 00.0000000     
-
-#                 epoch_end   = linecache.getline(iisset_file,val + 1)[60:80].strip() #1810160300 00.000
-#                 epoch_end_YYMMDD = linecache.getline(iisset_file,val + 1)[60:66].strip()       # 181016
-#                 epoch_end_HHMM = linecache.getline(iisset_file,val + 1)[66:70].strip()         # 210000.0000000
-#                 epoch_end_SS_SSSSSSS = linecache.getline(iisset_file,val + 1)[70:80].strip()   # 00.0000000     
-
-#         ##### TO DO : Add conditional for month-day turnover
-#         epoch_start_minus2days = epoch_start_YYMMDD[:-2]+str(int(epoch_start_YYMMDD[-2:])-2)+epoch_start_HHMM+epoch_start_SS_SSSSSSS
-#         epoch_end_plus1days =  epoch_end_YYMMDD[:-2]+str(int(epoch_end_YYMMDD[-2:])+1)+epoch_end_HHMM+epoch_end_SS_SSSSSSS
-
-
-#         ##### Putting in the options is one of the hardest parts of using GEODYN
-#         #####    They require VERY specific inputs depending on the run type.  
-#         card_strings = {}
-#         card_strings['ORBFIL'] =  'ORBFIL2 31       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
-#         card_strings['ORBTVU'] =  'ORBTVU1021       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
-#         card_strings['RESID']  =  'RESIDU12'
-#         card_strings['OBSVU']  =  'OBSVU 4'
-#         card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  
-#         card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
-#         card_strings['ATGRAV']  =  'ATGRAV9090              '+epoch_start_minus2days +''+epoch_end_plus1days[:-1]   
-#         card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
-#         card_strings['SATPAR']  =  'SATPAR   13      '+SAT_ID+'          9.53000000       1514.000'
-#         card_strings['SIGMA           1']  =  '               1.0                 1.0'    #10.0D+25            10.0D+25'
-#         card_strings['SIGMA           2']  =  '               1.0                 1.0'    #10.0D+25            10.0D+25'
-#         card_strings['SIGMA           3']  =  '               1.0                 1.0'    #10.0D+25            10.0D+25'
-#         card_strings['SIGMA          51']  =  '               10.0D+25             0.10'    #10.0D+25             0.10'
-#         card_strings['SIGMA          85']  =  '               0.010000            0.010000'    #0.010000            0.010000'
-
-
-#         ##### read in all lines of the file and save them
-#         with open(iisset_file, "r") as f:
-#             lines_all = f.readlines()    
-#         ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
-#         with open(iisset_file, "w") as f:
-#             for line in lines_all:
-#                 if any(card in line for card in cards_to_remove):
-#                     # IF the any of the cards in the list are in the line, dont add it
-#                     pass
-#                 else:
-#                     f.write(line)                
-
-#         ##### DO IT AGAIN but with the above updates
-#         ##### read in all lines of the file and save them
-#         with open(iisset_file, "r") as f:
-#             lines_all = f.readlines()                
-
-#         ####------------------------------------------------
-#         #### Check to see if cards we want are in file first
-#         ####------------------------------------------------
-#         ##### card flags to see if certain cards are present in the file
-#         card_flag = {}
-#         for card in card_strings:
-#             ### Set the default flag to be False,  if the card is in the file, flip the flag to True
-#             card_flag[card] = False
-#             for line in lines_all:
-#                 if card in line:
-#                     card_flag[card] = True
-
-
-#         ## Re-write the file line-by-line and EDIT the cards that need to be modified    
-#         with open(iisset_file, "w") as f:
-#             for line in lines_all:
-
-#                 for card in card_strings:
-
-#                     if card in line:
-#                         line_replace = card_strings[card]
-#                         # Go ahead and re-write the line to be in the desired format
-#                         f.write(line_replace+' \n')
-#                         print(line_replace)
-#                         break
-#                     else:
-#                         f.write(line)
-#                         break
-
-#         ##### DO IT AGAIN but with the above updates
-#         ###    read in all lines of the file and save them
-#         with open(iisset_file, "r") as f:
-#             lines_all = f.readlines()                  
-#         ####----------------------------------------------------
-#         #### Add any cards that we want that are not in the file
-#         ####----------------------------------------------------
-#         for card in card_flag:
-#             if card_flag[card] == False:
-
-#                 with open(iisset_file, "w") as f:
-#                     for line in lines_all:
-#                         if 'ALBEDO' in line:
-#                             f.write(line)
-#                             f.write(card_strings[card] + ' \n')                 
-#                         else:
-#                             f.write(line)
     def clean_iisset_file(self):
         '''
-        Overwrite the file cleaner with the ICESAT specific run parameters.
+        Overwrite the file cleaner with the icesat2 specific run parameters.
 
-        If one wants to make more major changes to this file, IE implemement a NON-PCE based run, then one may want to construct a new class to inherit this one, and overwrite this method in that class. 
+        To make majorchanges to this function (i.e. implemement a NON-PCE based run of ICESat2)
+            construct a new class to inherit this one, and overwrite this method in that class. 
+        
+        This function makes the following changes to the setup file:
+            - Adds three strings at the top of the setup file
+            - Deletes specified cards in the cards_to_remove list
+            - Modifies the cards in card_strings dict
+            - Special modifications for DRAG in the card_drag_strings dict
+                -i.e. implements time dependent drag options
+            - Adds cards that are wanted that are not in the file.
+
+        
         '''
 
         (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.ARC, self.SATID, self.iisset_den)
@@ -209,7 +94,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         shutil.copyfile(ORIG_iisset_file, path_to_setupfiles +'/'+'cleaned_setup_file')
         iisset_file =       path_to_setupfiles +'/'+'cleaned_setup_file'
 
-
+        # identify the cards we do not want in the setup file
         cards_to_remove = [ 'ACCEL9',
                             'XEPHEM',
                             'REFRAC',
@@ -219,6 +104,39 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             'ANTPHC',
                             'ANTPH2',
                             'CGMASS',
+                            'DRAG             5041144 ',       # remove the drag effects on the GPS satellites  
+                            'DRAG             5044284',
+                            'DRAG             5051204',
+                            'DRAG             5154184',
+                            'DRAG             5345214',
+                            'DRAG             5347224',
+                            'DRAG             5356164',
+                            'DRAG             5459194',
+                            'DRAG             5460234',
+                            'DRAG             5461024',
+                            'DRAG             5553175',
+                            'DRAG             5652315',
+                            'DRAG             5658125',
+                            'DRAG             5755155',
+                            'DRAG             5757295',
+                            'DRAG             5848075',
+                            'DRAG             5950055',
+                            'DRAG             6062256',
+                            'DRAG             6163016',
+                            'DRAG             6265246',
+                            'DRAG             6366276',
+                            'DRAG             6464306',
+                            'DRAG             6467066',
+                            'DRAG             6468096',
+                            'DRAG             6469036',
+                            'DRAG             6571266',
+                            'DRAG             6572086',
+                            'DRAG             6573106',
+                            'DRAG             6649045',
+                            'DRAG             6670326',
+                            'DRAG             9743134',
+                            'DRAG             9946114',
+                            'DRAG   0 0',
                           ] 
 
         ##### Grab the EPOCH start and end times
@@ -236,7 +154,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             if SAT_ID in satpar_line:
                 epoch_start = linecache.getline(iisset_file,val + 1)[20:40].strip() #181013210000.0000000
                 epoch_start_YYMMDD = linecache.getline(iisset_file,val + 1)[20:26].strip()       # 181013
-                epoch_start_HHMM = linecache.getline(iisset_file,val + 1)[26:30].strip()         # 210000.0000000
+                epoch_start_HHMM = linecache.getline(iisset_file,val + 1)[26:30].strip()         # 2100
                 epoch_start_SS_SSSSSSS = linecache.getline(iisset_file,val + 1)[30:40].strip()   # 00.0000000     
 
                 epoch_end   = linecache.getline(iisset_file,val + 1)[60:80].strip() #1810160300 00.000
@@ -255,7 +173,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['ORBFIL'] =  'ORBFIL2 31       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
         card_strings['ORBTVU'] =  'ORBTVU1021       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
         card_strings['RESID']  =  'RESIDU12'
-        card_strings['OBSVU']  =  'OBSVU 4'
+        card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
         card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  
         card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
         card_strings['ATGRAV']  =  'ATGRAV9090              '+epoch_start_minus2days +''+epoch_end_plus1days[:-1]   
@@ -266,19 +184,32 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'    #10.0D+25            10.0D+25'
         card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'    #10.0D+25             0.10'
         card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'    #0.010000            0.010000'
+        
+        ##### make modifications to the DRAG Cards
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+        add_hours_dt = pd.Series(pd.to_timedelta(9,'h'))
 
-
-        ##### read in all lines of the file and save them
-        with open(iisset_file, "r") as f:
-            lines_all = f.readlines()    
-        ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
-        with open(iisset_file, "w") as f:
-            for line in lines_all:
-                if any(card in line for card in cards_to_remove):
-                    # IF the any of the cards in the list are in the line, dont add it
-                    pass
-                else:
-                    f.write(line)                
+        drag_date_1 = (epoch_start_dt+add_hours_dt).dt.strftime('%y%m%d%H%M%S').values[0]
+        drag_date_2 = (epoch_start_dt+add_hours_dt*2).dt.strftime('%y%m%d%H%M%S').values[0]
+        drag_date_3 = (epoch_start_dt+add_hours_dt*3).dt.strftime('%y%m%d%H%M%S').values[0]
+        drag_date_4 = (epoch_start_dt+add_hours_dt*4).dt.strftime('%y%m%d%H%M%S').values[0]
+        drag_date_5 = (epoch_start_dt+add_hours_dt*5).dt.strftime('%y%m%d%H%M%S').values[0]
+        drag_date_6 = (epoch_start_dt+add_hours_dt*6).dt.strftime('%y%m%d%H%M%S').values[0]
+        
+        drag_date_rm = (epoch_start_dt+add_hours_dt*6).dt.strftime('%y%m%d%H%M%S').values[0]
+        
+        card_drag_strings={}
+        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
+#         card_drag_strings['DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00']  =  'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00'
+        card_drag_strings[drag_date_1]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_1[:10]+' 0.00    0.100D+02'
+        card_drag_strings[drag_date_2]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_2[:10]+' 0.00    0.100D+02'
+        card_drag_strings[drag_date_3]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_3[:10]+' 0.00    0.100D+02'
+        card_drag_strings[drag_date_4]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_4[:10]+' 0.00    0.100D+02'
+        card_drag_strings[drag_date_5]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_5[:10]+' 0.00    0.100D+02'
+        card_drag_strings[drag_date_6]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_6[:10]+' 0.00    0.100D+02'
+#         card_drag_strings[drag_date_rm] = 'DRAG   0 0       '+SAT_ID+' 2.2000000000000D+00'+drag_date_rm[:10]+''
+        
+    
 
         ##### DO IT AGAIN but with the above updates
         ##### read in all lines of the file and save them
@@ -317,7 +248,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     f.write(lines_replace[line_num]+'\n')
                 else:
                      f.write(line)
-
+            f.seek(0)
+            
     #     print(lines_replace.keys())
 
         ##### DO IT AGAIN but with the above updates
@@ -332,14 +264,60 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
                 with open(iisset_file, "w") as f:
                     for line in lines_all:
-                        if 'ALBEDO' in line:
-                            f.write(line)
+                        if 'ALBEDO' in line:  #this overwirte the line after albedo.  Need to add a fix so that multiple cards can be added here.
+                            f.write(line )
                             f.write(card_strings[card] + ' \n')                 
                         else:
                             f.write(line)
+               
+
+        #### for adding time dependent drag estimations.  We need to do a few things:
+        ###       Find the drag card that is already in the file:
+        ###       Add CONDRAG before all drag cards
+        ###       Add DRAG cards with TIME periods after the first drag card
+        with open(iisset_file, "w") as f:
+            for line in lines_all:
+                if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
+                    f.write(card_drag_strings['CONDRG'] + ' \n')
+                    f.write('DRAG             '+SAT_ID+' 2.3000000000000E+00'+ ' \n')
+                    f.write(card_drag_strings[drag_date_1] + ' \n')                 
+                    f.write(card_drag_strings[drag_date_2] + ' \n')                 
+                    f.write(card_drag_strings[drag_date_3] + ' \n')                 
+                    f.write(card_drag_strings[drag_date_4] + ' \n')                 
+                    f.write(card_drag_strings[drag_date_5] + ' \n')                 
+                    f.write(card_drag_strings[drag_date_6] + ' \n')                 
+                else:
+                    f.write(line)
+                    
+                    
+        ##### read in all lines of the file and save them
+        with open(iisset_file, "r") as f:
+            lines_all = f.readlines()    
+        ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
+        with open(iisset_file, "w") as f:
+            for line in lines_all:
+                if any(card in line for card in cards_to_remove):
+                    # IF the any of the cards in the list are in the line, dont add it
+                    pass
+                else:
+                    f.write(line)                
+                    
+        with open(iisset_file, 'r+') as f:
+            content = f.read()
+            f.seek(0, 0)   # find the first lines
+            f.write('### \n') 
+            f.write('### \n') 
+            f.write('### \n') 
+            f.write(content) 
+
 
     #### overwrite some methods from CONTROL:
     def print_runparameters_to_notebook(self):
+        '''
+        This method just prints to the run parameters to the notebook for user tracking.
+        The original method is overwritten to account for the fact that we have a external attitude file
+        
+        '''
         
         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
