@@ -331,15 +331,15 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 
         #### Build the dictionary to be index based on iteration number   
         #### and initialize each iteration number to also be a dictionary
-        text_GA_list = ["0GA 9P 11t1",
-                        "0GA 9P 12t1",
-                        "0GA 9P 21t1",
-                        "0GA 9P 22t1",
-                        "0GA 9P 11t2",
-                        "0GA 9P 12t2",
-                        "0GA 9P 21t2",
-                        "0GA 9P 22t2",
-                            ]    
+#         text_GA_list = ["0GA 9P 11t1",
+#                         "0GA 9P 12t1",
+#                         "0GA 9P 21t1",
+#                         "0GA 9P 22t1",
+#                         "0GA 9P 11t2",
+#                         "0GA 9P 12t2",
+#                         "0GA 9P 21t2",
+#                         "0GA 9P 22t2",
+#                             ]    
         SatMain_AdjustedParams = {}
         for i_iter,iterval in enumerate(np.arange(1, self.total_iterations+1)):
             SatMain_AdjustedParams[iterval] = {}
@@ -348,7 +348,7 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                     for iga, ga_val in enumerate(text_GA_list):
                         SatMain_AdjustedParams[iterval][satval] = {}
                         SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
-                        SatMain_AdjustedParams[iterval][satval][ga_val] = {}
+#                         SatMain_AdjustedParams[iterval][satval][ga_val] = {}
                 else:
                     SatMain_AdjustedParams[iterval][satval] = {}
                     SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
@@ -379,22 +379,27 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                             #### save the list of T##s and strip of whitespaces
                             timedep_Cd_count.append(line[18:24].strip()) 
 
-        #### Loop through the IIE cards to find the
+        #### Loop through the IIS cards to find the
         #### date inputs for the time dependent Cd option 
         #### First isolate the input card section:
         line_no_1 = [] 
         line_no_2 = [] 
         with open(self._iieout_filename, 'r') as f:
             for line_no, line_text in enumerate(f):
-                if 'GEODYN IIE VERSION' in line_text :
+#                 if 'GEODYN IIE VERSION' in line_text :
+#                     line_no_1.append(line_no)
+#                 if 'OBSERVATION RESIDUALS FOR ARC' in line_text:
+#                     line_no_2.append(line_no)
+                if 'GEODYN-IIS VERSION' in line_text :
                     line_no_1.append(line_no)
-                if 'OBSERVATION RESIDUALS FOR ARC' in line_text:
+                if 'GEODYN IIE VERSION' in line_text:
                     line_no_2.append(line_no)
                     break
 #         print('line_no_1',line_no_1)
 #         print('line_no_2',line_no_2)
         #### Make a list of the dates as determined by the DRAG input cards:            
-        card_inputs_range = np.arange(line_no_1[0], line_no_2[0]-100)
+        card_inputs_range = np.arange(line_no_1[0], line_no_2[0]-100)  # puts section above other places where 'DRAG' would appear
+        print(card_inputs_range)
         timedep_Cd_dates = []
         for i,val in enumerate(card_inputs_range):
                 line = linecache.getline(self._iieout_filename,val)            
@@ -405,7 +410,7 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                         #print(line[45:57])
                         timedep_Cd_dates.append(line[45:56].strip())
         date_timedep_cds = pd.to_datetime(timedep_Cd_dates[1:], format='%y%m%d%H%M%S')  #YYMMDDHHMMSS
-        
+        print(date_timedep_cds)
         #         
         #------------------- SECTION 2 ----------------------------------
         #--|
@@ -844,236 +849,241 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 #         else:
 #             self.str_iteration =     self.total_iterations
 
-        text_obs_resid = 'OBSERVATION RESIDUALS FOR ARC  1 FOR INNER ITERATION '+ (self.str_iteration)
-        end_of_section = 'RESIDUAL SUMMARY BY STATION AND TYPE FOR ARC  1 INNER ITERATION '+ (self.str_iteration)
-        lines_list_1 = [] 
-        lines_list_2 = []
+        resids_iters = {}
+    
+        for i_iter in [' 1', self.str_iteration]:
+            text_obs_resid = 'OBSERVATION RESIDUALS FOR ARC  1 FOR INNER ITERATION '+ (i_iter)
+            end_of_section = 'RESIDUAL SUMMARY BY STATION AND TYPE FOR ARC  1 INNER ITERATION '+ (i_iter)
+            lines_list_1 = [] 
+            lines_list_2 = []
 
-        #### The below grabs the line numbers of the section headers 
-        #### The Observation Residuals end at the first instance of the Summary by Station
-        with open(self._iieout_filename, 'r') as f:
-            for line_no, line in enumerate(f):
-                if text_obs_resid in line:
-                    lines_list_1.append(line_no)
-                elif end_of_section in line:
-                    lines_list_2.append(line_no)
-#         print('ll1',lines_list_1)
-#         print('ll2',lines_list_2)
+            #### The below grabs the line numbers of the section headers 
+            #### The Observation Residuals end at the first instance of the Summary by Station
+            with open(self._iieout_filename, 'r') as f:
+                for line_no, line in enumerate(f):
+                    if text_obs_resid in line:
+                        lines_list_1.append(line_no)
+                    elif end_of_section in line:
+                        lines_list_2.append(line_no)
+    #         print('ll1',lines_list_1)
+    #         print('ll2',lines_list_2)
 
-        #### If there are is not a list of residuals the snippet under try: 
-        ####     will kick an error.  This is added to allows the code to 
-        ####     continue going without error.  
-        #### This issue was tied to the above issue with there being too many iterations.
-        try:
-            residual_range  = np.arange(lines_list_1[0], lines_list_2[0]+1)
-        except:
-            residual_range  = np.arange(lines_list_1[0], lines_list_2+1)
+            #### If there are is not a list of residuals the snippet under try: 
+            ####     will kick an error.  This is added to allows the code to 
+            ####     continue going without error.  
+            #### This issue was tied to the above issue with there being too many iterations.
+            try:
+                residual_range  = np.arange(lines_list_1[0], lines_list_2[0]+1)
+            except:
+                residual_range  = np.arange(lines_list_1[0], lines_list_2+1)
 
-        #### Initialize some lists to save out the data
-        list_config_type  = []
-        list_SAT_main     = []
-        list_note         = []
-        list_track_1        = []
-        list_track_2        = []
-        list_YYMMDD       = []
-        list_HHMM         = []
-        list_SEC_UTC      = []
-        list_Observation  = []
-        list_Residual     = []
-        list_RatiotoSigma = []
-        list_Elev1        = []
-        list_Elev2        = []
-        list_OBS_No       = []
-        list_Block        = []
+            #### Initialize some lists to save out the data
+            list_config_type  = []
+            list_SAT_main     = []
+            list_note         = []
+            list_track_1        = []
+            list_track_2        = []
+            list_YYMMDD       = []
+            list_HHMM         = []
+            list_SEC_UTC      = []
+            list_Observation  = []
+            list_Residual     = []
+            list_RatiotoSigma = []
+            list_Elev1        = []
+            list_Elev2        = []
+            list_OBS_No       = []
+            list_Block        = []
 
-        #### Loop through the residual section and save out data.
-        #### There are some header quandries that must be dealt with
-        ####      and the method for doing so is in the if, elif, else statements below
-        #### This quandry is that the data that follows different kinds of headers 
-        ####     is in different columns of the fixed width format file
-        for i,val in enumerate(residual_range):
-            line = linecache.getline(self._iieout_filename,val)
-            #### HEADER TYPE 1
-            if 'STATION-SATELLITE CONFIGURATION' in line:
-                # print('HEADER Type 1')
-                config_type = line[35:44]
-                SAT_main = line[54:62]
-                #### The location of the columns changes between SLR and GPS... 
-                if self.DATA_TYPE == 'GPS':
-                    track_1 = line[72:80]
-                    track_2 = line[90:98]
-                    note = np.nan
-                elif self.DATA_TYPE == 'SLR':
-                    track_1 = line[44:53]
-                    track_2 = np.nan
-                    note = np.nan
-                elif self.DATA_TYPE == 'PCE':
-                    track_1 = line[72:80]
-                    track_2 = line[90:98]
-                    note = np.nan
-                    
-            #### HEADER TYPE 2
-            ####         within HEADER TYPE 2 the GPS data has further another header type
-            elif 'STATION-SAT CONFIG.' in line:
-                if self.DATA_TYPE == 'GPS':
-                    if 'DSS1WRNG' in line:
-                        config_type = line[46:56]
+            #### Loop through the residual section and save out data.
+            #### There are some header quandries that must be dealt with
+            ####      and the method for doing so is in the if, elif, else statements below
+            #### This quandry is that the data that follows different kinds of headers 
+            ####     is in different columns of the fixed width format file
+            for i,val in enumerate(residual_range):
+                line = linecache.getline(self._iieout_filename,val)
+                #### HEADER TYPE 1
+                if 'STATION-SATELLITE CONFIGURATION' in line:
+                    # print('HEADER Type 1')
+                    config_type = line[35:44]
+                    SAT_main = line[54:62]
+                    #### The location of the columns changes between SLR and GPS... 
+                    if self.DATA_TYPE == 'GPS':
+                        track_1 = line[72:80]
+                        track_2 = line[90:98]
+                        note = np.nan
+                    elif self.DATA_TYPE == 'SLR':
+                        track_1 = line[44:53]
+                        track_2 = np.nan
+                        note = np.nan
+                    elif self.DATA_TYPE == 'PCE':
+                        track_1 = line[72:80]
+                        track_2 = line[90:98]
+                        note = np.nan
+
+                #### HEADER TYPE 2
+                ####         within HEADER TYPE 2 the GPS data has further another header type
+                elif 'STATION-SAT CONFIG.' in line:
+                    if self.DATA_TYPE == 'GPS':
+                        if 'DSS1WRNG' in line:
+                            config_type = line[46:56]
+                            SAT_main = line[65:73]
+                            note = np.nan
+                            track_1 = line[83:91]
+                            track_2 = line[100:109]
+                        else:
+                            config_type = line[46:56]
+                            SAT_main = np.nan
+                            note = line[55:63]
+                            track_1 = line[65:74]
+                            track_2 = np.nan
+                    elif self.DATA_TYPE == 'SLR':
+                        config_type = line[46:55]
                         SAT_main = line[65:73]
                         note = np.nan
-                        track_1 = line[83:91]
-                        track_2 = line[100:109]
-                    else:
-                        config_type = line[46:56]
-                        SAT_main = np.nan
-                        note = line[55:63]
-                        track_1 = line[65:74]
-                        track_2 = np.nan
-                elif self.DATA_TYPE == 'SLR':
-                    config_type = line[46:55]
-                    SAT_main = line[65:73]
-                    note = np.nan
-                    track_1 = line[55:64]
-                    track_2 = np.nan      
-                elif self.DATA_TYPE == 'PCE':
-                    config_type = line[46:55]
-                    SAT_main = line[65:73]
-                    note = np.nan
-                    track_1 = line[55:64]
-                    track_2 = np.nan      
-            ####  If the block number is an integer 
-            ####        (which it will be if the line contains data) 
-            ####         then save the data out
-            try:
-                BLOCK_no = int(line[117:125])
-                YYMMDD       = line[1:8]
-                HHMM         = line[8:13]
-                SEC_UTC      = line[13:23]
-                Observation  = line[26:42]
-                Residual     = line[42:57]
-                RatiotoSigma = line[57:70]
-                Elev1        = line[71:84]
-                Elev2        = line[85:96]
-                OBS_No       = line[106:117]
-                Block        = line[117:125]
+                        track_1 = line[55:64]
+                        track_2 = np.nan      
+                    elif self.DATA_TYPE == 'PCE':
+                        config_type = line[46:55]
+                        SAT_main = line[65:73]
+                        note = np.nan
+                        track_1 = line[55:64]
+                        track_2 = np.nan      
+                ####  If the block number is an integer 
+                ####        (which it will be if the line contains data) 
+                ####         then save the data out
+                try:
+                    BLOCK_no = int(line[117:125])
+                    YYMMDD       = line[1:8]
+                    HHMM         = line[8:13]
+                    SEC_UTC      = line[13:23]
+                    Observation  = line[26:42]
+                    Residual     = line[42:57]
+                    RatiotoSigma = line[57:70]
+                    Elev1        = line[71:84]
+                    Elev2        = line[85:96]
+                    OBS_No       = line[106:117]
+                    Block        = line[117:125]
 
-                list_config_type.append(config_type)
-                list_SAT_main.append(SAT_main)
-                list_note.append(note)
-                list_track_1.append(track_1)
-                list_track_2.append(track_2)
-                list_YYMMDD.append(YYMMDD)
-                list_HHMM.append(HHMM)
-                list_SEC_UTC.append(SEC_UTC)
-                list_Observation.append(Observation)
-                list_Residual.append(Residual)
-                list_RatiotoSigma.append(RatiotoSigma)
-                list_Elev1.append(Elev1)
-                list_Elev2.append(Elev2)
-                list_OBS_No.append(OBS_No)
-                list_Block.append(Block)
-            except:
-        #         print('Not a data block', line[117:125]) 
-                pass
-        
-        ####  Save all the above data to a dictionary then convert to a dataframe
-        resids_dict= {'StatSatConfig' : list_config_type,
-                      'Sat_main'      : list_SAT_main   ,
-                      'track_1'         : list_track_1      ,
-                      'track_2'         : list_track_2      ,
-                      'Note'          : list_note       ,
-                      'YYMMDD'        : list_YYMMDD      ,
-                      'HHMM'          : list_HHMM        ,
-                      'SEC_UTC'       : list_SEC_UTC      ,
-                      'Observation'   : list_Observation  ,
-                      'Residual'      : list_Residual     ,
-                      'RatiotoSigma'  : list_RatiotoSigma ,
-                      'Elev1'         : list_Elev1       ,
-                      'Elev2'         : list_Elev2       ,
-                      'OBS_No'        : list_OBS_No      ,
-                      'Block'         : list_Block       ,
-                     } 
-        resids_df = pd.DataFrame.from_dict(resids_dict)
-        linecache.clearcache()
-        #
-        # ----------------------------------------------------------------------------------
-        #
-        #### Fix the date column:
-        dates = self.make_datetime_column(resids_df, self.YR)
+                    list_config_type.append(config_type)
+                    list_SAT_main.append(SAT_main)
+                    list_note.append(note)
+                    list_track_1.append(track_1)
+                    list_track_2.append(track_2)
+                    list_YYMMDD.append(YYMMDD)
+                    list_HHMM.append(HHMM)
+                    list_SEC_UTC.append(SEC_UTC)
+                    list_Observation.append(Observation)
+                    list_Residual.append(Residual)
+                    list_RatiotoSigma.append(RatiotoSigma)
+                    list_Elev1.append(Elev1)
+                    list_Elev2.append(Elev2)
+                    list_OBS_No.append(OBS_No)
+                    list_Block.append(Block)
+                except:
+            #         print('Not a data block', line[117:125]) 
+                    pass
 
-        resids_df.insert(0, 'Date', dates)
+            ####  Save all the above data to a dictionary then convert to a dataframe
+            resids_dict= {'StatSatConfig' : list_config_type,
+                          'Sat_main'      : list_SAT_main   ,
+                          'track_1'         : list_track_1      ,
+                          'track_2'         : list_track_2      ,
+                          'Note'          : list_note       ,
+                          'YYMMDD'        : list_YYMMDD      ,
+                          'HHMM'          : list_HHMM        ,
+                          'SEC_UTC'       : list_SEC_UTC      ,
+                          'Observation'   : list_Observation  ,
+                          'Residual'      : list_Residual     ,
+                          'RatiotoSigma'  : list_RatiotoSigma ,
+                          'Elev1'         : list_Elev1       ,
+                          'Elev2'         : list_Elev2       ,
+                          'OBS_No'        : list_OBS_No      ,
+                          'Block'         : list_Block       ,
+                         } 
+            resids_df = pd.DataFrame.from_dict(resids_dict)
+            linecache.clearcache()
+            #
+            # ----------------------------------------------------------------------------------
+            #
+            #### Fix the date column:
+            dates = self.make_datetime_column(resids_df, self.YR)
 
-        #### The ratio-to-sigma columns has some weird strings in it
-        ####        ValueError: could not convert string to float: ' -16.0620*'
-        ####        remove them
-        fix_string = []
-        for i,val in enumerate(resids_df['RatiotoSigma']):
-            try:
-                float(val)
-                fix_string.append(val)
-            except:
-                # print(i, val)
-                fix_string.append(val[:-1])
+            resids_df.insert(0, 'Date', dates)
 
-        resids_df['RatiotoSigma'] = fix_string
-        ####   
-        #### Some of the elevations are empty.  Replace the empty strings with nans
-        ####
-        elev_fix = []
-        for i,val in enumerate(resids_df['Elev1']):
-            try:
-                float(val)
-                elev_fix.append(float(val))
-            except:
-                elev_fix.append(np.nan)
-        resids_df['Elev1'] = elev_fix
-        elev_fix = []
-        for i,val in enumerate(resids_df['Elev2']):
-            try:
-                float(val)
-                elev_fix.append(float(val))
-            except:
-                elev_fix.append(np.nan)
-        resids_df['Elev2'] = elev_fix
-        
-                        # def test_apply(x):
-                        #     try:
-                        #         return float(x)
-                        #     except ValueError:
-                        #         return None
+            #### The ratio-to-sigma columns has some weird strings in it
+            ####        ValueError: could not convert string to float: ' -16.0620*'
+            ####        remove them
+            fix_string = []
+            for i,val in enumerate(resids_df['RatiotoSigma']):
+                try:
+                    float(val)
+                    fix_string.append(val)
+                except:
+                    # print(i, val)
+                    fix_string.append(val[:-1])
 
-                        # cleanDF = test['Value'].apply(test_apply).dropna()        
-        def test_apply(x):
-            try:
-                return float(x)
-            except:
-                return np.nan
-#         cleanDF = test['Value'].apply(test_apply).dropna()
+            resids_df['RatiotoSigma'] = fix_string
+            ####   
+            #### Some of the elevations are empty.  Replace the empty strings with nans
+            ####
+            elev_fix = []
+            for i,val in enumerate(resids_df['Elev1']):
+                try:
+                    float(val)
+                    elev_fix.append(float(val))
+                except:
+                    elev_fix.append(np.nan)
+            resids_df['Elev1'] = elev_fix
+            elev_fix = []
+            for i,val in enumerate(resids_df['Elev2']):
+                try:
+                    float(val)
+                    elev_fix.append(float(val))
+                except:
+                    elev_fix.append(np.nan)
+            resids_df['Elev2'] = elev_fix
+
+                            # def test_apply(x):
+                            #     try:
+                            #         return float(x)
+                            #     except ValueError:
+                            #         return None
+
+                            # cleanDF = test['Value'].apply(test_apply).dropna()        
+            def test_apply(x):
+                try:
+                    return float(x)
+                except:
+                    return np.nan
+    #         cleanDF = test['Value'].apply(test_apply).dropna()
 
 
 
-        resids_df['Observation']  = resids_df['Observation'].apply(test_apply)  #.astype(float)
-        resids_df['Residual']     = resids_df['Residual'].apply(test_apply)     #.astype(float)
-        resids_df['RatiotoSigma'] = resids_df['RatiotoSigma'].apply(test_apply) #.astype(float)
+            resids_df['Observation']  = resids_df['Observation'].apply(test_apply)  #.astype(float)
+            resids_df['Residual']     = resids_df['Residual'].apply(test_apply)     #.astype(float)
+            resids_df['RatiotoSigma'] = resids_df['RatiotoSigma'].apply(test_apply) #.astype(float)
 
-        #### Delete the superfluous columns
-        del resids_df['year']
-        del resids_df['month']
-        del resids_df['day']
-        del resids_df['hours']
-        del resids_df['minutes']
-        del resids_df['secs']
-        del resids_df['millsecs']
-        del resids_df['timeHHMM']
-        del resids_df['YYMMDD']
-        del resids_df['HHMM']
-        del resids_df['SEC_UTC']
-        del resids_df['Block']
-        del resids_df['OBS_No']
+            #### Delete the superfluous columns
+            del resids_df['year']
+            del resids_df['month']
+            del resids_df['day']
+            del resids_df['hours']
+            del resids_df['minutes']
+            del resids_df['secs']
+            del resids_df['millsecs']
+            del resids_df['timeHHMM']
+            del resids_df['YYMMDD']
+            del resids_df['HHMM']
+            del resids_df['SEC_UTC']
+            del resids_df['Block']
+            del resids_df['OBS_No']
 
-        end = time.time()
-        elapsed = end - start
-#         print('Observed residuals: ',elapsed)
-        return(resids_df)
+            end = time.time()
+            elapsed = end - start
+    #         print('Observed residuals: ',elapsed)
+            resids_iters[i_iter] = resids_df
+    
+        return(resids_iters)
        
         
     def read_resid_measurement_summaries(self):

@@ -48,8 +48,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.YR            =  2018
         self.DATA_TYPE     = 'PCE'
         self.grav_id = '' 
-#         self.g2b_file = 'icesat2_g2b_PCE_gpstraj.gz'   # fort.40
-        self.g2b_file = 'g2b_pce_312_328.gz'   # fort.40
+        self.g2b_file = 'icesat2g2b_pce_287_289A.gz'   # fort.40
+#         self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
         self.ephem_file = 'ephem1430.data_2025.gz'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
@@ -110,6 +110,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             'ANTPHC',
                             'ANTPH2',
                             'CGMASS',
+                            'OLOAD',
                             'DRAG             5041144 ',       # remove the drag effects on the GPS satellites  
                             'DRAG             5044284',
                             'DRAG             5051204',
@@ -192,6 +193,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         dt_epoch_start_minus2days = (epoch_start_dt - dt_2days).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
         dt_epoch_end_plus1days    = (epoch_end_dt + dt_1days).dt.strftime('%y%m%d%H%M%S.000').values[0]
         
+        ##### --------------------------------------------------------------------
         #### --------------------------------------------------------------------
         ####   INPUT THE OPTIONS ON THE SPECIFIC CARDS YOU WANT TO CHANGE
         ##### Putting in the options is one of the hardest parts of using GEODYN
@@ -201,17 +203,66 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['ORBTVU'] =  'ORBTVU1021       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
-        card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  
+        
+        ##### --------------------------------------------------------------------
+        ###   PRNTVU is used to control the IIS and IIE printed content
+        ###       Be warned that if you include a bunch, the file will be huge, and
+        ###           the run time will increase (printing to ascii is slow)
+        
+            ####   PRNTVU KEY                     1234567890123456 8901234
+            ####    columns      IIS output option
+            ####      9          Simple list of GEODYN -IIS setup. Interpretive
+            ####     10          Interpretive list of GEODYN -IIS setup.
+            ####     11          Observation block selection report.
+            ####     12          Gravity model coefficients. Global  
+            ####     13          Global parameter values and sigmas.                             
+            ####     14          Arc parameter values and sigmas.
+            ####     15          Sea surface topography. Ocean
+            ####     16          Ocean Tide Model.  
+            ####    columns      IIE output option
+            ####     18          Simple list of GEODYN -IIS setup.
+            ####     19          Values of estimated E-biases.
+            ####     20          E-matrix labels in Summary Page.
+            ####     21          Adjusted station baselines  
+            ####     22          Correlations for adjusted parameters.                             
+            ####     23          Shadow crossing. 
+            
+#       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
+#       card_strings['PRNTVU'] =  'PRNTVU5521111111 111222'  # over-suppress IIS/IIE outputs.
+        card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
+####   PRNTVU KEY                  1234567890123456 8901234
+
+#       
         card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
         card_strings['ATGRAV']  =  'ATGRAV9090              '+dt_epoch_start_minus2days +''+dt_epoch_end_plus1days[:-1]   
         card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
         card_strings['SATPAR   13']  =  'SATPAR   13      '+SAT_ID+'          9.53000000       1514.000'
-        card_strings['SIGMA           1']  =  'SIGMA           1               1.0                 1.0'    #10.0D+25            10.0D+25'
-        card_strings['SIGMA           2']  =  'SIGMA           2               1.0                 1.0'    #10.0D+25            10.0D+25'
-        card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'    #10.0D+25            10.0D+25'
-        card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'    #10.0D+25             0.10'
-        card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'    #0.010000            0.010000'
+        card_strings['SIGMA           1']  =  'SIGMA           1               1.0                 1.0'    
+        card_strings['SIGMA           2']  =  'SIGMA           2               1.0                 1.0'    
+        card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'   
+        card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
+        card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
         
+        ### Fix the coordinate system... PCE Data was in J2000
+        card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
+                    # 123456789012
+            
+        #### Suppress the printing of the flux model
+        card_strings['FLUX  1']  =  'FLUX  0'
+    
+        #### Suppress the printing of the gravity model
+        card_strings['PLANET    0100          2.20320900000000D+13      2439700.0 10000000.000'] = 'PLANET 2  0100          2.20320900000000D+13      2439700.0 10000000.000'
+        card_strings['PLANET    0200          3.24858592000000D+14      6051900.0 10000000.000'] = 'PLANET 2  0200          3.24858592000000D+14      6051900.0 10000000.000'
+        card_strings['PLANET    0301          4.90280007600000D+12      1738000.0 10000000.000'] = 'PLANET 2  0301          4.90280007600000D+12      1738000.0 10000000.000'
+        card_strings['PLANET    0400          4.28283752140000D+13      3397000.0      154.409'] = 'PLANET 2  0400          4.28283752140000D+13      3397000.0      154.409'
+        card_strings['PLANET    0500          1.26712764800000D+17     71492000.0       15.414'] = 'PLANET 2  0500          1.26712764800000D+17     71492000.0       15.414'
+        card_strings['PLANET    0600          3.79405852000000D+16     60268000.0       10.208'] = 'PLANET 2  0600          3.79405852000000D+16     60268000.0       10.208'
+        card_strings['PLANET    0700          5.79454860000000D+15     25559000.0       43.616'] = 'PLANET 2  0700          5.79454860000000D+15     25559000.0       43.616'
+        card_strings['PLANET    0800          6.83653500000000D+15     24764000.0       58.543'] = 'PLANET 2  0800          6.83653500000000D+15     24764000.0       58.543'
+        card_strings['PLANET    0900          9.77000000000000D+11      1151000.0 10000000.000'] = 'PLANET 2  0900          9.77000000000000D+11      1151000.0 10000000.000'
+        card_strings['PLANET    9999          1.32712440040944D+20    696000000.0 10000000.000'] = 'PLANET 2  9999          1.32712440040944D+20    696000000.0 10000000.000'
+    
+
         #### --------------------------------------------------------------------
         ####   INPUT THE DRAG OPTIONS  for time dependent drag
         card_drag_strings={}
@@ -288,37 +339,37 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         ##### then delete all the SATPAR,EPOCH,ELEMS110, ELEMS2 and restore the ones we saved
         #####-----------------------------------------------------------------------------
 
-#         ##### read in all lines of the file and save them
-#         with open(iisset_file, "r") as f:
-#             lines_all = f.readlines()    
-#         ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
-#         with open(iisset_file, "w") as f:
-#             for iline, line in enumerate(lines_all):
-#                 if 'SATPAR' in line:
-#                     if SAT_ID in line:
-#                         save_SATPAR = iline+1
-#                         save_EPOCH = iline+2
-#                         save_ELEMS11 = iline+3
-#                         save_ELEMS2 = iline+4
+        ##### read in all lines of the file and save them
+        with open(iisset_file, "r") as f:
+            lines_all = f.readlines()    
+        ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
+        with open(iisset_file, "w") as f:
+            for iline, line in enumerate(lines_all):
+                if 'SATPAR' in line:
+                    if SAT_ID in line:
+                        save_SATPAR = iline+1
+                        save_EPOCH = iline+2
+                        save_ELEMS11 = iline+3
+                        save_ELEMS2 = iline+4
                        
-#                 elif 'SATPAR'in line:
-#                     pass
-#                 elif 'EPOCH'in line:
-#                     pass
-#                 elif 'ELEMS1'in line:
-#                     pass
-#                 elif 'ELEMS2'in line:
-#                     pass
-# #                 elif 'MBIAS'in line:
-# #                     pass
+                elif 'SATPAR'in line:
+                    pass
+                elif 'EPOCH'in line:
+                    pass
+                elif 'ELEMS1'in line:
+                    pass
+                elif 'ELEMS2'in line:
+                    pass
+                elif 'MBIAS'in line:
+                    pass
                 
-#                 else:
-#                     f.write(line)
+                else:
+                    f.write(line)
                     
-#         line_SATPAR  = linecache.getline(iisset_file, save_SATPAR)
-#         line_EPOCH   = linecache.getline(iisset_file, save_EPOCH)
-#         line_ELEMS11 = linecache.getline(iisset_file, save_ELEMS11)
-#         line_ELEMS2  = linecache.getline(iisset_file, save_ELEMS2)
+        line_SATPAR  = linecache.getline(iisset_file, save_SATPAR)
+        line_EPOCH   = linecache.getline(iisset_file, save_EPOCH)
+        line_ELEMS11 = linecache.getline(iisset_file, save_ELEMS11)
+        line_ELEMS2  = linecache.getline(iisset_file, save_ELEMS2)
 
         ####----------------------------------------------------------------------
         #### REMOVE CARDS:: rewrite the file without the cards we specified in the cards_to_remove dict
@@ -363,13 +414,13 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                                 f.write(card_strings[card] + ' \n')
                                 switch_cardcount += 1
 
-#                         elif (('REFSYS' in line) and (switch_2 == True)):
-#                             f.write(line)
-#                             f.write(line_SATPAR)
-#                             f.write(line_EPOCH)
-#                             f.write(line_ELEMS11)
-#                             f.write(line_ELEMS2)
-#                             switch_2 = False
+                        elif (('REFSYS' in line) and (switch_2 == True)):
+                            f.write(line)
+                            f.write(line_SATPAR)
+                            f.write(line_EPOCH)
+                            f.write(line_ELEMS11)
+                            f.write(line_ELEMS2)
+                            switch_2 = False
                             
                         else:
                             f.write(line)
@@ -423,17 +474,17 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             '9743134',
                             '9946114',        
                             ]
-#         ##### read in all lines of the file and save them
-#         with open(iisset_file, "r") as f:
-#             lines_all = f.readlines()    
-#         ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
-#         with open(iisset_file, "w") as f:
-#             for iline, line in enumerate(lines_all):
-#                 if any(gps in line for gps in delete_gps_sats):
-#                     # IF the any of GPS IDs in the list are in the line, dont add it the line
-#                     pass
-#                 else:
-#                     f.write(line)      
+        ##### read in all lines of the file and save them
+        with open(iisset_file, "r") as f:
+            lines_all = f.readlines()    
+        ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
+        with open(iisset_file, "w") as f:
+            for iline, line in enumerate(lines_all):
+                if any(gps in line for gps in delete_gps_sats):
+                    # IF the any of GPS IDs in the list are in the line, dont add it the line
+                    pass
+                else:
+                    f.write(line)      
 
 
     #### overwrite some methods from CONTROL:
