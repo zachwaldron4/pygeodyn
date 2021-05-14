@@ -14,18 +14,12 @@ import time
 import linecache
 from datetime import datetime,timedelta
 import copy
+#### ----------------------------------------
+#### ----------------------------------------
 
 
-#### ----------------------------------------
-#### Plotting modules:
-#### -----------------
-import plotly.graph_objects as go
-from plotly.offline import plot, iplot
-from plotly.subplots import make_subplots
-import plotly.express as px
-#### ----------------------------------------
-#### ----------------------------------------
-#### ----------------------------------------
+sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+
 
 from util_Set_Inputs           import UtilSetInputs
 from util_ReaderTools          import UtilReader_Tools
@@ -44,10 +38,20 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         self.options_in        = params['options_in']
         self.verbose           = params['verbose']
         self.run_ID            = params['run_ID']
+        self.arc_input         = params['arc']
         
         
-        
-#         self.set_satellite_params( self.satellite )
+#         # Should i put these in as dummy variables?
+#         self.SATELLITE_dir  = None
+#         self.SATID          = None
+#         self.YR             = None
+#         self.DATA_TYPE      = None
+#         self.grav_id        = None
+#         self.g2b_file       = None
+#         self.atgrav_file    = None
+#         self.ephem_file     = None
+#         self.gravfield_file = None
+    
         self.set_density_model_setup_params( self.den_model )
         self.set_acceleration_params( self.empirical_accels )
         
@@ -57,26 +61,24 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         else:
             self.SpecialRun_name = params['SpecialRun_name']
 
-        if np.size(params['arc']) == 1:
-            self.arc = params['arc']
+#         if np.size(params['arc']) == 1:
+#             self.arc = params['arc']
             
-            self.path_to_model = ('/data/data_geodyn/results/'+
-                                       self.SATELLITE_dir +'/'+
-                                       self.den_model+'/'+  
-                                       self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
+#             self.path_to_model = ('/data/data_geodyn/results/'+
+#                                        self.SATELLITE_dir +'/'+
+#                                        self.den_model+'/'+  
+#                                        self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
 
-            ####  save the specific file names as "private members" with the _filename convention
-#             print(filename)
-            self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
-            self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
-            self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
-            #### the _filenames are now stored into self as members and can be passed to the next class
-
-          
-        else:
-            self.arc = params['arc']
-            print('Calling pygeodyn with multiple arcs...')
-            pass
+#             ####  save the specific file names as "private members" with the _filename convention
+# #             print(filename)
+#             self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
+#             self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
+#             self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
+#             #### the _filenames are now stored into self as members and can be passed to the next class
+#         else:
+#             self.arc = params['arc']
+#             print('Calling pygeodyn with multiple arcs...')
+#             pass
       
     
         
@@ -331,15 +333,15 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 
         #### Build the dictionary to be index based on iteration number   
         #### and initialize each iteration number to also be a dictionary
-        text_GA_list = ["0GA 9P 11t1",
-                        "0GA 9P 12t1",
-                        "0GA 9P 21t1",
-                        "0GA 9P 22t1",
-                        "0GA 9P 11t2",
-                        "0GA 9P 12t2",
-                        "0GA 9P 21t2",
-                        "0GA 9P 22t2",
-                            ]    
+#         text_GA_list = ["0GA 9P 11t1",
+#                         "0GA 9P 12t1",
+#                         "0GA 9P 21t1",
+#                         "0GA 9P 22t1",
+#                         "0GA 9P 11t2",
+#                         "0GA 9P 12t2",
+#                         "0GA 9P 21t2",
+#                         "0GA 9P 22t2",
+#                             ]    
         SatMain_AdjustedParams = {}
         for i_iter,iterval in enumerate(np.arange(1, self.total_iterations+1)):
             SatMain_AdjustedParams[iterval] = {}
@@ -348,7 +350,7 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                     for iga, ga_val in enumerate(text_GA_list):
                         SatMain_AdjustedParams[iterval][satval] = {}
                         SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
-                        SatMain_AdjustedParams[iterval][satval][ga_val] = {}
+#                         SatMain_AdjustedParams[iterval][satval][ga_val] = {}
                 else:
                     SatMain_AdjustedParams[iterval][satval] = {}
                     SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
@@ -379,22 +381,27 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                             #### save the list of T##s and strip of whitespaces
                             timedep_Cd_count.append(line[18:24].strip()) 
 
-        #### Loop through the IIE cards to find the
+        #### Loop through the IIS cards to find the
         #### date inputs for the time dependent Cd option 
         #### First isolate the input card section:
         line_no_1 = [] 
         line_no_2 = [] 
         with open(self._iieout_filename, 'r') as f:
             for line_no, line_text in enumerate(f):
-                if 'GEODYN IIE VERSION' in line_text :
+#                 if 'GEODYN IIE VERSION' in line_text :
+#                     line_no_1.append(line_no)
+#                 if 'OBSERVATION RESIDUALS FOR ARC' in line_text:
+#                     line_no_2.append(line_no)
+                if 'GEODYN-IIS VERSION' in line_text :
                     line_no_1.append(line_no)
-                if 'OBSERVATION RESIDUALS FOR ARC' in line_text:
+                if 'GEODYN IIE VERSION' in line_text:
                     line_no_2.append(line_no)
                     break
 #         print('line_no_1',line_no_1)
 #         print('line_no_2',line_no_2)
         #### Make a list of the dates as determined by the DRAG input cards:            
-        card_inputs_range = np.arange(line_no_1[0], line_no_2[0]-100)
+        card_inputs_range = np.arange(line_no_1[0], line_no_2[0]-100)  # puts section above other places where 'DRAG' would appear
+#         print(card_inputs_range)
         timedep_Cd_dates = []
         for i,val in enumerate(card_inputs_range):
                 line = linecache.getline(self._iieout_filename,val)            
@@ -405,7 +412,7 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                         #print(line[45:57])
                         timedep_Cd_dates.append(line[45:56].strip())
         date_timedep_cds = pd.to_datetime(timedep_Cd_dates[1:], format='%y%m%d%H%M%S')  #YYMMDDHHMMSS
-        
+#         print(date_timedep_cds)
         #         
         #------------------- SECTION 2 ----------------------------------
         #--|
@@ -490,9 +497,9 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                 data_2ndtline = linecache.getline(self._iieout_filename,val_lines+2) #
                 data_3rdline = linecache.getline(self._iieout_filename,val_lines+3) #
 
-                apriorival = float(data_1stline[19:38])
-                prevval = float(data_2ndtline[19:38])
-                currentval  = float(data_3rdline[19:38])
+                apriorival = float(data_1stline[19:41])
+                prevval = float(data_2ndtline[19:41])
+                currentval  = float(data_3rdline[19:41])
                 totalDelta = float(data_2ndtline[42:62])
                 currentDelta =  float(data_3rdline[42:62])
                 AprioriSigma = float(data_2ndtline[63:78])
@@ -844,236 +851,241 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 #         else:
 #             self.str_iteration =     self.total_iterations
 
-        text_obs_resid = 'OBSERVATION RESIDUALS FOR ARC  1 FOR INNER ITERATION '+ (self.str_iteration)
-        end_of_section = 'RESIDUAL SUMMARY BY STATION AND TYPE FOR ARC  1 INNER ITERATION '+ (self.str_iteration)
-        lines_list_1 = [] 
-        lines_list_2 = []
+        resids_iters = {}
+    
+        for i_iter in [' 1', self.str_iteration]:
+            text_obs_resid = 'OBSERVATION RESIDUALS FOR ARC  1 FOR INNER ITERATION '+ (i_iter)
+            end_of_section = 'RESIDUAL SUMMARY BY STATION AND TYPE FOR ARC  1 INNER ITERATION '+ (i_iter)
+            lines_list_1 = [] 
+            lines_list_2 = []
 
-        #### The below grabs the line numbers of the section headers 
-        #### The Observation Residuals end at the first instance of the Summary by Station
-        with open(self._iieout_filename, 'r') as f:
-            for line_no, line in enumerate(f):
-                if text_obs_resid in line:
-                    lines_list_1.append(line_no)
-                elif end_of_section in line:
-                    lines_list_2.append(line_no)
-#         print('ll1',lines_list_1)
-#         print('ll2',lines_list_2)
+            #### The below grabs the line numbers of the section headers 
+            #### The Observation Residuals end at the first instance of the Summary by Station
+            with open(self._iieout_filename, 'r') as f:
+                for line_no, line in enumerate(f):
+                    if text_obs_resid in line:
+                        lines_list_1.append(line_no)
+                    elif end_of_section in line:
+                        lines_list_2.append(line_no)
+    #         print('ll1',lines_list_1)
+    #         print('ll2',lines_list_2)
 
-        #### If there are is not a list of residuals the snippet under try: 
-        ####     will kick an error.  This is added to allows the code to 
-        ####     continue going without error.  
-        #### This issue was tied to the above issue with there being too many iterations.
-        try:
-            residual_range  = np.arange(lines_list_1[0], lines_list_2[0]+1)
-        except:
-            residual_range  = np.arange(lines_list_1[0], lines_list_2+1)
+            #### If there are is not a list of residuals the snippet under try: 
+            ####     will kick an error.  This is added to allows the code to 
+            ####     continue going without error.  
+            #### This issue was tied to the above issue with there being too many iterations.
+            try:
+                residual_range  = np.arange(lines_list_1[0], lines_list_2[0]+1)
+            except:
+                residual_range  = np.arange(lines_list_1[0], lines_list_2+1)
 
-        #### Initialize some lists to save out the data
-        list_config_type  = []
-        list_SAT_main     = []
-        list_note         = []
-        list_track_1        = []
-        list_track_2        = []
-        list_YYMMDD       = []
-        list_HHMM         = []
-        list_SEC_UTC      = []
-        list_Observation  = []
-        list_Residual     = []
-        list_RatiotoSigma = []
-        list_Elev1        = []
-        list_Elev2        = []
-        list_OBS_No       = []
-        list_Block        = []
+            #### Initialize some lists to save out the data
+            list_config_type  = []
+            list_SAT_main     = []
+            list_note         = []
+            list_track_1        = []
+            list_track_2        = []
+            list_YYMMDD       = []
+            list_HHMM         = []
+            list_SEC_UTC      = []
+            list_Observation  = []
+            list_Residual     = []
+            list_RatiotoSigma = []
+            list_Elev1        = []
+            list_Elev2        = []
+            list_OBS_No       = []
+            list_Block        = []
 
-        #### Loop through the residual section and save out data.
-        #### There are some header quandries that must be dealt with
-        ####      and the method for doing so is in the if, elif, else statements below
-        #### This quandry is that the data that follows different kinds of headers 
-        ####     is in different columns of the fixed width format file
-        for i,val in enumerate(residual_range):
-            line = linecache.getline(self._iieout_filename,val)
-            #### HEADER TYPE 1
-            if 'STATION-SATELLITE CONFIGURATION' in line:
-                # print('HEADER Type 1')
-                config_type = line[35:44]
-                SAT_main = line[54:62]
-                #### The location of the columns changes between SLR and GPS... 
-                if self.DATA_TYPE == 'GPS':
-                    track_1 = line[72:80]
-                    track_2 = line[90:98]
-                    note = np.nan
-                elif self.DATA_TYPE == 'SLR':
-                    track_1 = line[44:53]
-                    track_2 = np.nan
-                    note = np.nan
-                elif self.DATA_TYPE == 'PCE':
-                    track_1 = line[72:80]
-                    track_2 = line[90:98]
-                    note = np.nan
-                    
-            #### HEADER TYPE 2
-            ####         within HEADER TYPE 2 the GPS data has further another header type
-            elif 'STATION-SAT CONFIG.' in line:
-                if self.DATA_TYPE == 'GPS':
-                    if 'DSS1WRNG' in line:
-                        config_type = line[46:56]
+            #### Loop through the residual section and save out data.
+            #### There are some header quandries that must be dealt with
+            ####      and the method for doing so is in the if, elif, else statements below
+            #### This quandry is that the data that follows different kinds of headers 
+            ####     is in different columns of the fixed width format file
+            for i,val in enumerate(residual_range):
+                line = linecache.getline(self._iieout_filename,val)
+                #### HEADER TYPE 1
+                if 'STATION-SATELLITE CONFIGURATION' in line:
+                    # print('HEADER Type 1')
+                    config_type = line[35:44]
+                    SAT_main = line[54:62]
+                    #### The location of the columns changes between SLR and GPS... 
+                    if self.DATA_TYPE == 'GPS':
+                        track_1 = line[72:80]
+                        track_2 = line[90:98]
+                        note = np.nan
+                    elif self.DATA_TYPE == 'SLR':
+                        track_1 = line[44:53]
+                        track_2 = np.nan
+                        note = np.nan
+                    elif self.DATA_TYPE == 'PCE':
+                        track_1 = line[72:80]
+                        track_2 = line[90:98]
+                        note = np.nan
+
+                #### HEADER TYPE 2
+                ####         within HEADER TYPE 2 the GPS data has further another header type
+                elif 'STATION-SAT CONFIG.' in line:
+                    if self.DATA_TYPE == 'GPS':
+                        if 'DSS1WRNG' in line:
+                            config_type = line[46:56]
+                            SAT_main = line[65:73]
+                            note = np.nan
+                            track_1 = line[83:91]
+                            track_2 = line[100:109]
+                        else:
+                            config_type = line[46:56]
+                            SAT_main = np.nan
+                            note = line[55:63]
+                            track_1 = line[65:74]
+                            track_2 = np.nan
+                    elif self.DATA_TYPE == 'SLR':
+                        config_type = line[46:55]
                         SAT_main = line[65:73]
                         note = np.nan
-                        track_1 = line[83:91]
-                        track_2 = line[100:109]
-                    else:
-                        config_type = line[46:56]
-                        SAT_main = np.nan
-                        note = line[55:63]
-                        track_1 = line[65:74]
-                        track_2 = np.nan
-                elif self.DATA_TYPE == 'SLR':
-                    config_type = line[46:55]
-                    SAT_main = line[65:73]
-                    note = np.nan
-                    track_1 = line[55:64]
-                    track_2 = np.nan      
-                elif self.DATA_TYPE == 'PCE':
-                    config_type = line[46:55]
-                    SAT_main = line[65:73]
-                    note = np.nan
-                    track_1 = line[55:64]
-                    track_2 = np.nan      
-            ####  If the block number is an integer 
-            ####        (which it will be if the line contains data) 
-            ####         then save the data out
-            try:
-                BLOCK_no = int(line[117:125])
-                YYMMDD       = line[1:8]
-                HHMM         = line[8:13]
-                SEC_UTC      = line[13:23]
-                Observation  = line[26:42]
-                Residual     = line[42:57]
-                RatiotoSigma = line[57:70]
-                Elev1        = line[71:84]
-                Elev2        = line[85:96]
-                OBS_No       = line[106:117]
-                Block        = line[117:125]
+                        track_1 = line[55:64]
+                        track_2 = np.nan      
+                    elif self.DATA_TYPE == 'PCE':
+                        config_type = line[46:55]
+                        SAT_main = line[65:73]
+                        note = np.nan
+                        track_1 = line[55:64]
+                        track_2 = np.nan      
+                ####  If the block number is an integer 
+                ####        (which it will be if the line contains data) 
+                ####         then save the data out
+                try:
+                    BLOCK_no = int(line[117:125])
+                    YYMMDD       = line[1:8]
+                    HHMM         = line[8:13]
+                    SEC_UTC      = line[13:23]
+                    Observation  = line[26:42]
+                    Residual     = line[42:57]
+                    RatiotoSigma = line[57:70]
+                    Elev1        = line[71:84]
+                    Elev2        = line[85:96]
+                    OBS_No       = line[106:117]
+                    Block        = line[117:125]
 
-                list_config_type.append(config_type)
-                list_SAT_main.append(SAT_main)
-                list_note.append(note)
-                list_track_1.append(track_1)
-                list_track_2.append(track_2)
-                list_YYMMDD.append(YYMMDD)
-                list_HHMM.append(HHMM)
-                list_SEC_UTC.append(SEC_UTC)
-                list_Observation.append(Observation)
-                list_Residual.append(Residual)
-                list_RatiotoSigma.append(RatiotoSigma)
-                list_Elev1.append(Elev1)
-                list_Elev2.append(Elev2)
-                list_OBS_No.append(OBS_No)
-                list_Block.append(Block)
-            except:
-        #         print('Not a data block', line[117:125]) 
-                pass
-        
-        ####  Save all the above data to a dictionary then convert to a dataframe
-        resids_dict= {'StatSatConfig' : list_config_type,
-                      'Sat_main'      : list_SAT_main   ,
-                      'track_1'         : list_track_1      ,
-                      'track_2'         : list_track_2      ,
-                      'Note'          : list_note       ,
-                      'YYMMDD'        : list_YYMMDD      ,
-                      'HHMM'          : list_HHMM        ,
-                      'SEC_UTC'       : list_SEC_UTC      ,
-                      'Observation'   : list_Observation  ,
-                      'Residual'      : list_Residual     ,
-                      'RatiotoSigma'  : list_RatiotoSigma ,
-                      'Elev1'         : list_Elev1       ,
-                      'Elev2'         : list_Elev2       ,
-                      'OBS_No'        : list_OBS_No      ,
-                      'Block'         : list_Block       ,
-                     } 
-        resids_df = pd.DataFrame.from_dict(resids_dict)
-        linecache.clearcache()
-        #
-        # ----------------------------------------------------------------------------------
-        #
-        #### Fix the date column:
-        dates = self.make_datetime_column(resids_df, self.YR)
+                    list_config_type.append(config_type)
+                    list_SAT_main.append(SAT_main)
+                    list_note.append(note)
+                    list_track_1.append(track_1)
+                    list_track_2.append(track_2)
+                    list_YYMMDD.append(YYMMDD)
+                    list_HHMM.append(HHMM)
+                    list_SEC_UTC.append(SEC_UTC)
+                    list_Observation.append(Observation)
+                    list_Residual.append(Residual)
+                    list_RatiotoSigma.append(RatiotoSigma)
+                    list_Elev1.append(Elev1)
+                    list_Elev2.append(Elev2)
+                    list_OBS_No.append(OBS_No)
+                    list_Block.append(Block)
+                except:
+            #         print('Not a data block', line[117:125]) 
+                    pass
 
-        resids_df.insert(0, 'Date', dates)
+            ####  Save all the above data to a dictionary then convert to a dataframe
+            resids_dict= {'StatSatConfig' : list_config_type,
+                          'Sat_main'      : list_SAT_main   ,
+                          'track_1'         : list_track_1      ,
+                          'track_2'         : list_track_2      ,
+                          'Note'          : list_note       ,
+                          'YYMMDD'        : list_YYMMDD      ,
+                          'HHMM'          : list_HHMM        ,
+                          'SEC_UTC'       : list_SEC_UTC      ,
+                          'Observation'   : list_Observation  ,
+                          'Residual'      : list_Residual     ,
+                          'RatiotoSigma'  : list_RatiotoSigma ,
+                          'Elev1'         : list_Elev1       ,
+                          'Elev2'         : list_Elev2       ,
+                          'OBS_No'        : list_OBS_No      ,
+                          'Block'         : list_Block       ,
+                         } 
+            resids_df = pd.DataFrame.from_dict(resids_dict)
+            linecache.clearcache()
+            #
+            # ----------------------------------------------------------------------------------
+            #
+            #### Fix the date column:
+            dates = self.make_datetime_column(resids_df, self.YR)
 
-        #### The ratio-to-sigma columns has some weird strings in it
-        ####        ValueError: could not convert string to float: ' -16.0620*'
-        ####        remove them
-        fix_string = []
-        for i,val in enumerate(resids_df['RatiotoSigma']):
-            try:
-                float(val)
-                fix_string.append(val)
-            except:
-                # print(i, val)
-                fix_string.append(val[:-1])
+            resids_df.insert(0, 'Date', dates)
 
-        resids_df['RatiotoSigma'] = fix_string
-        ####   
-        #### Some of the elevations are empty.  Replace the empty strings with nans
-        ####
-        elev_fix = []
-        for i,val in enumerate(resids_df['Elev1']):
-            try:
-                float(val)
-                elev_fix.append(float(val))
-            except:
-                elev_fix.append(np.nan)
-        resids_df['Elev1'] = elev_fix
-        elev_fix = []
-        for i,val in enumerate(resids_df['Elev2']):
-            try:
-                float(val)
-                elev_fix.append(float(val))
-            except:
-                elev_fix.append(np.nan)
-        resids_df['Elev2'] = elev_fix
-        
-                        # def test_apply(x):
-                        #     try:
-                        #         return float(x)
-                        #     except ValueError:
-                        #         return None
+            #### The ratio-to-sigma columns has some weird strings in it
+            ####        ValueError: could not convert string to float: ' -16.0620*'
+            ####        remove them
+            fix_string = []
+            for i,val in enumerate(resids_df['RatiotoSigma']):
+                try:
+                    float(val)
+                    fix_string.append(val)
+                except:
+                    # print(i, val)
+                    fix_string.append(val[:-1])
 
-                        # cleanDF = test['Value'].apply(test_apply).dropna()        
-        def test_apply(x):
-            try:
-                return float(x)
-            except:
-                return np.nan
-#         cleanDF = test['Value'].apply(test_apply).dropna()
+            resids_df['RatiotoSigma'] = fix_string
+            ####   
+            #### Some of the elevations are empty.  Replace the empty strings with nans
+            ####
+            elev_fix = []
+            for i,val in enumerate(resids_df['Elev1']):
+                try:
+                    float(val)
+                    elev_fix.append(float(val))
+                except:
+                    elev_fix.append(np.nan)
+            resids_df['Elev1'] = elev_fix
+            elev_fix = []
+            for i,val in enumerate(resids_df['Elev2']):
+                try:
+                    float(val)
+                    elev_fix.append(float(val))
+                except:
+                    elev_fix.append(np.nan)
+            resids_df['Elev2'] = elev_fix
+
+                            # def test_apply(x):
+                            #     try:
+                            #         return float(x)
+                            #     except ValueError:
+                            #         return None
+
+                            # cleanDF = test['Value'].apply(test_apply).dropna()        
+            def test_apply(x):
+                try:
+                    return float(x)
+                except:
+                    return np.nan
+    #         cleanDF = test['Value'].apply(test_apply).dropna()
 
 
 
-        resids_df['Observation']  = resids_df['Observation'].apply(test_apply)  #.astype(float)
-        resids_df['Residual']     = resids_df['Residual'].apply(test_apply)     #.astype(float)
-        resids_df['RatiotoSigma'] = resids_df['RatiotoSigma'].apply(test_apply) #.astype(float)
+            resids_df['Observation']  = resids_df['Observation'].apply(test_apply)  #.astype(float)
+            resids_df['Residual']     = resids_df['Residual'].apply(test_apply)     #.astype(float)
+            resids_df['RatiotoSigma'] = resids_df['RatiotoSigma'].apply(test_apply) #.astype(float)
 
-        #### Delete the superfluous columns
-        del resids_df['year']
-        del resids_df['month']
-        del resids_df['day']
-        del resids_df['hours']
-        del resids_df['minutes']
-        del resids_df['secs']
-        del resids_df['millsecs']
-        del resids_df['timeHHMM']
-        del resids_df['YYMMDD']
-        del resids_df['HHMM']
-        del resids_df['SEC_UTC']
-        del resids_df['Block']
-        del resids_df['OBS_No']
+            #### Delete the superfluous columns
+            del resids_df['year']
+            del resids_df['month']
+            del resids_df['day']
+            del resids_df['hours']
+            del resids_df['minutes']
+            del resids_df['secs']
+            del resids_df['millsecs']
+            del resids_df['timeHHMM']
+            del resids_df['YYMMDD']
+            del resids_df['HHMM']
+            del resids_df['SEC_UTC']
+            del resids_df['Block']
+            del resids_df['OBS_No']
 
-        end = time.time()
-        elapsed = end - start
-#         print('Observed residuals: ',elapsed)
-        return(resids_df)
+            end = time.time()
+            elapsed = end - start
+    #         print('Observed residuals: ',elapsed)
+            resids_iters[i_iter] = resids_df
+    
+        return(resids_iters)
        
         
     def read_resid_measurement_summaries(self):
@@ -1102,7 +1114,8 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                               'TYPE2'    :[],
                                         })
 
-
+        (self.total_iterations, self.str_iteration) = self.iteration_number(self._iieout_filename)
+        
         for i_iter, iter_val in enumerate(np.arange(0, self.total_iterations)+1):
             #
             # ----------------------------------------------------------------------------------
@@ -1112,7 +1125,7 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
             #### We use the observation number to find where to STOP reading in data. 
             #### We find this by finding the Summary by Measurment Header
             text_smry_meas = ('RESIDUAL SUMMARY BY MEASUREMENT TYPE FOR ARC  1 INNER ITERATION '+
-                                   self.str_iterations +
+                                   self.str_iteration +
                                ' OF GLOBAL ITERATION 1')
             ####
             #### Loop through the iieout file and find where the above header exists 
@@ -1321,7 +1334,9 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         for i,val in enumerate(StatsSection_range):
             line = linecache.getline(self._iieout_filename,val)
             if 'START' and 'END' in line:
-                dict_stats['START_epoch'] = float(line[7:16].strip())
+            #  START 1181107 2100  0.0000EPOCH 1181107 2100  0.0000  END 1181110  300  0.0000
+            # 123456789012345  
+                dict_stats['START_epoch'] = float(line[7:14].strip())
                 dict_stats['END_epoch']   = float(line[59:67].strip())
             if 'INTEGRATION STEP SIZE' in line:
                 dict_stats['INTEGRATION_STEP_secs'] = float(line[41:50].strip())     
@@ -1516,54 +1531,135 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 
 
 
-    def getData_Arc(self):
+#     def getData_Arc(self):
 
-        data_keys = [
-                    'AdjustedParams',
+#         data_keys = [
+#                     'AdjustedParams',
+# #                     'Trajectory_xyz',
+# #                     'Density',
+#                     'Residuals_obs',
+# #                     'Residuals_summary',
+# #                     'Statistics',
+#                     ]
+
+#         self.AdjustedParams    = {}
+#         self.Trajectory_xyz    = {}
+#         self.Density           = {}
+#         self.Residuals_obs     = {}
+#         self.Residuals_summary = {}
+#         self.Statistics        = {}
+        
+#         arc = self.arc_input
+
+        
+#         self.set_file_paths_for_multiple_arcs( arc )
+
+
+#         for choice in data_keys:
+#             if choice == 'AdjustedParams':
+#                 self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
+#             elif choice == 'Trajectory_xyz':
+#                 self.Trajectory_xyz[arc]            = self.getData_asciiXYZ()
+#             elif choice == 'Density':
+#                 self.Density[arc]                   = self.getData_density_denfile()
+#             elif choice == 'Residuals_obs':
+#                 self.Residuals_obs[arc]            = self.getData_residsObserved_iieout()
+#             elif choice ==  'Residuals_summary':
+#                 self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
+#             elif choice == 'Statistics':
+#                 self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
+#             else:
+#                 print('The requested output [', choice, '] does not match and inputs')
+
+#         self.organize_output_object_keys(data_keys)            
+
+        
+        
+        
+        
+        
+#     def getData_ArcList(self):
+
+#         data_keys = [
+#                     'AdjustedParams',
 #                     'Trajectory_xyz',
 #                     'Density',
-                    'Residuals_obs',
+#                     'Residuals_obs',
 #                     'Residuals_summary',
 #                     'Statistics',
-                    ]
+#                     ]
 
-        self.AdjustedParams    = {}
-        self.Trajectory_xyz    = {}
-        self.Density           = {}
-        self.Residuals_obs     = {}
-        self.Residuals_summary = {}
-        self.Statistics        = {}
+#         self.AdjustedParams    = {}
+#         self.Trajectory_xyz    = {}
+#         self.Density           = {}
+#         self.Residuals_obs     = {}
+#         self.Residuals_summary = {}
+#         self.Statistics        = {}
         
-        arc = self.arc_input
-#         for arc in self.arc:
-        self.set_file_paths_for_multiple_arcs( arc )
+#         for arc in self.arc_input:
+#             self.set_file_paths_for_multiple_arcs( arc )
+
+            
+#             for choice in data_keys:
+#                 if choice == 'AdjustedParams':
+#                     self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
+#                 elif choice == 'Trajectory_xyz':
+#                     self.Trajectory_xyz[arc]            = self.getData_asciiXYZ()
+#                 elif choice == 'Density':
+#                     self.Density[arc]                   = self.getData_density_denfile()
+#                 elif choice == 'Residuals_obs':
+#                     self.Residuals_obs[arc]            = self.getData_residsObserved_iieout()
+#                 elif choice ==  'Residuals_summary':
+#                     self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
+#                 elif choice == 'Statistics':
+#                     self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
+#                 else:
+#                     print('The requested output [', choice, '] does not match and inputs')
+
+#         self.organize_output_object_keys(data_keys)  # this cleans up the extra keys and puts them in a dictionary key called 'run_parameters'
+    
+    
+    
+    
+    
+    
+#     def getData_ParallelizeArcs(self):
+
+#         data_keys = [
+#                     'AdjustedParams',
+#                     'Trajectory_xyz',
+#                     'Density',
+#                     'Residuals_obs',
+#                     'Residuals_summary',
+# #                     'Statistics',
+#                     ]
+
+#         import multiprocessing
+#         import time
+#         from multiprocessing import set_start_method
+#         set_start_method("spawn")
+
+        
+#         in1 = [
+#                 ( '030914_2wk' ),
+#                 ( '030928_2wk' ),
+# #                 ( '031012_2wk' ),
+# #                 ( '031026_2wk' ),
+# #                 ( '031109_2wk' ),
+# #                 ( '031123_2wk' ),
+# #                 ( '031207_2wk' ),
+# #                 ( '031221_2wk' ),
+#                 ]
+        
+#         pool = multiprocessing.Pool(processes=4)
+#         pool.starmap(self.getData_Arc, in1)
 
 
-        for choice in data_keys:
-            if choice == 'AdjustedParams':
-                self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
-            elif choice == 'Trajectory_xyz':
-                self.Trajectory_xyz[arc]            = self.getData_asciiXYZ()
-            elif choice == 'Density':
-                self.Density[arc]                   = self.getData_density_denfile()
-            elif choice == 'Residuals_obs':
-                self.Residuals_obs[arc]            = self.getData_residsObserved_iieout()
-            elif choice ==  'Residuals_summary':
-                self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
-            elif choice == 'Statistics':
-                self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
-            else:
-                print('The requested output [', choice, '] does not match and inputs')
 
-        self.organize_output_object_keys(data_keys)            
 
-        
-        
-        
-        
-        
-    def getData_ArcList(self):
 
+
+    def getData(self):
         data_keys = [
                     'AdjustedParams',
                     'Trajectory_xyz',
@@ -1573,6 +1669,7 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                     'Statistics',
                     ]
 
+        #### Make dictionaries to store arc in a loop
         self.AdjustedParams    = {}
         self.Trajectory_xyz    = {}
         self.Density           = {}
@@ -1580,10 +1677,12 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         self.Residuals_summary = {}
         self.Statistics        = {}
         
-        for arc in self.arc_input:
+#         print(self.arc_input)
+        num_arcs = np.size(self.arc_input)
+        for iarc, arc in enumerate(self.arc_input):
+
             self.set_file_paths_for_multiple_arcs( arc )
 
-            
             for choice in data_keys:
                 if choice == 'AdjustedParams':
                     self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
@@ -1598,51 +1697,14 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                 elif choice == 'Statistics':
                     self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
                 else:
-                    print('The requested output [', choice, '] does not match and inputs')
+#                     print('Error in PygeodynReader.getData()')
+#                     print('The requested output [', choice, '] does not match any inputs')
+                    break
 
-        self.organize_output_object_keys(data_keys)  # this cleans up the extra keys and puts them in a dictionary key called 'run_parameters'
-    
-    
-    
-    
-    
-    
-    def getData_ParallelizeArcs(self):
+            self.organize_output_object_keys(data_keys, arc, iarc, num_arcs)
 
-        data_keys = [
-                    'AdjustedParams',
-                    'Trajectory_xyz',
-                    'Density',
-                    'Residuals_obs',
-                    'Residuals_summary',
-#                     'Statistics',
-                    ]
-
-        import multiprocessing
-        import time
-        from multiprocessing import set_start_method
-        set_start_method("spawn")
-
-        
-        in1 = [
-                ( '030914_2wk' ),
-                ( '030928_2wk' ),
-#                 ( '031012_2wk' ),
-#                 ( '031026_2wk' ),
-#                 ( '031109_2wk' ),
-#                 ( '031123_2wk' ),
-#                 ( '031207_2wk' ),
-#                 ( '031221_2wk' ),
-                ]
-        
-        pool = multiprocessing.Pool(processes=4)
-        pool.starmap(self.getData_Arc, in1)
-
-
-
-
-
-
+#             print('DONE with ARC:' , arc)
+#         self.organize_output_object_keys(data_keys, arc)
         
         
         

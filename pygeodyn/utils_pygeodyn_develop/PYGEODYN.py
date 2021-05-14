@@ -8,7 +8,7 @@ from PYGEODYN_Satellites import *
 # from pre_processing import pygeodyn_PreProcessing
 
 
-class Satellite(Satellite_ICESat2, Satellite_Starlette ):
+class Satellite(Satellite_ICESat2):
     '''
     Define a sattellite class that will inherit all of the methods associated with the controllers and readers.
     '''
@@ -18,9 +18,13 @@ class Satellite(Satellite_ICESat2, Satellite_Starlette ):
         if self.satellite ==  'icesat2':
             self.Satellite = Satellite_ICESat2(params)
             super().__init__(params)
-        elif self.satellite ==  'starlette':
-            self.Satellite = Satellite_Starlette(params)
-            super().__init__(params)
+            
+#             print(self.Satellite.__dict__.keys())
+            
+            
+#         elif self.satellite ==  'starlette':
+#             self.Satellite = Satellite_Starlette(params)
+#             super().__init__(params)
 
         
         
