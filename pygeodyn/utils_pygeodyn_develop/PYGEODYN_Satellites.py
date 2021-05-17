@@ -31,13 +31,47 @@ from PYGEODYN_Read    import PygeodynReader
 
 # class Satellite_ICESat2(PygeodynController, PygeodynReader ):
 class Satellite_ICESat2(PygeodynController,  PygeodynReader):
-
-
-    '''
-    The ICESat2 class inherits the PygeodynController class and its methods.
+    """ Satellite_ICESat2 class documentation
     
-     We make necessary modifications to certain methods of the above classes here by over-writing them
-    '''
+    Description: 
+    ------------
+       Class with satellite specific confiuguration for running 
+       Pygeodyn with ICESat2.
+       
+
+    Long Description:
+    -----------------
+       This class hosts all major modifications to the methods 
+       in the PygeodynController and PygeodynReader that allow 
+       the running of the ICESat2 satellite through Pygeodyn.  
+       The setup here is originally for PCE trajectory analysis.
+
+
+    Parameters
+    ----------
+        Inherit PygeodynController : Class
+            Used to control and run the GEODYN with Python
+        Inherit PygeodynReader : Class
+            Used to read and reformat the GEODYN output with Python
+
+
+    Example
+    -------
+
+
+    Notes
+    -----
+    
+    
+    Returns
+    -------
+        Object
+            Returns an object with methods that have been re-written 
+            to accomodate the Icesat2 satellite, its data, and its 
+            configuration on AWS.
+            
+    """
+    
     def __init__(self,params):
         super().__init__(params)
         
@@ -48,25 +82,29 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.YR            =  2018
         self.DATA_TYPE     = 'PCE'
         self.grav_id = '' 
-        self.g2b_file = 'icesat2g2b_pce_287_289A.gz'   # fort.40
-#         self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
+#         self.g2b_file = 'icesat2g2b_pce_287_289A.gz'   # fort.40
+        self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
         self.ephem_file = 'ephem1430.data_2025.gz'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
-        
-
+        self.arc_length = '54hr'
+        self.setup_file_arc = self.arc_input
         ### Modifications that are ICESat2 Specific:
-        self.ARC =   self.arc_input
+#         self.ARC =   self.arc_input
         
         # we want the string after the first occurance of the period.
-        index = self.ARC.find('.')
-        arc_name_id = self.ARC[index:]
+        index = self.arc_input.find('.')
+        arc_name_id = self.arc_input[index:]
 
         # The setup files and the external attitutde files have the same naming convention
         self.external_attitude = 'EXAT01'+arc_name_id+'.gz'
+        self.arc_name_id = arc_name_id
+        
+        yr  = self.arc_name_id[1:5]
+        doy = self.arc_name_id[6:]
+        self.arcdate_for_files = yr+doy
+        self.ARC = self.SATELLITE_dir+'_'  + self.arcdate_for_files+'_'+ self.arc_length + '.' +  self.DEN_DIR
 
-        
-        
     def clean_iisset_file(self):
         '''
         Overwrite the setup file with the icesat2 specific run parameters.
@@ -86,17 +124,20 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             * this
 
         '''
+        
+        self.verboseprint('ICESat2 -- clean_iisset_file()')
+
         #### --------------------------------------------------------------------
         #### Initialize our variables from user input
-        (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.ARC, self.SATID, self.iisset_den)
+        (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.setup_file_arc, self.SATID, self.iisset_den)
 
         ORIG_iisset_file = path_to_setupfiles + '/' + setup_file_arc
         
         #### --------------------------------------------------------------------
         ##### COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
         ####    We copy to a temporary file "cleaned_setup_file"
-        shutil.copyfile(ORIG_iisset_file, path_to_setupfiles +'/'+'cleaned_setup_file')
-        iisset_file =       path_to_setupfiles +'/'+'cleaned_setup_file'
+        shutil.copyfile(ORIG_iisset_file, path_to_setupfiles +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files)
+        iisset_file =       path_to_setupfiles +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
 
         
         #### --------------------------------------------------------------------
@@ -228,7 +269,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             ####     23          Shadow crossing. 
             
 #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
-#       card_strings['PRNTVU'] =  'PRNTVU5521111111 111222'  # over-suppress IIS/IIE outputs.
         card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
 ####   PRNTVU KEY                  1234567890123456 8901234
 
@@ -262,6 +302,11 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['PLANET    0900          9.77000000000000D+11      1151000.0 10000000.000'] = 'PLANET 2  0900          9.77000000000000D+11      1151000.0 10000000.000'
         card_strings['PLANET    9999          1.32712440040944D+20    696000000.0 10000000.000'] = 'PLANET 2  9999          1.32712440040944D+20    696000000.0 10000000.000'
     
+        if self.fast_run == True:
+            card_strings['PRNTVU'] =  'PRNTVU5511111111 111111'  # over-suppress for fast run?
+            card_strings['OBSVU']  =  'OBSVU 5'  # dont print residuals to IIE
+        else:
+            pass
 
         #### --------------------------------------------------------------------
         ####   INPUT THE DRAG OPTIONS  for time dependent drag
@@ -432,7 +477,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             content = f.read()
             f.seek(0, 0)   # find the first lines
             f.write('### \n') 
-            f.write('### \n') 
+            f.write('###   '+self.arc_input+'  \n') 
             f.write('### \n') 
             f.write(content) 
             
@@ -494,10 +539,11 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         The original method is overwritten to account for the fact that we have a external attitude file
         
         '''
-        
+        self.verboseprint('ICESat2 -- print_runparameters_to_notebook()')
+
         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
-        
+
         print(self.run_ID,"    Density Model:     " ,self.DEN_DIR)
         print(self.run_ID,"    GEODYN Version:    " ,self.GDYN_version)
         print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
@@ -525,7 +571,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
              
              it is being overridden to INCLUDE the external attitude
         '''
-
+        self.verboseprint('ICESat2 -- prepare_tmpdir_for_geodyn_run()')
+#         print(self.TMPDIR_arc)
         self.verboseprint(self.tabtab,'Current DIR: ',os.getcwd())
      
         #### Navigate TO the TMPDIR
@@ -547,6 +594,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #                 os.symlink(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
 #                 self.verboseprint(self.tabtab,'EXAT01:',self._EXTATTITUDE_filename)
             self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   '+self._EXTATTITUDE_filename+' > EXAT01'+'.gz')
         else:
             self.verboseprint(self.tabtab,'copy is set up: EXAT01 file')
 
@@ -612,7 +660,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
         #### GUNZIP the files:  gzip is a very fast compression option.
         os.system('gunzip -vr *.gz')
-
+        self.verboseprint(self.tabtab, "gunzipping the input data files")
 
         
     def set_file_paths_for_multiple_arcs(self, arc_val):
@@ -620,6 +668,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         Construct a way to read in the satellite specific filenames.
         
         '''
+        self.verboseprint('ICESat2 -- set_file_paths_for_multiple_arcs()')
 
         self.path_to_model = ('/data/data_geodyn/results/'+
                                    self.SATELLITE_dir +'/'+
