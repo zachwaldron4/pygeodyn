@@ -87,8 +87,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
         self.ephem_file = 'ephem1430.data_2025.gz'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
-<<<<<<< HEAD
-<<<<<<< HEAD
         
         
         ###### ---------------------------------------------------------------------
@@ -138,31 +136,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     
     
     
-=======
-=======
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
-        self.arc_length = '54hr'
-        self.setup_file_arc = self.arc_input
-        ### Modifications that are ICESat2 Specific:
-#         self.ARC =   self.arc_input
-        
-        # we want the string after the first occurance of the period.
-        index = self.arc_input.find('.')
-        arc_name_id = self.arc_input[index:]
-
-        # The setup files and the external attitutde files have the same naming convention
-        self.external_attitude = 'EXAT01'+arc_name_id+'.gz'
-        self.arc_name_id = arc_name_id
-        
-        yr  = self.arc_name_id[1:5]
-        doy = self.arc_name_id[6:]
-        self.arcdate_for_files = yr+doy
-        self.ARC = self.SATELLITE_dir+'_'  + self.arcdate_for_files+'_'+ self.arc_length + '.' +  self.DEN_DIR
-
-<<<<<<< HEAD
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
-=======
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
     def clean_iisset_file(self):
         '''
         Overwrite the setup file with the icesat2 specific run parameters.
@@ -301,7 +274,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['ORBFIL'] =  'ORBFIL2 31       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
-<<<<<<< HEAD
         #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
         card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
         card_strings['ORBTVU'] =  'ORBTVU1001       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
@@ -311,15 +283,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             ####                             Be warned that if you include a bunch, the file 
             ####                             will be huge, and the run time will increase 
             ####                             (printing to ascii is slow)
-=======
-        
-        ##### --------------------------------------------------------------------
-        ###   PRNTVU is used to control the IIS and IIE printed content
-        ###       Be warned that if you include a bunch, the file will be huge, and
-        ###           the run time will increase (printing to ascii is slow)
-        
-            ####   PRNTVU KEY                     1234567890123456 8901234
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
             ####    columns      IIS output option
             ####      9          Simple list of GEODYN -IIS setup. Interpretive
             ####     10          Interpretive list of GEODYN -IIS setup.
@@ -336,8 +299,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             ####     21          Adjusted station baselines  
             ####     22          Correlations for adjusted parameters.                             
             ####     23          Shadow crossing. 
-<<<<<<< HEAD
-<<<<<<< HEAD
             ####-----------------------------------------------------------------------------------------------
             ##### ORBTVU KEY ------ Controls the printing of ASCII 
             #####                           orbit info to a separate file.
@@ -363,19 +324,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             #####                    2 - Both first first and last last 
             #####                    3 - All iterations
        
-=======
-=======
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
-            
-#       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
-        card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
-####   PRNTVU KEY                  1234567890123456 8901234
-
-#       
-<<<<<<< HEAD
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
-=======
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
         card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
         card_strings['ATGRAV']  =  'ATGRAV9090              '+dt_epoch_start_minus2days +''+dt_epoch_end_plus1days[:-1]   
         card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
@@ -405,25 +353,11 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['PLANET    0900          9.77000000000000D+11      1151000.0 10000000.000'] = 'PLANET 2  0900          9.77000000000000D+11      1151000.0 10000000.000'
         card_strings['PLANET    9999          1.32712440040944D+20    696000000.0 10000000.000'] = 'PLANET 2  9999          1.32712440040944D+20    696000000.0 10000000.000'
     
-<<<<<<< HEAD
-<<<<<<< HEAD
 #         if self.fast_run == True:
 #             card_strings['PRNTVU'] =  'PRNTVU5511111111 111111'  # over-suppress for fast run?
 #             card_strings['OBSVU']  =  'OBSVU 5'  # dont print residuals to IIE
 #         else:
 #             pass
-=======
-=======
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
-        if self.fast_run == True:
-            card_strings['PRNTVU'] =  'PRNTVU5511111111 111111'  # over-suppress for fast run?
-            card_strings['OBSVU']  =  'OBSVU 5'  # dont print residuals to IIE
-        else:
-            pass
-<<<<<<< HEAD
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
-=======
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
 
         #### --------------------------------------------------------------------
         ####   INPUT THE DRAG OPTIONS  for time dependent drag
@@ -776,35 +710,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
 
         #### GUNZIP the files:  gzip is a very fast compression option.
-<<<<<<< HEAD
 #         self.verboseprint(self.tabtab, "gunzipping the input data files")
         print(self.tabtab, "gunzipping the input data files")
-=======
-        os.system('gunzip -vr *.gz')
-        self.verboseprint(self.tabtab, "gunzipping the input data files")
-
-        
-    def set_file_paths_for_multiple_arcs(self, arc_val):
-        '''
-        Construct a way to read in the satellite specific filenames.
-        
-        '''
-        self.verboseprint('ICESat2 -- set_file_paths_for_multiple_arcs()')
-
-        self.path_to_model = ('/data/data_geodyn/results/'+
-                                   self.SATELLITE_dir +'/'+
-                                   self.den_model+'/'+  
-                                   self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
-        file_name =   str(arc_val)         
-        print('        ')
-        print('     File path: ')
-        print('     Loading ', self.path_to_model ,'.../',file_name,' ' ,sep = '')
-
-        ####  save the specific file names as "private members" with the _filename convention
-        self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
-        self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
-        self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
->>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
 
         os.system('gunzip -vr *.gz')
 #         os.system('gunzip -ftn01.gz')
