@@ -401,7 +401,11 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 #         print('line_no_2',line_no_2)
         #### Make a list of the dates as determined by the DRAG input cards:            
         card_inputs_range = np.arange(line_no_1[0], line_no_2[0]-100)  # puts section above other places where 'DRAG' would appear
+<<<<<<< HEAD
 #         print(card_inputs_range)
+=======
+        print(card_inputs_range)
+>>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
         timedep_Cd_dates = []
         for i,val in enumerate(card_inputs_range):
                 line = linecache.getline(self._iieout_filename,val)            
@@ -412,7 +416,11 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                         #print(line[45:57])
                         timedep_Cd_dates.append(line[45:56].strip())
         date_timedep_cds = pd.to_datetime(timedep_Cd_dates[1:], format='%y%m%d%H%M%S')  #YYMMDDHHMMSS
+<<<<<<< HEAD
 #         print(date_timedep_cds)
+=======
+        print(date_timedep_cds)
+>>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
         #         
         #------------------- SECTION 2 ----------------------------------
         #--|
@@ -1009,9 +1017,15 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
             #
             #### Fix the date column:
             dates = self.make_datetime_column(resids_df, self.YR)
+<<<<<<< HEAD
 
             resids_df.insert(0, 'Date', dates)
 
+=======
+
+            resids_df.insert(0, 'Date', dates)
+
+>>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
             #### The ratio-to-sigma columns has some weird strings in it
             ####        ValueError: could not convert string to float: ' -16.0620*'
             ####        remove them

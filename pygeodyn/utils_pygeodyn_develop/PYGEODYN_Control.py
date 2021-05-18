@@ -93,7 +93,11 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         self.verbose          = params['verbose']
         self.run_ID           = params['run_ID']
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+        self.fast_run         = params['fast_run']
+>>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
 =======
         self.fast_run         = params['fast_run']
 >>>>>>> 2d057238c249981328ee8fb89ad060ac58c1142c
