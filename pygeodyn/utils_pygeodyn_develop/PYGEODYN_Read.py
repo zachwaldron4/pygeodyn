@@ -21,39 +21,28 @@ import copy
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
 
 
-from util_Set_Inputs           import UtilSetInputs
+# from util_Set_Inputs           import UtilSetInputs
 from util_ReaderTools          import UtilReader_Tools
 
 
 
-class PygeodynReader(UtilReader_Tools, UtilSetInputs):
+class PygeodynReader(UtilReader_Tools):
     # UtilTools and all of its methods are now inherited in our main functions
        
     #### read in the input and store as members
     def __init__(self, params):  
         self.satellite         = params['satellite']
         self.den_model         = params['den_model']
-        self.empirical_accels  = params['empirical_accels']
         self.SpecialRun_name   = params['SpecialRun_name']
-        self.options_in        = params['options_in']
         self.verbose           = params['verbose']
-        self.run_ID            = params['run_ID']
         self.arc_input         = params['arc']
-        
-        
-#         # Should i put these in as dummy variables?
-#         self.SATELLITE_dir  = None
-#         self.SATID          = None
-#         self.YR             = None
-#         self.DATA_TYPE      = None
-#         self.grav_id        = None
-#         self.g2b_file       = None
-#         self.atgrav_file    = None
-#         self.ephem_file     = None
-#         self.gravfield_file = None
-    
+#         self.empirical_accels = params['empirical_accels']
+#         self.options_in       = params['options_in']
+#         self.run_ID           = params['run_ID']        
+
+            
         self.set_density_model_setup_params( self.den_model )
-        self.set_acceleration_params( self.empirical_accels )
+#         self.set_acceleration_params( self.empirical_accels )
         
         #### The below interprets that no input has been given for special name
         if self.SpecialRun_name == None:
@@ -342,8 +331,10 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 #                         "0GA 9P 21t2",
 #                         "0GA 9P 22t2",
 #                             ]    
+#         print(self.total_iterations)
         SatMain_AdjustedParams = {}
         for i_iter,iterval in enumerate(np.arange(1, self.total_iterations+1)):
+#             print(iterval)
             SatMain_AdjustedParams[iterval] = {}
             for isat, satval in enumerate(sat_list):
                 if self.empirical_accels == True:
@@ -457,7 +448,10 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
                 currentDelta =  float(data_3rdline[42:62])
                 AprioriSigma = float(data_2ndtline[63:78])
                 CurrentSigma =  float(data_3rdline[63:78])
-
+                
+#                 print('check_iter',check_iter)
+#                 print('check_sat',check_sat)
+#                 print('text_param_adjusts',text_param_adjusts)
                 SatMain_AdjustedParams[check_iter][check_sat][text_param_adjusts] = {'APRIORI_VALUE': apriorival,
                                                      'PREVIOUS_VALUE': prevval,
                                                      'CURRENT_VALUE': currentval,
@@ -667,6 +661,9 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         '''
         start = time.time()
         
+        ##### Unzip the density file:
+     
+        
         #### The density file is a very simple format
         #### with this it can be loaded using pd.csv very easily
         DEN_csv = pd.read_csv(self._density_filename, 
@@ -800,6 +797,9 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         del DEN_df['Elapsed Secs']
         del DEN_df['YYMMDD']
         del DEN_df['HHMMSS']
+        
+        
+
         
         #--------------------------------------------------------
         end = time.time()
@@ -1662,11 +1662,11 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
     def getData(self):
         data_keys = [
                     'AdjustedParams',
-                    'Trajectory_xyz',
+#                     'Trajectory_xyz',
                     'Density',
                     'Residuals_obs',
-                    'Residuals_summary',
-                    'Statistics',
+#                     'Residuals_summary',
+#                     'Statistics',
                     ]
 
         #### Make dictionaries to store arc in a loop
@@ -1677,13 +1677,23 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
         self.Residuals_summary = {}
         self.Statistics        = {}
         
-#         print(self.arc_input)
         num_arcs = np.size(self.arc_input)
-        for iarc, arc in enumerate(self.arc_input):
+        
+        ##### Go thru the files once and unzip them
+        
+        self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1 )
+        os.chdir(self.path_to_model+'DENSITY/')
+        os.system('bunzip2 -v '+'*')
 
-            self.set_file_paths_for_multiple_arcs( arc )
+        
+        for iarc, arc in enumerate(self.arc_input):
+            self.set_file_paths_for_multiple_arcs( arc, iarc )
+            self.check_if_run_converged(self._iieout_filename)
+
 
             for choice in data_keys:
+                
+                
                 if choice == 'AdjustedParams':
                     self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
                 elif choice == 'Trajectory_xyz':
@@ -1700,9 +1710,11 @@ class PygeodynReader(UtilReader_Tools, UtilSetInputs):
 #                     print('Error in PygeodynReader.getData()')
 #                     print('The requested output [', choice, '] does not match any inputs')
                     break
-
+    
+#             os.system('bzip2 -v' +' '+self._density_filename)
+            
             self.organize_output_object_keys(data_keys, arc, iarc, num_arcs)
-
+            
 #             print('DONE with ARC:' , arc)
 #         self.organize_output_object_keys(data_keys, arc)
         

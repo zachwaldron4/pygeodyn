@@ -206,7 +206,6 @@ class PygeodynPreprocessing:
         np_data = np.frombuffer(b)  # create a numpy array
         est_num_records = int((np_data.size/29) - 29*2)
         
-        print(self.tabtab, '--- File %i / %i '% (self.filenum, self.total_files))
         print(self.tabtab, '----- Loading ',__rvg_filename  )
         print(self.tabtab, '----- The file has ~%i records. Will take ~%i seconds' % (est_num_records,  self.time_estimate_onAWS*est_num_records ) )
 
@@ -238,7 +237,6 @@ class PygeodynPreprocessing:
                 ####  If the the first index has -999.0 we are at the sentinel record 
                 #     which denotes the end of the data section.
                 print(self.tabtab, '----- End of file')
-                print()
 
                 rvg_data['sentinel'] = dict(zip(sentinel_titles, a))    
                 end_datarecord = True
@@ -265,9 +263,9 @@ class PygeodynPreprocessing:
         
 #         del rvg_data['data']['RSEC_fractional_secs']
         del rvg_data['data']['spare_4']
-        del rvg_data['data']['XDOT_statevector_m_s']
-        del rvg_data['data']['YDOT_statevector_m_s']
-        del rvg_data['data']['ZDOT_statevector_m_s']
+#         del rvg_data['data']['XDOT_statevector_m_s']
+#         del rvg_data['data']['YDOT_statevector_m_s']
+#         del rvg_data['data']['ZDOT_statevector_m_s']
         del rvg_data['data']['latitude_sat']
         del rvg_data['data']['longitude_sat']
         del rvg_data['data']['height_sat_m']
@@ -480,9 +478,8 @@ class PygeodynPreprocessing:
         
         print(self.tabtab, 'Loading and processing %i files will take approx. %.2f minutes. '% (self.total_files, (self.total_files*self.time_estimate_onAWS*109000)/60))
         print()
-        print(self.tabtab,'First we unzip the files... check the console for progess.')
+#         print(self.tabtab,'First we unzip the files... check the console for progess.')
         os.chdir(self.path_binary)
-        os.system('gunzip -vr *.gz')
 
         
         # Initialize a Dataframe 
@@ -492,10 +489,15 @@ class PygeodynPreprocessing:
         for i, file in enumerate(self.arc_files):
             
             self.filenum  =i+1 
+            print(self.tabtab, '--- File %i / %i '% (self.filenum, self.total_files))
+
+            print(self.tabtab,'Unzipping file...', file)
+            os.system('gunzip -vr '+file+'.gz')
+
             
             self.__rvg_filename =  self.path_binary +'/' + file
             
-            
+
             # Read in the binary data into a dict w/ pd.dataframes
             self.RVGfiles_read_rvg_binary()
 
@@ -512,30 +514,76 @@ class PygeodynPreprocessing:
                 # to append df2 at the end of df1 dataframe
                 df1 = pd.concat([df1, rvg_data_chopped])
             
-        
+            print(self.tabtab,'Zipping file...', file)
+            os.system('gzip -vr '+file)
+            print()
+
         self.RVG_FINAL = df1
         
         
     def make_ascii_traj_txt_file_for_pcefortran(self):
-      
+        import copy
+
+        
+        
+        print(self.tabtab,  "Saving the fixed datasets as an ascii text file... ")
+        print(self.tabtab,"PATH: ",self.path_preprocessing , '/TRAJ.txt' )
+
         #### First call the functions that convert RVG files to a dataframe
         self.get_timechopped_rvgdata()
     
     
-        print(self.tabtab,  "Saving the fixed datasets as an ascii text file: ")
-        print(self.tabtab,"PATH: ",self.path_preprocessing , '/TRAJ.txt' )
         
-
-        df_traj_txt = self.RVG_FINAL
+        
+        #####     Save a file to be used to amend ELEMS in IISSET
+        ##########-------------------------------------------------------------------
+        print('Saving the EPOCH info and POS+VEL vectors as text file.')
+        df_traj_txt_big = copy.deepcopy(self.RVG_FINAL)
 
         #### We need to prepare the dataframe to be saved to a CSV according 
         #        to the requirements of the fortran code
 
         #### first integer of TRAJ.txt is just the first word 
         #      of RVG data record converted to an integer 
+#         df_traj_txt_big.insert(0, 'first_int', df_traj_txt_big['MJDSEC_secs_timeGPS'].astype(int))
+
+#         del df_traj_txt['Date']
+        del df_traj_txt_big['MJDSEC_secs_timeGPS']
+
+        #### The first floating point of TRAJ.txt is just 
+        #        the sum of words 2 and 3 of the RVG data record
+#         sum_words_2_and_3 = df_traj_txt_big['RSEC_fractional_secs'] + df_traj_txt_big['GPS_offset_secs_utc']
+#         df_traj_txt_big.insert(1, 'first_float', sum_words_2_and_3)
+        del df_traj_txt_big['RSEC_fractional_secs'] 
+        del df_traj_txt_big['GPS_offset_secs_utc']
+
+        ##### Save as a txt file with pandas built-in function.
+        #### BZIP2 the file and move it to the setup directory
+        df_traj_txt_big.to_csv(self.path_preprocessing + '/StateVector_epochs.txt', sep=' ', index = False, header=False)
+        os.system('rm'+' '+'/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt')
+        os.system('rm'+' '+'/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt.bz2')
+
+        os.system('bzip2'+' '+'/data/data_geodyn/inputs/icesat2/pre_processing/StateVector_epochs.txt')
+        os.system('mv'+' '+self.path_preprocessing+'/StateVector_epochs.txt.bz2'+ ' '+'/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt.bz2')
+
+        print('File loc: /data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt.bz2')
+        ##########-------------------------------------------------------------------
+        
+        
+        
+        df_traj_txt = copy.deepcopy(self.RVG_FINAL)
+
+        #### We need to prepare the dataframe to be saved to a CSV according 
+        #        to the requirements of the fortran code
+        #### first integer of TRAJ.txt is just the first word 
+        #      of RVG data record converted to an integer 
         df_traj_txt.insert(0, 'first_int', df_traj_txt['MJDSEC_secs_timeGPS'].astype(int))
+
         del df_traj_txt['Date']
         del df_traj_txt['MJDSEC_secs_timeGPS']
+        del df_traj_txt['XDOT_statevector_m_s']
+        del df_traj_txt['YDOT_statevector_m_s']
+        del df_traj_txt['ZDOT_statevector_m_s']
 
         #### The first floating point of TRAJ.txt is just 
         #        the sum of words 2 and 3 of the RVG data record
@@ -579,10 +627,11 @@ class PygeodynPreprocessing:
         print('The G2B binary file has been saved to: ',path_to_data,'/',out_filename, sep='')
         
         os.system('gzip -vr g2b_pce')
+        os.system('rm'+' '+self.path_preprocessing + '/TRAJ.txt')
 
-        print(self.tabtab,'Finally, gzip the files')
-        os.chdir(self.path_binary)
-        os.system('gzip -vr *')
+#         print(self.tabtab,'Finally, gzip the files')
+#         os.chdir(self.path_binary)
+#         os.system('gzip -vr *')
 
         
         
@@ -591,7 +640,7 @@ class PygeodynPreprocessing:
         
         self.make_ascii_traj_txt_file_for_pcefortran()
         self.call_fortran_pce_converter()
-
+        
         
         
         

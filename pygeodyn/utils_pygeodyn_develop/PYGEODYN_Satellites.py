@@ -11,7 +11,7 @@ import sys
 import subprocess
 import shutil
 import linecache
-
+import time
 
 #### --------------------------------------------
 #### ============================================
@@ -75,19 +75,28 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     def __init__(self,params):
         super().__init__(params)
         
-
-        #### HARD CODE the satellite properties
+        ###### ---------------------------------------------------------------------
+        #### HARD CODE the ICESat2 properties
+        ###### ---------------------------------------------------------------------
         self.SATELLITE_dir = 'icesat2'
         self.SATID         = '1807001'
-        self.YR            =  2018
+#         self.YR            =  2018
         self.DATA_TYPE     = 'PCE'
         self.grav_id = '' 
+        self.empirical_accels =  False  
+        self.ACCELS = 'acceloff'
+        self.options_in =  {'DRHODZ_update':True}  
+
+        #### ICESAT2 Data files
 #         self.g2b_file = 'icesat2g2b_pce_287_289A.gz'   # fort.40
         self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
         self.ephem_file = 'ephem1430.data_2025.gz'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
         
+
+#         self.path_to_binaryrvgs     = '/data/data_geodyn/inputs/icesat2/pre_processing/traj_files_rvg'
+        self.StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt'
         
         ###### ---------------------------------------------------------------------
         ###### SPECIFY ARC NAMING CONVENTION
@@ -95,18 +104,20 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.arc_length = '54hr'
 
         
-    def set_file_paths_for_multiple_arcs(self, arc_val):
+    def set_file_paths_for_multiple_arcs(self, arc_val, iarc):
         '''
+        Handles the Arc naming conventions
         Construct a way to read in the satellite specific filenames.
-        
         '''
+        self.run_ID = 'Run # '+ str(iarc+1)
         
         self.arc_name_id = arc_val
-        yr  = self.arc_name_id[0:4]
+        self.YR  = self.arc_name_id[0:4]
         doy = self.arc_name_id[5:]
-        self.arcdate_for_files = yr + doy
+        self.arcdate_for_files = self.YR + doy
         ####
         #### The setup files and the external attitutde files have the same naming convention.
+#         print('self.arc_name_id',self.arc_name_id)
         self.setup_file_arc    = 'iisset.'+self.arc_name_id
         self.external_attitude = 'EXAT01.'+self.arc_name_id+'.gz'
         ####
@@ -124,17 +135,22 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                                    self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
         file_name =   self.ARC         
         print('        ')
-        print('     Loading ... ', file_name,' ' ,sep = '')
+        if self.action == 'read':
+            print('     Loading ... ', file_name,' ' ,sep = '')
 #         print('     File path: ')
 #         print('     Loading ', self.path_to_model ,'.../',file_name,' ' ,sep = '')
-
+        else:
+            pass
+        
+        
         ####  save the specific file names as "private members" with the _filename convention
         self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
         self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
         self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
 
-    
-    
+        
+        time.sleep(1)
+        
     
     def clean_iisset_file(self):
         '''
@@ -161,15 +177,32 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         #### --------------------------------------------------------------------
         #### Initialize our variables from user input
         (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.setup_file_arc, self.SATID, self.iisset_den)
-
-        ORIG_iisset_file = path_to_setupfiles + '/' + setup_file_arc
         
+#         print('path_to_setupfiles', path_to_setupfiles)
+#         print('setup_file_arc', setup_file_arc)
+#         print('SAT_ID', SAT_ID)
+#         print('den_model_setupval', den_model_setupval)
+        
+        
+        
+        ORIG_iisset_file = self._INPUT_filename 
+        iisset_file      = 'cleaned_setup'+'_'  + self.arcdate_for_files
+
         #### --------------------------------------------------------------------
         ##### COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
         ####    We copy to a temporary file "cleaned_setup_file"
-        shutil.copyfile(ORIG_iisset_file, path_to_setupfiles +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files)
-        iisset_file =       path_to_setupfiles +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
-
+        
+#         print(os.getcwd())
+            
+        shutil.copyfile(ORIG_iisset_file, self.TMPDIR_arc +'/'+iisset_file+'.bz2')
+        print(self.TMPDIR_arc)
+        
+        os.chdir(self.TMPDIR_arc)
+        os.system('bunzip2 -v '+ '*.bz2')
+        os.chdir('/data/geodyn_proj/pygeodyn')
+        
+        iisset_file = self.TMPDIR_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
+        print(iisset_file)
         
         #### --------------------------------------------------------------------
         #### identify the cards we do not want in the setup file
@@ -216,6 +249,9 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             'DRAG             9743134',
                             'DRAG             9946114',
                             'DRAG   0 0',
+                            'MBIAS',
+#                             'ORBFIL',
+#                             'RESID',
                           ] 
         #### --------------------------------------------------------------------
         ##### Grab the EPOCH start and end times
@@ -265,18 +301,74 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         dt_epoch_start_minus2days = (epoch_start_dt - dt_2days).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
         dt_epoch_end_plus1days    = (epoch_end_dt + dt_1days).dt.strftime('%y%m%d%H%M%S.000').values[0]
         
-        ##### --------------------------------------------------------------------
-        #### --------------------------------------------------------------------
+        ##### -------------------------------------------------------------------------------------------
+        ##### -------------------------------------------------------------------------------------------
+        ##### -------------------------------------------------------------------------------------------
+        ###       FIND THE X,Y,Z,Xdot,Ydot,Zdot for this epoch start in the PCE data.
+        ##### -------------------------------------------------------------------------------------------
+        os.system('bunzip2'+' '+self.StateVector_epochs_datafile+'.bz2')
+        
+        epoch_start_dt_STR = str(epoch_start_dt)
+        date_in_file_flag = False
+
+        with open(self.StateVector_epochs_datafile, 'r') as f:
+            for line_no, line_text in enumerate(f):
+                
+                if epoch_start_dt_STR in line_text:
+                    date_in_file_flag= True
+#                     print('    ','xyzline',line_no,line_text)
+
+                    break
+                
+        if date_in_file_flag == False:
+            print('Date not found in file!!!')
+            print('Check that the start date:',epoch_start_dt_STR)
+            print('    is within the PCE date range saved in the file')
+            print('       ',self.StateVector_epochs_datafile)
+#                     os.system('bzip2'+' '+'/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt')
+            sys.exit()
+
+
+        xyzline = pd.read_csv(self.StateVector_epochs_datafile, 
+                    skiprows = line_no, 
+                    nrows=1,           
+                    sep = '\s+',
+                    dtype=str,
+                    names = [
+                            'Date',
+                            'X',
+                            'Y',
+                            'Z',
+                            'X_dot',
+                            'Y_dot',
+                            'Z_dot',
+                          ],
+                    )
+#         print(xyzline['X'].values[0].ljust(20))
+        X     =  xyzline['X'].values[0].ljust(20)     #'  -745933.8926940708'
+        Y     =  xyzline['Y'].values[0].ljust(20)     #'  -4864983.834066438'
+        Z     =  xyzline['Z'].values[0].ljust(20)     #'    4769954.60524261'
+        X_dot =  xyzline['X_dot'].values[0].ljust(20) #'  457.44564954037634'
+        Y_dot =  xyzline['Y_dot'].values[0].ljust(20) #'   5302.381564886811'
+        Z_dot =  xyzline['Z_dot'].values[0].ljust(20) #'    5463.55571622269'
+    
+        os.system('bzip2'+' '+self.StateVector_epochs_datafile)
+        ##### -------------------------------------------------------------------------------------------
+        #### --------------------------------------------------------------------------------------------
+        
+        
         ####   INPUT THE OPTIONS ON THE SPECIFIC CARDS YOU WANT TO CHANGE
         ##### Putting in the options is one of the hardest parts of using GEODYN
         #####    They require VERY specific inputs depending on the run type.  
         card_strings = {}
+#                                  1234567890 
         card_strings['ORBFIL'] =  'ORBFIL2 31       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
         #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
         card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
-        card_strings['ORBTVU'] =  'ORBTVU1001       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
+#                                  1234567890 
+        card_strings['ORBTVU'] =  'ORBTVU1201       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
 
         ##### --------------------------------------------------------------------
             ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
@@ -327,38 +419,23 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
         card_strings['ATGRAV']  =  'ATGRAV9090              '+dt_epoch_start_minus2days +''+dt_epoch_end_plus1days[:-1]   
         card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
-        card_strings['SATPAR   13']  =  'SATPAR   13      '+SAT_ID+'          9.53000000       1514.000'
         card_strings['SIGMA           1']  =  'SIGMA           1               1.0                 1.0'    
         card_strings['SIGMA           2']  =  'SIGMA           2               1.0                 1.0'    
         card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'   
         card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
         card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
         
+        card_strings['SATPAR   13']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
+
         ### Fix the coordinate system... PCE Data was in J2000
         card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
-                    # 123456789012
-            
+        card_strings['ELEMS1']  = 'ELEMS11             '+X+''+Y+''+Z+''   
+        card_strings['ELEMS2']  = 'ELEMS2              '+X_dot+''+Y_dot+''+Z_dot+''
+                
         #### Suppress the printing of the flux model
         card_strings['FLUX  1']  =  'FLUX  0'
-    
-        #### Suppress the printing of the gravity model
-        card_strings['PLANET    0100          2.20320900000000D+13      2439700.0 10000000.000'] = 'PLANET 2  0100          2.20320900000000D+13      2439700.0 10000000.000'
-        card_strings['PLANET    0200          3.24858592000000D+14      6051900.0 10000000.000'] = 'PLANET 2  0200          3.24858592000000D+14      6051900.0 10000000.000'
-        card_strings['PLANET    0301          4.90280007600000D+12      1738000.0 10000000.000'] = 'PLANET 2  0301          4.90280007600000D+12      1738000.0 10000000.000'
-        card_strings['PLANET    0400          4.28283752140000D+13      3397000.0      154.409'] = 'PLANET 2  0400          4.28283752140000D+13      3397000.0      154.409'
-        card_strings['PLANET    0500          1.26712764800000D+17     71492000.0       15.414'] = 'PLANET 2  0500          1.26712764800000D+17     71492000.0       15.414'
-        card_strings['PLANET    0600          3.79405852000000D+16     60268000.0       10.208'] = 'PLANET 2  0600          3.79405852000000D+16     60268000.0       10.208'
-        card_strings['PLANET    0700          5.79454860000000D+15     25559000.0       43.616'] = 'PLANET 2  0700          5.79454860000000D+15     25559000.0       43.616'
-        card_strings['PLANET    0800          6.83653500000000D+15     24764000.0       58.543'] = 'PLANET 2  0800          6.83653500000000D+15     24764000.0       58.543'
-        card_strings['PLANET    0900          9.77000000000000D+11      1151000.0 10000000.000'] = 'PLANET 2  0900          9.77000000000000D+11      1151000.0 10000000.000'
-        card_strings['PLANET    9999          1.32712440040944D+20    696000000.0 10000000.000'] = 'PLANET 2  9999          1.32712440040944D+20    696000000.0 10000000.000'
-    
-#         if self.fast_run == True:
-#             card_strings['PRNTVU'] =  'PRNTVU5511111111 111111'  # over-suppress for fast run?
-#             card_strings['OBSVU']  =  'OBSVU 5'  # dont print residuals to IIE
-#         else:
-#             pass
 
+    
         #### --------------------------------------------------------------------
         ####   INPUT THE DRAG OPTIONS  for time dependent drag
         card_drag_strings={}
@@ -431,8 +508,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
               
         #####-----------------------------------------------------------------------------
         ##### Delete the SATPAR GPS, EPOCH, ELEMS110, and ELEMS2 lines after the SATPAR GPS
-        #####  Do this by finding the SATPAR for our sat and then saving it and the next 3 lines
-        ##### then delete all the SATPAR,EPOCH,ELEMS110, ELEMS2 and restore the ones we saved
+        #####   Do this by finding the SATPAR for our sat and then saving it and the next 3 lines
+        #####   then delete all the SATPAR,EPOCH,ELEMS110, ELEMS2 and restore the ones we saved
         #####-----------------------------------------------------------------------------
 
         ##### read in all lines of the file and save them
@@ -456,9 +533,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     pass
                 elif 'ELEMS2'in line:
                     pass
-                elif 'MBIAS'in line:
-                    pass
-                
                 else:
                     f.write(line)
                     
@@ -512,14 +586,22 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
                         elif (('REFSYS' in line) and (switch_2 == True)):
                             f.write(line)
-                            f.write(line_SATPAR)
+                            f.write(card_strings['SATPAR   13'] + ' \n')
                             f.write(line_EPOCH)
-                            f.write(line_ELEMS11)
-                            f.write(line_ELEMS2)
+                            f.write(card_strings['ELEMS1']      + ' \n')
+                            f.write(card_strings['ELEMS2']      + ' \n')
                             switch_2 = False
                             
                         else:
                             f.write(line)
+        print('    ','Changing starting vector:')
+        print('    ','Orig:')
+        print('    ',line_ELEMS11)
+        print(line_ELEMS2)
+        print('    ','PCE Update:')
+        print('    ',card_strings['ELEMS1'],' \n')
+        print('    ',card_strings['ELEMS2'],' \n')
+        
         ####----------------------------------------------------------------------
         #### Add three lines to the start of the file.  This is the GLOBAL TITLE
         ####----------------------------------------------------------------------
@@ -528,7 +610,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             content = f.read()
             f.seek(0, 0)   # find the first lines
             f.write('### \n') 
-            f.write('###   '+self.arc_input+'  \n') 
+            f.write('###   '+self.arc_name_id+'  \n') 
             f.write('### \n') 
             f.write(content) 
             
@@ -711,7 +793,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
         #### GUNZIP the files:  gzip is a very fast compression option.
 #         self.verboseprint(self.tabtab, "gunzipping the input data files")
-        print(self.tabtab, "gunzipping the input data files")
+        self.verboseprint(self.tabtab, "gunzipping the input data files")
 
         os.system('gunzip -vr *.gz')
 #         os.system('gunzip -ftn01.gz')

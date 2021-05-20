@@ -136,14 +136,21 @@ class UtilReader_Tools:
             for line_no, line in enumerate(f):
                 if 'CONVERGENCE' in line:
                     line_text = line
-                    # print(line)
-        num_iters = float(line_text[38:42])-1
+#                     print(line)
+#         print('line_text',line_text)
+#         print('num_iters',line_text)
+
+        num_iters = float(line_text[38:42])
         self.total_iterations = int(num_iters)
 
         if len(str(self.total_iterations)) == 1:
              self.str_iteration = ' '+str(self.total_iterations)  # add a space if the iteration number is not double digit
         else:
              self.str_iteration =     str(self.total_iterations)
+                
+#         print('total_iterations',self.total_iterations)
+#         print('str_iteration',self.total_iterations)
+
         return(self.total_iterations, self.str_iteration)
     
     
@@ -206,13 +213,65 @@ class UtilReader_Tools:
 #         print(iarc+1)
 #         print(num_arcs)
 
+        ##### On the last arc, delete the additional stuff
         if iarc+1 == num_arcs :
 #             print('FINAL ARC-- Deleting extra keys from 0th dim')
                      #             print(self.__dict__.keys())
+            os.chdir(self.path_to_model+'DENSITY/')
+            os.system('bzip2 -v '+'*')
+
             for i_del in to_move_and_delete:         
                 del self.__dict__[i_del]
             
-            
         return(self)
             
-            
+        
+        
+    def check_if_run_converged(self, iieout_filename):
+        ''' 
+        Check if the run converged properly. If it did not print to the console.
+        
+        Non-convergence options:
+
+            ** ELEM **  CARTESIAN SPACECRAFT COORDINATES EQUIVALENT TO HYPERBOLIC TRAJECTORY.
+                EXECUTION TERMINATING.
+
+
+        
+        '''
+        self.convergence_flag = False
+        
+        with open(iieout_filename, 'r') as f:
+            for line_no, line in enumerate(f):
+                
+                if 'CONVERGENCE' in line:
+                    self.convergence_flag = True
+#                     print('File converged... reading the file.')
+                    break
+                
+                elif 'HYPERBOLIC TRAJECTORY' in line:
+                    self.convergence_flag = False
+#                     index_last_slash = self._iieout_filename.rfind('/')
+#                     print('|',self.tab,'-----','File: ',self._iieout_filename[index_last_slash+1:]  )
+                    
+                    longest_line = '|'+' File:'+self._iieout_filename
+                    print('+','—'*len(longest_line))
+                    print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
+                    print('|',)
+                    print('|', ' File:',self._iieout_filename )
+                    print('|', ' Line number:',line_no )
+                    print('',)
+                    print('',line.rstrip("\n"))
+                    print('',)
+                    print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+                    print('+','—'*len(longest_line))
+
+                                       
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+

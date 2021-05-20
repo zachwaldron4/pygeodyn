@@ -59,58 +59,58 @@ class UtilSetInputs:
 #             print('Satellites that are currently available: [starlette, icesat2]')
             
         
-    def set_density_model_setup_params(self, den_model):
-        if den_model == 'msis86':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'msis'
-            self.iisset_den = '86'
-#             self.GDYN_version  = 'pygeodyn_MODS'
-        elif den_model == 'msis00':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'msis'
-            self.iisset_den = '86'
-#             self.GDYN_version  = 'pygeodyn_MODS'
-        elif den_model == 'msis2':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'msis'
-            self.iisset_den = '86'
-#             self.GDYN_version  = 'pygeodyn_MODS'
-        elif den_model == 'dtm87':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'dtm87'
-            self.iisset_den = '87'
-#             self.GDYN_version  = 'pygeodyn_MODS'
-        elif den_model == 'jaachia71':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'jaachia71'
-            self.iisset_den = '71'
-#             self.GDYN_version  = 'pygeodyn_MODS'
-        else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
+#     def set_density_model_setup_params(self, den_model):
+#         if den_model == 'msis86':
+#             self.DEN_DIR       = den_model
+#             self.SETUP_DEN_DIR = 'msis'
+#             self.iisset_den = '86'
+# #             self.GDYN_version  = 'pygeodyn_MODS'
+#         elif den_model == 'msis00':
+#             self.DEN_DIR       = den_model
+#             self.SETUP_DEN_DIR = 'msis'
+#             self.iisset_den = '86'
+# #             self.GDYN_version  = 'pygeodyn_MODS'
+#         elif den_model == 'msis2':
+#             self.DEN_DIR       = den_model
+#             self.SETUP_DEN_DIR = 'msis'
+#             self.iisset_den = '86'
+# #             self.GDYN_version  = 'pygeodyn_MODS'
+#         elif den_model == 'dtm87':
+#             self.DEN_DIR       = den_model
+#             self.SETUP_DEN_DIR = 'dtm87'
+#             self.iisset_den = '87'
+# #             self.GDYN_version  = 'pygeodyn_MODS'
+#         elif den_model == 'jaachia71':
+#             self.DEN_DIR       = den_model
+#             self.SETUP_DEN_DIR = 'jaachia71'
+#             self.iisset_den = '71'
+# #             self.GDYN_version  = 'pygeodyn_MODS'
+#         else:
+#             print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
     
     
-    def set_acceleration_params(self, emp_accels_bool):
-        if emp_accels_bool == False:
-            self.ACCELS = 'acceloff'
-        elif emp_accels_bool == True:
-            self.ACCELS = 'accelon'
-        else:
-            print('Please input the correct status of the empirically adjusted accelerations:')
-            print("        param['empirical_accels']= False if the empircal accererations are turned off.")
+#     def set_acceleration_params(self, emp_accels_bool):
+#         if emp_accels_bool == False:
+#             self.ACCELS = 'acceloff'
+#         elif emp_accels_bool == True:
+#             self.ACCELS = 'accelon'
+#         else:
+#             print('Please input the correct status of the empirically adjusted accelerations:')
+#             print("        param['empirical_accels']= False if the empircal accererations are turned off.")
 
 
-    def set_parallelize_arcs(self, satellite):
-        self.set_satellite_params( self.satellite )
-        self.arcs_list =  [  '030914_2wk',
-                        '030928_2wk',
-                        '031012_2wk',
-                        '031026_2wk',
-                        '031109_2wk',
-                        '031123_2wk',
-                        '031207_2wk',
-                        '031221_2wk',
-                        ]
-        self.parallelize = True
+#     def set_parallelize_arcs(self, satellite):
+#         self.set_satellite_params( self.satellite )
+#         self.arcs_list =  [  '030914_2wk',
+#                         '030928_2wk',
+#                         '031012_2wk',
+#                         '031026_2wk',
+#                         '031109_2wk',
+#                         '031123_2wk',
+#                         '031207_2wk',
+#                         '031221_2wk',
+#                         ]
+#         self.parallelize = True
 
         
 

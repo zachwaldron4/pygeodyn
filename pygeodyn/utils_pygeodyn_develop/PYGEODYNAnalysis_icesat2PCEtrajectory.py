@@ -137,8 +137,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
         index_pce_y = obj_m1.Residuals_obs[arc][final_iter]['StatSatConfig'] == 'PCE Y    '
         index_pce_z = obj_m1.Residuals_obs[arc][final_iter]['StatSatConfig'] == 'PCE Z    '
 
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_x][::3],
-                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_x][::3]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_x][::10],
+                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_x][::10]*1e2,
                                  name= 'PCE X',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -147,8 +147,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=1, col=1,
                                  )
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_y][::3],
-                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_y][::3]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_y][::10],
+                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_y][::10]*1e2,
                                  name= 'PCE Y',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -157,8 +157,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=2, col=1,
                                  )
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_z][::3],
-                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_z][::3]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_z][::10],
+                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_z][::10]*1e2,
                                  name= 'PCE Z',
                                  mode='markers',
                                  marker=dict(color=col,

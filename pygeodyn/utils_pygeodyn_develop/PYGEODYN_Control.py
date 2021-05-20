@@ -35,12 +35,12 @@ sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
 
 
 ### Import the Classes from the Tools
-from util_Set_Inputs            import UtilSetInputs
+# from util_Set_Inputs            import UtilSetInputs
 from util_ControlTools          import UtilControl_Tools
 
 
 
-class PygeodynController(UtilControl_Tools, UtilSetInputs):
+class PygeodynController(UtilControl_Tools):
     """ PygeodynController class documentation
     
     Description: 
@@ -86,17 +86,18 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         # CHANGEABLE INPUTS
         self.satellite        = params['satellite']
         self.den_model        = params['den_model']
-        self.empirical_accels = params['empirical_accels']
         self.SpecialRun_name  = params['SpecialRun_name']
         self.arc_input        = params['arc']
-        self.options_in       = params['options_in']
         self.verbose          = params['verbose']
-        self.run_ID           = params['run_ID']
+#         self.empirical_accels = params['empirical_accels']
+#         self.options_in       = params['options_in']
+#         self.run_ID           = params['run_ID']        
 
-        # get self.DEN_DIR and self.ACCELS
+        
+        # get self.DEN_DIR 
         self.set_density_model_setup_params( self.den_model )
-        self.set_acceleration_params( self.empirical_accels )
-            
+
+        
         #### Hardcoded constants:    
         self.tabtab = '       '
         #------ Point to the GEODYN executables
@@ -104,14 +105,14 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         self.G2SDIR      = '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
         self.G2EDIR      = '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
 
-        #### Modifiable
+#         #### Modifiable
         
-        if np.size(self.arc_input) == 1:
-            self.ARC = self.arc_input
-            self.multiprocess_flag = False
+#         if np.size(self.arc_input) == 1:
+#             self.ARC = self.arc_input
+#             self.multiprocess_flag = False
 
-        else:
-            self.multiprocess_flag = True
+#         else:
+#             self.multiprocess_flag = True
 
         
         
@@ -148,8 +149,8 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
                 ##   I decided to make my series 
                 ##   identify the density models,
                 ##   accelerations, run name
-        SERIES = self.DEN_DIR + '_' + self.ACCELS + self.SpecialRun_name
-        self.OUTPUTDIR   = path_run_outputs + '/'+self.DEN_DIR+'/'+SERIES
+        self.SERIES = self.DEN_DIR + '_' + self.ACCELS + self.SpecialRun_name
+        self.OUTPUTDIR   = path_run_outputs + '/'+self.DEN_DIR+'/'+self.SERIES
         # make output directory 
         self.make_directory_check_exist(path_run_outputs)
         self.make_directory_check_exist(path_run_outputs + '/'+self.DEN_DIR)
@@ -161,14 +162,14 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
 #         COMMONHD4DIR = path_extra_dirs             
 #         DELDIR       = path_extra_dirs + '/deletes/'+self.SATELLITE_dir                 
 #         BINDIR       = path_extra_dirs + '/bin'
-        TMPDIR       = '/data/data_geodyn/' +'tmp/'+self.SATELLITE_dir+'/'+SERIES 
+        TMPDIR       = '/data/data_geodyn/' +'tmp/'+self.SERIES 
         #### Set up path for tmp run folder
         self.TMPDIR_arc = TMPDIR+'/'+self.ARC
         ## Make temporary directory path
         self.make_directory_check_exist('/data/data_geodyn/') 
         self.make_directory_check_exist('/data/data_geodyn/'+'/tmp') 
-        self.make_directory_check_exist('/data/data_geodyn/'+'/tmp/'+self.SATELLITE_dir)
-        self.make_directory_check_exist('/data/data_geodyn/'+'/tmp/'+self.SATELLITE_dir+'/'+SERIES)
+#         self.make_directory_check_exist('/data/data_geodyn/'+'/tmp/'+self.SATELLITE_dir)
+        self.make_directory_check_exist('/data/data_geodyn/'+'/tmp/'+self.SERIES)
 
         ## Input file directories (ftn 05)
         self.INPUTDIR  = path_run_inputs + '/setups'
@@ -196,17 +197,29 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
 #         self._EXTATTITUDE_filename = self.EXATDIR +'/'
             
     
-    
-        ### Construct the setup file for the Arc of Choice
-        #---- Input iisset file (fort.05)
-        self._INPUT_filename      = self.INPUTDIR  +'/'+ self.arc_input
-        print(self.run_ID,"    Cleaning iisset:   ", self._INPUT_filename)
-        self.clean_iisset_file()
-        self._INPUT_filename      = self.INPUTDIR  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
-        print(self.run_ID,"    This run's iisset: ", self._INPUT_filename)
+        #### Remove old TMPDIR version and remake it 
+#         os.system('rm -rf '+self.TMPDIR_arc)
+        os.system('rm -rf '+self.TMPDIR_arc)
+
+        # chmod 777 gives the tmp directory read, write and overwrite priveleges.
+        self.make_directory_check_exist(self.TMPDIR_arc) 
+        os.system('chmod 777 '+self.TMPDIR_arc)
 
         
-    def make_output_and_temprun_directories(self):
+        ### Construct the setup file for the Arc of Choice
+        #---- Input iisset file (fort.05)
+        self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +'.bz2'
+        
+        print(self.run_ID,"    Begin cleaning iisset:   ", self._INPUT_filename)
+#         print(self.run_ID,"        copy and bunzip2")
+
+        self.clean_iisset_file()
+        
+        self._INPUT_filename      = self.TMPDIR_arc  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
+        print(self.run_ID,"    Cleaned iisset in /tmp: ", self._INPUT_filename)
+
+        
+    def make_output_directories(self):
         '''
         This function builds the output directory structure and the temporary run directory
         
@@ -220,26 +233,19 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         ##### Make the GEODYN output directories to be saved later
         #     If the below directories do not exists, build them: 
         self.make_directory_check_exist(self.OUTPUTDIR) 
-        self.make_directory_check_exist(self.OUTPUTDIR+'/orbits/')
+        self.make_directory_check_exist(self.OUTPUTDIR+'/ORBITS/')
         self.make_directory_check_exist(self.OUTPUTDIR+'/RESIDS/')
-        self.make_directory_check_exist(self.OUTPUTDIR+'/PUNCH/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/PUNCH/')
         self.make_directory_check_exist(self.OUTPUTDIR+'/IIEOUT/')
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/TELEM/')
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/EMAT/')
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/EMAT/scans/')
-        self.make_directory_check_exist(self.OUTPUTDIR+'/IISSET/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/IISSET/')
         self.make_directory_check_exist(self.OUTPUTDIR+'/DENSITY/')
         self.make_directory_check_exist(self.OUTPUTDIR+'/XYZ_TRAJ/')
-        self.make_directory_check_exist(self.OUTPUTDIR+'/KEP_TRAJ/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/KEP_TRAJ/')
         
 
-        #### Remove old TMPDIR version and remake it 
-#         os.system('rm -rf '+self.TMPDIR_arc)
-        os.system('rm -rf '+self.TMPDIR_arc)
-
-        # chmod 777 gives the tmp directory read, write and overwrite priveleges.
-        self.make_directory_check_exist(self.TMPDIR_arc) 
-        os.system('chmod 777 '+self.TMPDIR_arc)
 
     def print_runparameters_to_notebook(self):
         '''
@@ -250,10 +256,10 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
 
         print(self.run_ID,"    Density Model:     " ,self.DEN_DIR)
         print(self.run_ID,"    GEODYN Version:    " ,self.GDYN_version)
-        print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
+#         print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
         print(self.run_ID,"    ARC run:           " ,self.ARC)
         print(self.run_ID,"    Output directory:  " ,self.OUTPUTDIR)
-        print(self.run_ID,"    Call Options:      " ,self.options_in)
+#         print(self.run_ID,"    Call Options:      " ,self.options_in)
 
         print(self.run_ID,"    EXAT File:    " ,self._EXTATTITUDE_filename)
 
@@ -425,7 +431,7 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
                 print(read_iiserrors.read())
             sys.exit()
 
-            
+        
         ###  Then cleanup temporary files.
         os.system('rm -f ftn* fort.*')
 #         print(self.run_ID,"         End of  IIS" )
@@ -471,11 +477,15 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
             print(self.run_ID,"         No errors in IIE" )
             print(self.run_ID,"---------End of IIE" )
         else:
-            print('ERRORS FOUND IN IIE:', _iiserr_filename)
+            print('ERRORS FOUND IN IIE:', _iieerr_filename)
             with open(_iieerr_filename, 'r') as read_iieerrors:
                 # Read & print the entire file
                 print(read_iieerrors.read())
+        
+        self.check_if_run_converged(self.TMPDIR_arc+'/iieout')
 
+        
+        
         
         end = time.time()
         elapsed = end - start
@@ -535,7 +545,7 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         output_files = {'fort.71': 'emat',
                         'ftn97'  : 'telem',
 #                         'ftn08'  : '/xyzout',
-#                         'ftn10': 'a/eiout' ,
+#                         'ftn10': '/aeiout' ,
                         'fort.8': 'ascii_xyz',
                         'fort.10': 'ascii_kep',
                         'fort.30': 'orbfil',
@@ -581,9 +591,9 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         #### First remove files stored in the output directory that have this arc name
         # os.system('rm -f  '+OUTPUTDIR+'/EMAT/${ARC}'+'')
 
-        os.system('rm -f '+self.OUTPUTDIR+'/orbits/'+ self.ARC+'')
-        os.system('rm -f '+self.OUTPUTDIR+'/orbits/'+ self.ARC+'.Z')
-        os.system('rm -f '+self.OUTPUTDIR+'/orbits/'+ self.ARC+'.gz')
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'')
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'.Z')
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'.gz')
 
         os.system('rm -f  '+self.OUTPUTDIR+'/RESIDS/'+ self.ARC+'')
         os.system('rm -f  '+self.OUTPUTDIR+'/RESIDS/'+ self.ARC+'.Z')
@@ -595,66 +605,62 @@ class PygeodynController(UtilControl_Tools, UtilSetInputs):
         os.system('rm -f '+self.OUTPUTDIR+'/XYZ_TRAJ/'+ self.ARC+'')
         os.system('rm -f '+self.OUTPUTDIR+'/KEP_TRAJ/'+ self.ARC+'')
         os.system('rm -f  '+self.OUTPUTDIR+'/IIEOUT/'+ self.ARC+'')
+        os.system('rm -f  '+self.OUTPUTDIR+'/IISSET/'+ self.ARC+'')
 
 
         ### We compress any files that are not frequently used in their ascii form
-        ###   I use gzip for very large files (speed needed) and bzip2 for all others       
-        ###        IISSET
-        ###        RESIDS
-        ###        PUNCH
-        ###        orbits ...  _orb1
-        ###        orbits ...  _orb2
-        
-        os.system('bzip2 -v giis.input')
-        os.system('bzip2 -v punch.gdn')
-        os.system('gzip -v Resid')
+        ###   I use gzip for very large files (speed needed) and bzip2 for all others              
+#         os.system('bzip2 -v giis.input')
+        os.system('bzip2 -v Resid')
         os.system('bzip2 -v orbfil')
         os.system('bzip2 -v orbfil2')
+        os.system('bzip2 -v densityfil')
+        os.system('bzip2 -v ascii_xyz')
+#         os.system('bzip2 -v ascii_kep')
+#         os.system('bzip2 -v punch.gdn')
 
-        
-        os.system('cp giis.input.bz2  '+self.OUTPUTDIR+'/IISSET/'+ self.ARC+'.bz2')
-        os.system('cp punch.gdn.bz2   '+self.OUTPUTDIR+'/PUNCH/'+ self.ARC+'.gdn.bz2')
-        os.system('cp Resid.gz '+self.OUTPUTDIR+'/RESIDS/'+ self.ARC+'.gz')
-        os.system('cp orbfil.bz2 '+self.OUTPUTDIR+'/orbits/'+self.ARC+'_orb1.bz2')
-        os.system('cp orbfil2.bz2 '+self.OUTPUTDIR+'/orbits/'+self.ARC+'_orb2.bz2')
-        
+#         os.system('cp giis.input.bz2  '+self.OUTPUTDIR+'/IISSET/'+ self.ARC+'.bz2')
+        os.system('cp Resid.bz2 '      +self.OUTPUTDIR+'/RESIDS/'  +self.ARC+     '.bz2')
+        os.system('cp orbfil.bz2 '     +self.OUTPUTDIR+'/ORBITS/'  +self.ARC+'_orb1.bz2')
+        os.system('cp orbfil2.bz2 '    +self.OUTPUTDIR+'/ORBITS/'  +self.ARC+'_orb2.bz2')
+        os.system('cp densityfil.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     '.bz2')
+        os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
+#         os.system('cp ascii_kep.bz2 '  +self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+     '.bz2')
         os.system('mv IIEOUT.'+ self.ARC+' '+self.OUTPUTDIR+'/IIEOUT/'+ self.ARC+'')
-        os.system('cp sumry '+self.OUTPUTDIR+'/sumry/'+ self.ARC+'')
-        os.system('cp densityfil  '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'')
+        
         os.system('cp msis_in_file '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin')
         os.system('cp msis_out_file '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisout')
         os.system('cp msis_SWI_file '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisSWI')
-        os.system('cp ascii_xyz '+self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+'')
-        os.system('cp ascii_xyz '+self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+'')
+#         os.system('cp punch.gdn.bz2   '+self.OUTPUTDIR+'/PUNCH/'+ self.ARC+'.gdn.bz2')
+#         os.system('cp sumry '+self.OUTPUTDIR+'/sumry/'+ self.ARC+'')
 #         os.system('cp punch '+self.OUTPUTDIR+'/PUNCH/'+ self.ARC+'')
 
         print(self.run_ID,"               Finished copying files to outputdir")
 
-        #### Go up a level and delete the temporary directory:
-        os.chdir('../')
-        os.system('rm -rf '+self.TMPDIR_arc)
+        #### Go up 3 levels and delete the temporary directories:
+        os.chdir('../../')
+        print(self.tabtab,'BACK TWO LEVELS: ',os.getcwd())
+        print(self.tabtab,'Deleting: ',self.SERIES)
+
+        os.system('rm -rf'+'' +''+self.SERIES)
+        
+#         os.system('rm -rf '+self.TMPDIR_arc)
 
 
         
     def RUN_GEODYN(self):
         
-        if self.multiprocess_flag == False:
+
+        for iarc, arc in enumerate(self.arc_input):
+#             print(arc)
+            self.set_file_paths_for_multiple_arcs( arc , iarc)
+            
             self.setup_directories_and_geodyn_input()
-            self.make_output_and_temprun_directories()
+            self.make_output_directories()
             self.print_runparameters_to_notebook()
             self.prepare_tmpdir_for_geodyn_run()
             self.run_geodyn_in_tmpdir()
             self.post_geodynrun_savefiles_and_cleanup()
-        else:
-            print('Multiprocessing is True')
-
-            for iarc, self.ARC in self.arc_input:
-                self.setup_directories_and_geodyn_input()
-                self.make_output_and_temprun_directories()
-                self.print_runparameters_to_notebook()
-                self.prepare_tmpdir_for_geodyn_run()
-                self.run_geodyn_in_tmpdir()
-                self.post_geodynrun_savefiles_and_cleanup()
         
 
 

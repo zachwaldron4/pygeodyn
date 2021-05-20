@@ -32,6 +32,37 @@ class UtilControl_Tools:
     def __init__(self):  
         pass
     
+    
+    
+    def set_density_model_setup_params(self, den_model):
+        if den_model == 'msis86':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'msis'
+            self.iisset_den = '86'
+#             self.GDYN_version  = 'pygeodyn_MODS'
+        elif den_model == 'msis00':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'msis'
+            self.iisset_den = '86'
+#             self.GDYN_version  = 'pygeodyn_MODS'
+        elif den_model == 'msis2':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'msis'
+            self.iisset_den = '86'
+#             self.GDYN_version  = 'pygeodyn_MODS'
+        elif den_model == 'dtm87':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'dtm87'
+            self.iisset_den = '87'
+#             self.GDYN_version  = 'pygeodyn_MODS'
+        elif den_model == 'jaachia71':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'jaachia71'
+            self.iisset_den = '71'
+#             self.GDYN_version  = 'pygeodyn_MODS'
+        else:
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
+
     def make_directory_check_exist(self, directory, verbose=False):
         if verbose:
             def verboseprint(*args, **kwargs):
@@ -373,4 +404,41 @@ class UtilControl_Tools:
                         else:
                             f.write(line)
 
+    def check_if_run_converged(self, iieout_filename):
+        ''' 
+        Check if the run converged properly. If it did not print to the console.
+        
+        Non-convergence options:
 
+            ** ELEM **  CARTESIAN SPACECRAFT COORDINATES EQUIVALENT TO HYPERBOLIC TRAJECTORY.
+                EXECUTION TERMINATING.
+
+
+        
+        '''
+        self.convergence_flag = False
+        
+        with open(iieout_filename, 'r') as f:
+            for line_no, line in enumerate(f):
+                
+                if 'CONVERGENCE' in line:
+                    self.convergence_flag = True
+#                     print('File converged... reading the file.')
+                    break
+                
+                elif 'HYPERBOLIC TRAJECTORY' in line:
+                    self.convergence_flag = False
+#                     index_last_slash = self._iieout_filename.rfind('/')
+#                     print('|',self.tab,'-----','File: ',self._iieout_filename[index_last_slash+1:]  )
+                    
+                    longest_line = '|'+' File:'+self._iieout_filename
+                    print('+','—'*len(longest_line))
+                    print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
+                    print('|',)
+                    print('|', ' File:',self._iieout_filename )
+                    print('|', ' Line number:',line_no )
+                    print('',)
+                    print('',line.rstrip("\n"))
+                    print('',)
+                    print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+                    print('+','—'*len(longest_line))
