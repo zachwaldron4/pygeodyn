@@ -17,13 +17,10 @@ import copy
 #### ----------------------------------------
 #### ----------------------------------------
 
-
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
-
 
 # from util_Set_Inputs           import UtilSetInputs
 from util_ReaderTools          import UtilReader_Tools
-
 
 
 class PygeodynReader(UtilReader_Tools):
@@ -71,8 +68,250 @@ class PygeodynReader(UtilReader_Tools):
       
     
         
-                
-                
+    def read_binary_ORBFIL(self ):
+        from scipy.io import FortranFile
+        import numpy as np
+        import pandas as pd
+        from collections import namedtuple
+        import time
+        # Fortran calls
+        import subprocess
+        import os
+
+        orb_fil= self._orbfil_filename
+        
+        f = FortranFile(orb_fil, 'r')
+
+#         print(' TEST PRINT HERE') 
+        #### -----------------------------------------------------
+        #### ------------------- HEADER RECORD -------------------
+        #### -----------------------------------------------------
+        ### Read the first record, this is the header buffer
+        a = f.read_record(float)  # read the record with the required datatype
+
+
+        #### Glean important variables
+        NA     = int(a[2-1]) # Number of alphanumeric buffers to follow the header
+        NC     = int(a[3-1]) # Number of card images in the GEODYN II input control deck
+        NSATS  = int(a[7-1])  # Number of satellites on this file:  
+        NWDSAT = int(a[8-1])  # Actual number of words per satellite per time point (NWDSAT <= 39).
+        NWDATA = int(a[9-1])   #NSATS*NWDSAT
+        NTIMBF = int(a[10-1]) # Number of time points per Data Buffer
+
+        header= {}
+        header['Number of alphanumeric data buffers to follow (NA)']             = a[2-1]
+        header['Number of card images in the GEODYN II input control deck (NC)'] = a[3-1]
+        header['Arc Number.']                                                    = a[4-1]
+        header['Global Iteration Number']                                        = a[5-1]
+        header['Inner Iteration Number']                                         = a[6-1]
+        header['Number of satellites on this file']                              = a[7-1]  # upper lmit of 50
+        header['Actual number of words per satellite per time point']            = a[8-1]
+        header['Number of words of data per time point (NWDATA=NSATS*NWDSAT)']   = a[9-1]
+        header['Number of time points per Data Buffer (NTIMBF)']                 = a[10-1]
+        header['Trajectory Start Date & Time in form YYMMDDHHMMSS .0D0 UTC']     = a[11-1]
+        header['Fractional seconds of Start Time. UTC']                          = a[12-1]
+        header['Trajectory Stop Date & Time in form YYMMDDHHMMSS .0D0 UTC']      = a[13-1]
+        header['Fractional seconds of Stop Time. UTC']                           = a[14-1]
+        header['Trajectory Start Date & Time in MJDS']                           = a[15-1] # (MJDS=(JD -2430000.5 D0 )*86400+ ISEC) ET
+        header['Fractional seconds of Start Time']                               = a[16-1]
+        header['Trajectory Stop Date & Time in MJDS']                            = a[17-1] # (MJDS=(JD -2430000.5 D0 )*86400+ ISEC) ET
+        header['Fractional seconds of Stop Time. ET']                            = a[18-1]
+        header['Nominal interval between trajectory times in seconds. ET ']      = a[19-1]
+        header['Nominal number of trajectory times.']                            = a[20-1]
+        header['Output S/C ephem ref sys(0 = TOD, 1 = TOR, 2 =  J2000)']         = a[22-1]
+        # 
+        header['Speed of Light.']                                     = a[101-1]
+        header['GM for Earth.']                                       = a[102-1]
+        header['Semi -major axis of Earth reference ellipsoid.']      = a[103-1]
+        header['Equatorial Flattening of Earth reference ellipsoid.'] = a[104-1]
+        header['Gravitational Potential Checksum.']                   = a[105-1]
+        header['Maximum Degree of Gravitational Expansion.']          = a[106-1]
+        header['Maximum Order of Gravitational Expansion.']           = a[107-1]   ### SKIP from 108 -200
+        #
+        #### PRESENCE ON FILE INDICATORS
+        ## right ascension of Greenwich 
+        header['Presence of right ascension of Greenwich for each time point in each Buffer'] = a[201-1]   
+        ## Inertial State Vector
+        header['Presence per Sat. of inertial X coordinate for each time point']    = a[202-1]   
+        header['Presence per Sat. of inertial Y coordinate for each time point']    = a[203-1]   
+        header['Presence per Sat. of inertial Z coordinate for each time point']    = a[204-1]   
+        header['Presence per Sat. of inertial Xdot coordinate for each time point'] = a[205-1]   
+        header['Presence per Sat. of inertial Ydot coordinate for each time point'] = a[206-1]   
+        header['Presence per Sat. of inertial Zdot coordinate for each time point'] = a[207-1] 
+        # 
+        header['Presence per Sat. of geodetic latitude for each time point'] = a[208-1]   
+        header['Presence per Sat. of east longitude for each time point']    = a[209-1]   
+        # 
+        header['Presence per Sat. of ECF X coordinate for each time point']  = a[210-1]   
+        header['Presence per Sat. of ECF Y coordinate for each time point']  = a[211-1]   
+        header['Presence per Sat. of ECF Z coordinate for each time point']  = a[212-1]   
+        header['Presence per Sat. of ECF Xdot for each time point']         = a[213-1]   
+        header['Presence per Sat. of ECF Ydot for each time point']         = a[214-1]   
+        header['Presence per Sat. of ECF Zdot for each time point']         = a[215-1]   
+        header['Presence per Sat. of polar motion X for each time point']   = a[216-1]   
+        header['Presence per Sat. of polar motion Y for each time point']   = a[217-1]   
+        header['Presence per Sat. of beta prime angle for each time point'] = a[218-1]   
+        header['Presence per Sat. of yaw angle for each time point']        = a[219-1]   
+        header['Presence per Sat. of orbit angle for each time point']      = a[220-1]   
+
+        ##### Satellite ID ’s for all Satellites on File.
+        ###       Trajectory data is ordered based upon order of these Satellite ID ’s.'
+        for i in range(int(NSATS)):
+            ii = i + 1
+            index_sats = 300 + (ii)
+            header['Satellite '+str(ii)+' ID'] = a[index_sats-1]  
+
+
+        #### ----------------------------------------------------
+        #### --------------- ALPHANUMERIC RECORDS ---------------
+        #### ----------------------------------------------------
+        #### We don't care about the Alphanumeric buffers so skip over them.
+        for i in range(int(NA)):
+            a = f.read_record(float)
+
+
+        #### -----------------------------------------------------
+        #### -------------- DATA + SENTINEL RECORDS --------------
+        #### -----------------------------------------------------
+        ### Read the Data records in a while loop.  
+        ### When we hit the end_data_val, we have reached the
+        ###    sentinel record and we can exit the while loop 
+        ###    to read in the sentinel buffer.
+
+
+        end_data_val           = 9000000000
+        end_datarecord         = False
+        data_dict_times        = {}
+        data_dict_RA_greenwich = {}
+        data_dict_sat_packets  = {}
+
+        count_while = 0
+
+        data_dict_sat_packets['MJDSEC ET']                       =[]
+        data_dict_sat_packets['Satellite Inertial X coordinate'] =[]
+        data_dict_sat_packets['Satellite Inertial Y coordinate'] =[]
+        data_dict_sat_packets['Satellite Inertial Z coordinate'] =[]
+        data_dict_sat_packets['Satellite Inertial X velocity']   =[]
+        data_dict_sat_packets['Satellite Inertial Y velocity']   =[]
+        data_dict_sat_packets['Satellite Inertial Z velocity']   =[]
+        data_dict_sat_packets['Satellite Geodetic Latitude']     =[]
+        data_dict_sat_packets['Satellite East Longitude']        =[]
+        data_dict_sat_packets['Satellite Height']                =[]
+#         data_dict_sat_packets['Satellite ECF X coordinate']      =[]
+#         data_dict_sat_packets['Satellite ECF Y coordinate']      =[]
+#         data_dict_sat_packets['Satellite ECF Z coordinate']      =[]
+#         data_dict_sat_packets['Satellite ECF X velocity']        =[]
+#         data_dict_sat_packets['Satellite ECF Y velocity']        =[]
+#         data_dict_sat_packets['Satellite ECF Z velocity']        =[]
+#         data_dict_sat_packets['Polar Motion X']                  =[]
+#         data_dict_sat_packets['Polar Motion Y']                  =[]
+#         data_dict_sat_packets['Beta prime angle']                =[]
+#         data_dict_sat_packets['Yaw angle']                       =[]
+#         data_dict_sat_packets['Orbit Angle']                     =[]
+#         data_dict_sat_packets['Q(1)']                            =[]
+#         data_dict_sat_packets['Q(2)']                            =[]
+#         data_dict_sat_packets['Q(3)']                            =[]
+#         data_dict_sat_packets['Q(4)']                            =[]
+
+        while end_datarecord == False:
+
+            ### Read in each data buffer
+            a = f.read_record(float)
+
+            if not end_data_val in a:
+                count_while+=1
+                NTB    = int(a[5-1])  # Number of trajectory times in this Data Buffer (NTB <= NTIMBF ).
+                MJDSBF = a[4-1]
+
+                #### Trajectory Times in elapsed ET seconds from MJDSBF
+                counter = 0
+                for itime in np.arange( (6)   ,   ((NTB+5)  +1)  ):
+                    index_times = int(itime)
+                    data_dict_times[counter] = MJDSBF + a[index_times-1] 
+                    counter+=1
+
+
+                #### Right Ascension of Greenwich Values (radians) for each time in Buffer.
+                counter = 0
+                for i in np.arange((NTIMBF+6) ,((NTIMBF+5 + NTB)+1)):
+                    counter+=1
+                    index = int(i)
+                    data_dict_RA_greenwich['Right Ascension of Greenwich Values '+ str(counter)] = a[index-1] 
+
+
+                ##### Satellite Data Packets
+                #####    first satellite 
+                #####    first time point 
+                counter = 0        
+                first_sat_first_time = ((NSATS +1)* NTIMBF +6) + (NSATS -1)* NWDSAT #2* NTIMBF +6
+                last_sat_last_time   = ((NSATS +1)* NTIMBF +5) + NSATS*NWDSAT*NTB #(((NSATS+1)* NTIMBF+5)+(NSATS*NWDSAT))
+
+        #         print('first_sat_first_time', first_sat_first_time)
+        #         print('last_sat_last_time  ', last_sat_last_time)
+
+
+
+
+                for i in np.arange(first_sat_first_time, last_sat_last_time  , 24):
+                    index = int(i)
+
+
+                    data_dict_sat_packets['MJDSEC ET'].append(data_dict_times[counter])
+                    data_dict_sat_packets['Satellite Inertial X coordinate'].append(a[(index +1) - 2])
+                    data_dict_sat_packets['Satellite Inertial Y coordinate'].append(a[(index +2) - 2])
+                    data_dict_sat_packets['Satellite Inertial Z coordinate'].append(a[(index +3) - 2])
+                    data_dict_sat_packets['Satellite Inertial X velocity'].append(a[(index +4) - 2])
+                    data_dict_sat_packets['Satellite Inertial Y velocity'].append(a[(index +5) - 2])
+                    data_dict_sat_packets['Satellite Inertial Z velocity'].append(a[(index +6) - 2])
+                    data_dict_sat_packets['Satellite Geodetic Latitude'].append(a[(index +7) - 2])
+                    data_dict_sat_packets['Satellite East Longitude'].append(a[(index +8) - 2])
+                    data_dict_sat_packets['Satellite Height'].append(a[(index +9) - 2])
+#                     data_dict_sat_packets['Satellite ECF X coordinate'].append(a[(index +10) - 2])
+#                     data_dict_sat_packets['Satellite ECF Y coordinate'].append(a[(index +11) - 2])
+#                     data_dict_sat_packets['Satellite ECF Z coordinate'].append(a[(index +12) - 2])
+#                     data_dict_sat_packets['Satellite ECF X velocity'].append(a[(index +13) - 2])
+#                     data_dict_sat_packets['Satellite ECF Y velocity'].append(a[(index +14) - 2])
+#                     data_dict_sat_packets['Satellite ECF Z velocity'].append(a[(index +15) - 2])
+#                     data_dict_sat_packets['Polar Motion X'].append(a[(index +16) - 2])
+#                     data_dict_sat_packets['Polar Motion Y'].append(a[(index +17) - 2])
+#                     data_dict_sat_packets['Beta prime angle'].append(a[(index +18) - 2])
+#                     data_dict_sat_packets['Yaw angle'].append(a[(index +19) - 2])
+#                     data_dict_sat_packets['Orbit Angle'].append(a[(index +20) - 2])
+#                     data_dict_sat_packets['Q(1)'].append(a[(index +21) - 2])
+#                     data_dict_sat_packets['Q(2)'].append(a[(index +22) - 2])
+#                     data_dict_sat_packets['Q(3)'].append(a[(index +23) - 2])
+#                     data_dict_sat_packets['Q(4)'].append(a[(index +24) - 2])
+                    counter+=1
+
+
+        #         print('counter',counter)    
+
+            else:
+                ####  If the the first index has +9000000000 we are at the sentinel record 
+                #     which denotes the end of the data section.
+#                 print('----- End of file')
+#                 print('sentinel buffer indicator                       ',a[1-1])
+#                 print('Count of the number of Data Buffers. GEODYN     ',a[2-1])
+#                 print('GEODYN II Interface File creation date and time.',a[3-1])
+#                 print('GEODYN II -S version used.                      ',a[4-1])
+#                 print('GEODYN II -E version used.                      ',a[5-1])
+#                 print('spare                                           ',a[6-1])
+#                 print('spare                                           ',a[7-1])
+                end_datarecord = True
+                f.close()  #### be sure to close the file
+
+
+        data_record_df = pd.DataFrame.from_dict(data_dict_sat_packets, orient='columns')
+
+
+        self.orbfil_dict = {}
+        self.orbfil_dict['header'] = header
+        self.orbfil_dict['data_record'] = data_record_df
+
+        return(self.orbfil_dict)
+
+
+                        
     def read_ascixyz(self):
 
         '''
@@ -851,242 +1090,244 @@ class PygeodynReader(UtilReader_Tools):
 #         else:
 #             self.str_iteration =     self.total_iterations
 
-        resids_iters = {}
+#         resids_iters = {}
     
-        for i_iter in [' 1', self.str_iteration]:
-            text_obs_resid = 'OBSERVATION RESIDUALS FOR ARC  1 FOR INNER ITERATION '+ (i_iter)
-            end_of_section = 'RESIDUAL SUMMARY BY STATION AND TYPE FOR ARC  1 INNER ITERATION '+ (i_iter)
-            lines_list_1 = [] 
-            lines_list_2 = []
+#         for i_iter in [' 1', self.str_iteration]:
+        text_obs_resid = 'OBSERVATION RESIDUALS FOR ARC  1 FOR INNER ITERATION '+ ( self.str_iteration)
+        end_of_section = 'RESIDUAL SUMMARY BY STATION AND TYPE FOR ARC  1 INNER ITERATION '+ ( self.str_iteration)
+        lines_list_1 = [] 
+        lines_list_2 = []
 
-            #### The below grabs the line numbers of the section headers 
-            #### The Observation Residuals end at the first instance of the Summary by Station
-            with open(self._iieout_filename, 'r') as f:
-                for line_no, line in enumerate(f):
-                    if text_obs_resid in line:
-                        lines_list_1.append(line_no)
-                    elif end_of_section in line:
-                        lines_list_2.append(line_no)
-    #         print('ll1',lines_list_1)
-    #         print('ll2',lines_list_2)
+        #### The below grabs the line numbers of the section headers 
+        #### The Observation Residuals end at the first instance of the Summary by Station
+        with open(self._iieout_filename, 'r') as f:
+            for line_no, line in enumerate(f):
+                if text_obs_resid in line:
+                    lines_list_1.append(line_no)
+                elif end_of_section in line:
+                    lines_list_2.append(line_no)
+#         print('self.str_iteration', self.str_iteration)
+#         print('ll1',lines_list_1)
+#         print('ll2',lines_list_2)
 
-            #### If there are is not a list of residuals the snippet under try: 
-            ####     will kick an error.  This is added to allows the code to 
-            ####     continue going without error.  
-            #### This issue was tied to the above issue with there being too many iterations.
-            try:
-                residual_range  = np.arange(lines_list_1[0], lines_list_2[0]+1)
-            except:
-                residual_range  = np.arange(lines_list_1[0], lines_list_2+1)
+        #### If there are is not a list of residuals the snippet under try: 
+        ####     will kick an error.  This is added to allows the code to 
+        ####     continue going without error.  
+        #### This issue was tied to the above issue with there being too many iterations.
+        try:
+            residual_range  = np.arange(lines_list_1[0], lines_list_2[0]+1)
+        except:
+            residual_range  = np.arange(lines_list_1[0], lines_list_2+1)
 
-            #### Initialize some lists to save out the data
-            list_config_type  = []
-            list_SAT_main     = []
-            list_note         = []
-            list_track_1        = []
-            list_track_2        = []
-            list_YYMMDD       = []
-            list_HHMM         = []
-            list_SEC_UTC      = []
-            list_Observation  = []
-            list_Residual     = []
-            list_RatiotoSigma = []
-            list_Elev1        = []
-            list_Elev2        = []
-            list_OBS_No       = []
-            list_Block        = []
+        #### Initialize some lists to save out the data
+        list_config_type  = []
+        list_SAT_main     = []
+        list_note         = []
+        list_track_1        = []
+        list_track_2        = []
+        list_YYMMDD       = []
+        list_HHMM         = []
+        list_SEC_UTC      = []
+        list_Observation  = []
+        list_Residual     = []
+        list_RatiotoSigma = []
+        list_Elev1        = []
+        list_Elev2        = []
+        list_OBS_No       = []
+        list_Block        = []
 
-            #### Loop through the residual section and save out data.
-            #### There are some header quandries that must be dealt with
-            ####      and the method for doing so is in the if, elif, else statements below
-            #### This quandry is that the data that follows different kinds of headers 
-            ####     is in different columns of the fixed width format file
-            for i,val in enumerate(residual_range):
-                line = linecache.getline(self._iieout_filename,val)
-                #### HEADER TYPE 1
-                if 'STATION-SATELLITE CONFIGURATION' in line:
-                    # print('HEADER Type 1')
-                    config_type = line[35:44]
-                    SAT_main = line[54:62]
-                    #### The location of the columns changes between SLR and GPS... 
-                    if self.DATA_TYPE == 'GPS':
-                        track_1 = line[72:80]
-                        track_2 = line[90:98]
+        #### Loop through the residual section and save out data.
+        #### There are some header quandries that must be dealt with
+        ####      and the method for doing so is in the if, elif, else statements below
+        #### This quandry is that the data that follows different kinds of headers 
+        ####     is in different columns of the fixed width format file
+        for i,val in enumerate(residual_range):
+            line = linecache.getline(self._iieout_filename,val)
+            #### HEADER TYPE 1
+            if 'STATION-SATELLITE CONFIGURATION' in line:
+                # print('HEADER Type 1')
+                config_type = line[35:44]
+                SAT_main = line[54:62]
+                #### The location of the columns changes between SLR and GPS... 
+                if self.DATA_TYPE == 'GPS':
+                    track_1 = line[72:80]
+                    track_2 = line[90:98]
+                    note = np.nan
+                elif self.DATA_TYPE == 'SLR':
+                    track_1 = line[44:53]
+                    track_2 = np.nan
+                    note = np.nan
+                elif self.DATA_TYPE == 'PCE':
+                    track_1 = line[72:80]
+                    track_2 = line[90:98]
+                    note = np.nan
+
+            #### HEADER TYPE 2
+            ####         within HEADER TYPE 2 the GPS data has further another header type
+            elif 'STATION-SAT CONFIG.' in line:
+                if self.DATA_TYPE == 'GPS':
+                    if 'DSS1WRNG' in line:
+                        config_type = line[46:56]
+                        SAT_main = line[65:73]
                         note = np.nan
-                    elif self.DATA_TYPE == 'SLR':
-                        track_1 = line[44:53]
+                        track_1 = line[83:91]
+                        track_2 = line[100:109]
+                    else:
+                        config_type = line[46:56]
+                        SAT_main = np.nan
+                        note = line[55:63]
+                        track_1 = line[65:74]
                         track_2 = np.nan
-                        note = np.nan
-                    elif self.DATA_TYPE == 'PCE':
-                        track_1 = line[72:80]
-                        track_2 = line[90:98]
-                        note = np.nan
+                elif self.DATA_TYPE == 'SLR':
+                    config_type = line[46:55]
+                    SAT_main = line[65:73]
+                    note = np.nan
+                    track_1 = line[55:64]
+                    track_2 = np.nan      
+                elif self.DATA_TYPE == 'PCE':
+                    config_type = line[46:55]
+                    SAT_main = line[65:73]
+                    note = np.nan
+                    track_1 = line[55:64]
+                    track_2 = np.nan      
+            ####  If the block number is an integer 
+            ####        (which it will be if the line contains data) 
+            ####         then save the data out
+            try:
+                BLOCK_no = int(line[117:125])
+                YYMMDD       = line[1:8]
+                HHMM         = line[8:13]
+                SEC_UTC      = line[13:23]
+                Observation  = line[26:42]
+                Residual     = line[42:57]
+                RatiotoSigma = line[57:70]
+                Elev1        = line[71:84]
+                Elev2        = line[85:96]
+                OBS_No       = line[106:117]
+                Block        = line[117:125]
 
-                #### HEADER TYPE 2
-                ####         within HEADER TYPE 2 the GPS data has further another header type
-                elif 'STATION-SAT CONFIG.' in line:
-                    if self.DATA_TYPE == 'GPS':
-                        if 'DSS1WRNG' in line:
-                            config_type = line[46:56]
-                            SAT_main = line[65:73]
-                            note = np.nan
-                            track_1 = line[83:91]
-                            track_2 = line[100:109]
-                        else:
-                            config_type = line[46:56]
-                            SAT_main = np.nan
-                            note = line[55:63]
-                            track_1 = line[65:74]
-                            track_2 = np.nan
-                    elif self.DATA_TYPE == 'SLR':
-                        config_type = line[46:55]
-                        SAT_main = line[65:73]
-                        note = np.nan
-                        track_1 = line[55:64]
-                        track_2 = np.nan      
-                    elif self.DATA_TYPE == 'PCE':
-                        config_type = line[46:55]
-                        SAT_main = line[65:73]
-                        note = np.nan
-                        track_1 = line[55:64]
-                        track_2 = np.nan      
-                ####  If the block number is an integer 
-                ####        (which it will be if the line contains data) 
-                ####         then save the data out
-                try:
-                    BLOCK_no = int(line[117:125])
-                    YYMMDD       = line[1:8]
-                    HHMM         = line[8:13]
-                    SEC_UTC      = line[13:23]
-                    Observation  = line[26:42]
-                    Residual     = line[42:57]
-                    RatiotoSigma = line[57:70]
-                    Elev1        = line[71:84]
-                    Elev2        = line[85:96]
-                    OBS_No       = line[106:117]
-                    Block        = line[117:125]
+                list_config_type.append(config_type)
+                list_SAT_main.append(SAT_main)
+                list_note.append(note)
+                list_track_1.append(track_1)
+                list_track_2.append(track_2)
+                list_YYMMDD.append(YYMMDD)
+                list_HHMM.append(HHMM)
+                list_SEC_UTC.append(SEC_UTC)
+                list_Observation.append(Observation)
+                list_Residual.append(Residual)
+                list_RatiotoSigma.append(RatiotoSigma)
+                list_Elev1.append(Elev1)
+                list_Elev2.append(Elev2)
+                list_OBS_No.append(OBS_No)
+                list_Block.append(Block)
+            except:
+        #         print('Not a data block', line[117:125]) 
+                pass
 
-                    list_config_type.append(config_type)
-                    list_SAT_main.append(SAT_main)
-                    list_note.append(note)
-                    list_track_1.append(track_1)
-                    list_track_2.append(track_2)
-                    list_YYMMDD.append(YYMMDD)
-                    list_HHMM.append(HHMM)
-                    list_SEC_UTC.append(SEC_UTC)
-                    list_Observation.append(Observation)
-                    list_Residual.append(Residual)
-                    list_RatiotoSigma.append(RatiotoSigma)
-                    list_Elev1.append(Elev1)
-                    list_Elev2.append(Elev2)
-                    list_OBS_No.append(OBS_No)
-                    list_Block.append(Block)
-                except:
-            #         print('Not a data block', line[117:125]) 
-                    pass
+        ####  Save all the above data to a dictionary then convert to a dataframe
+        resids_dict= {'StatSatConfig' : list_config_type,
+                      'Sat_main'      : list_SAT_main   ,
+                      'track_1'         : list_track_1      ,
+                      'track_2'         : list_track_2      ,
+                      'Note'          : list_note       ,
+                      'YYMMDD'        : list_YYMMDD      ,
+                      'HHMM'          : list_HHMM        ,
+                      'SEC_UTC'       : list_SEC_UTC      ,
+                      'Observation'   : list_Observation  ,
+                      'Residual'      : list_Residual     ,
+                      'RatiotoSigma'  : list_RatiotoSigma ,
+                      'Elev1'         : list_Elev1       ,
+                      'Elev2'         : list_Elev2       ,
+                      'OBS_No'        : list_OBS_No      ,
+                      'Block'         : list_Block       ,
+                     } 
+        resids_df = pd.DataFrame.from_dict(resids_dict)
+        linecache.clearcache()
+        #
+        # ----------------------------------------------------------------------------------
+        #
+        #### Fix the date column:
+        dates = self.make_datetime_column(resids_df, self.YR)
 
-            ####  Save all the above data to a dictionary then convert to a dataframe
-            resids_dict= {'StatSatConfig' : list_config_type,
-                          'Sat_main'      : list_SAT_main   ,
-                          'track_1'         : list_track_1      ,
-                          'track_2'         : list_track_2      ,
-                          'Note'          : list_note       ,
-                          'YYMMDD'        : list_YYMMDD      ,
-                          'HHMM'          : list_HHMM        ,
-                          'SEC_UTC'       : list_SEC_UTC      ,
-                          'Observation'   : list_Observation  ,
-                          'Residual'      : list_Residual     ,
-                          'RatiotoSigma'  : list_RatiotoSigma ,
-                          'Elev1'         : list_Elev1       ,
-                          'Elev2'         : list_Elev2       ,
-                          'OBS_No'        : list_OBS_No      ,
-                          'Block'         : list_Block       ,
-                         } 
-            resids_df = pd.DataFrame.from_dict(resids_dict)
-            linecache.clearcache()
-            #
-            # ----------------------------------------------------------------------------------
-            #
-            #### Fix the date column:
-            dates = self.make_datetime_column(resids_df, self.YR)
+        resids_df.insert(0, 'Date', dates)
 
-            resids_df.insert(0, 'Date', dates)
+        #### The ratio-to-sigma columns has some weird strings in it
+        ####        ValueError: could not convert string to float: ' -16.0620*'
+        ####        remove them
+        fix_string = []
+        for i,val in enumerate(resids_df['RatiotoSigma']):
+            try:
+                float(val)
+                fix_string.append(val)
+            except:
+                # print(i, val)
+                fix_string.append(val[:-1])
 
-            #### The ratio-to-sigma columns has some weird strings in it
-            ####        ValueError: could not convert string to float: ' -16.0620*'
-            ####        remove them
-            fix_string = []
-            for i,val in enumerate(resids_df['RatiotoSigma']):
-                try:
-                    float(val)
-                    fix_string.append(val)
-                except:
-                    # print(i, val)
-                    fix_string.append(val[:-1])
+        resids_df['RatiotoSigma'] = fix_string
+        ####   
+        #### Some of the elevations are empty.  Replace the empty strings with nans
+        ####
+        elev_fix = []
+        for i,val in enumerate(resids_df['Elev1']):
+            try:
+                float(val)
+                elev_fix.append(float(val))
+            except:
+                elev_fix.append(np.nan)
+        resids_df['Elev1'] = elev_fix
+        elev_fix = []
+        for i,val in enumerate(resids_df['Elev2']):
+            try:
+                float(val)
+                elev_fix.append(float(val))
+            except:
+                elev_fix.append(np.nan)
+        resids_df['Elev2'] = elev_fix
 
-            resids_df['RatiotoSigma'] = fix_string
-            ####   
-            #### Some of the elevations are empty.  Replace the empty strings with nans
-            ####
-            elev_fix = []
-            for i,val in enumerate(resids_df['Elev1']):
-                try:
-                    float(val)
-                    elev_fix.append(float(val))
-                except:
-                    elev_fix.append(np.nan)
-            resids_df['Elev1'] = elev_fix
-            elev_fix = []
-            for i,val in enumerate(resids_df['Elev2']):
-                try:
-                    float(val)
-                    elev_fix.append(float(val))
-                except:
-                    elev_fix.append(np.nan)
-            resids_df['Elev2'] = elev_fix
+                        # def test_apply(x):
+                        #     try:
+                        #         return float(x)
+                        #     except ValueError:
+                        #         return None
 
-                            # def test_apply(x):
-                            #     try:
-                            #         return float(x)
-                            #     except ValueError:
-                            #         return None
-
-                            # cleanDF = test['Value'].apply(test_apply).dropna()        
-            def test_apply(x):
-                try:
-                    return float(x)
-                except:
-                    return np.nan
-    #         cleanDF = test['Value'].apply(test_apply).dropna()
+                        # cleanDF = test['Value'].apply(test_apply).dropna()        
+        def test_apply(x):
+            try:
+                return float(x)
+            except:
+                return np.nan
+#         cleanDF = test['Value'].apply(test_apply).dropna()
 
 
 
-            resids_df['Observation']  = resids_df['Observation'].apply(test_apply)  #.astype(float)
-            resids_df['Residual']     = resids_df['Residual'].apply(test_apply)     #.astype(float)
-            resids_df['RatiotoSigma'] = resids_df['RatiotoSigma'].apply(test_apply) #.astype(float)
+        resids_df['Observation']  = resids_df['Observation'].apply(test_apply)  #.astype(float)
+        resids_df['Residual']     = resids_df['Residual'].apply(test_apply)     #.astype(float)
+        resids_df['RatiotoSigma'] = resids_df['RatiotoSigma'].apply(test_apply) #.astype(float)
 
-            #### Delete the superfluous columns
-            del resids_df['year']
-            del resids_df['month']
-            del resids_df['day']
-            del resids_df['hours']
-            del resids_df['minutes']
-            del resids_df['secs']
-            del resids_df['millsecs']
-            del resids_df['timeHHMM']
-            del resids_df['YYMMDD']
-            del resids_df['HHMM']
-            del resids_df['SEC_UTC']
-            del resids_df['Block']
-            del resids_df['OBS_No']
+        #### Delete the superfluous columns
+        del resids_df['year']
+        del resids_df['month']
+        del resids_df['day']
+        del resids_df['hours']
+        del resids_df['minutes']
+        del resids_df['secs']
+        del resids_df['millsecs']
+        del resids_df['timeHHMM']
+        del resids_df['YYMMDD']
+        del resids_df['HHMM']
+        del resids_df['SEC_UTC']
+        del resids_df['Block']
+        del resids_df['OBS_No']
 
-            end = time.time()
-            elapsed = end - start
-    #         print('Observed residuals: ',elapsed)
-            resids_iters[i_iter] = resids_df
+        end = time.time()
+        elapsed = end - start
+#         print('Observed residuals: ',elapsed)
+#         resids_iters[i_iter] = resids_df
     
-        return(resids_iters)
-       
+#         return(resids_iters)
+        return(resids_df)
+
         
     def read_resid_measurement_summaries(self):
         '''
@@ -1432,6 +1673,12 @@ class PygeodynReader(UtilReader_Tools):
         return(self.read_ascixyz())
 
     #----------------------------------------------
+
+    
+    def getData_Trajectory_orbfil(self):
+        return(self.read_binary_ORBFIL())
+
+    #----------------------------------------------
     
     def getData_adjustedparams_iieout(self):
         return(self.read_adjustedparams_iieout())
@@ -1457,45 +1704,45 @@ class PygeodynReader(UtilReader_Tools):
 
     
 
-    def getData_UserChoose(self, inputlist):
+#     def getData_UserChoose(self, inputlist):
     
-        '''
-        determine which datasets to return
-        '''
-        print('     Input must be chosen from the following:')
-        print('           Density', '\n',
-              '          AdjustedParams','\n',
-              '          Trajectory_xyz', '\n',
-              '          Residuals_obs', '\n',
-              '          Residuals_summary', '\n',
-              '          Statistics \n')
+#         '''
+#         determine which datasets to return
+#         '''
+#         print('     Input must be chosen from the following:')
+#         print('           Density', '\n',
+#               '          AdjustedParams','\n',
+#               '          Trajectory_xyz', '\n',
+#               '          Residuals_obs', '\n',
+#               '          Residuals_summary', '\n',
+#               '          Statistics \n')
         
-        for choice in inputlist:
+#         for choice in inputlist:
 
-            if choice == 'AdjustedParams':
-                self.AdjustedParams      = self.getData_adjustedparams_iieout()
+#             if choice == 'AdjustedParams':
+#                 self.AdjustedParams      = self.getData_adjustedparams_iieout()
                
-            elif choice == 'Trajectory_xyz':
-                self.Trajectory_xyz            = self.getData_asciiXYZ()
+#             elif choice == 'Trajectory_xyz':
+#                 self.Trajectory_xyz            = self.getData_asciiXYZ()
                 
-            elif choice == 'Density':
-                self.Density             = self.getData_density_denfile()
+#             elif choice == 'Density':
+#                 self.Density             = self.getData_density_denfile()
              
-            elif choice == 'Residuals_obs':
-                self.Residuals_obs          = self.getData_residsObserved_iieout()
+#             elif choice == 'Residuals_obs':
+#                 self.Residuals_obs          = self.getData_residsObserved_iieout()
          
-            elif choice ==  'Residuals_summary':
-                self.Residuals_summary      = self.getData_residsMeasSumm_iieout()
+#             elif choice ==  'Residuals_summary':
+#                 self.Residuals_summary      = self.getData_residsMeasSumm_iieout()
          
-            elif choice == 'Statistics':
-                self.Statistics = self.getData_stats_endOfFile_iieout()
+#             elif choice == 'Statistics':
+#                 self.Statistics = self.getData_stats_endOfFile_iieout()
          
-            else:
-                print('The requested output [', choice, '] does not match and inputs')
+#             else:
+#                 print('The requested output [', choice, '] does not match and inputs')
 
                 
-#             print(self.keys())
-        return(self)
+# #             print(self.keys())
+#         return(self)
     
 
         
@@ -1663,15 +1910,17 @@ class PygeodynReader(UtilReader_Tools):
         data_keys = [
                     'AdjustedParams',
 #                     'Trajectory_xyz',
+                    'Trajectory_orbfil',
                     'Density',
                     'Residuals_obs',
-#                     'Residuals_summary',
-#                     'Statistics',
+                    'Residuals_summary',
+                    'Statistics',
                     ]
 
         #### Make dictionaries to store arc in a loop
         self.AdjustedParams    = {}
         self.Trajectory_xyz    = {}
+        self.Trajectory_orbfil = {}
         self.Density           = {}
         self.Residuals_obs     = {}
         self.Residuals_summary = {}
@@ -1681,8 +1930,10 @@ class PygeodynReader(UtilReader_Tools):
         
         ##### Go thru the files once and unzip them
         
-        self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1 )
+        self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1, True )
         os.chdir(self.path_to_model+'DENSITY/')
+        os.system('bunzip2 -v '+'*')
+        os.chdir(self.path_to_model+'ORBITS/')
         os.system('bunzip2 -v '+'*')
 
         
@@ -1690,22 +1941,23 @@ class PygeodynReader(UtilReader_Tools):
             self.set_file_paths_for_multiple_arcs( arc, iarc )
             self.check_if_run_converged(self._iieout_filename)
 
-
-            for choice in data_keys:
-                
+            for choice in data_keys:                
                 
                 if choice == 'AdjustedParams':
-                    self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
+                    self.AdjustedParams[arc]         = self.getData_adjustedparams_iieout()
                 elif choice == 'Trajectory_xyz':
-                    self.Trajectory_xyz[arc]            = self.getData_asciiXYZ()
+                    self.Trajectory_xyz[arc]         = self.getData_asciiXYZ()
                 elif choice == 'Density':
-                    self.Density[arc]                   = self.getData_density_denfile()
+                    self.Density[arc]                = self.getData_density_denfile()
                 elif choice == 'Residuals_obs':
-                    self.Residuals_obs[arc]            = self.getData_residsObserved_iieout()
+                    self.Residuals_obs[arc]          = self.getData_residsObserved_iieout()
                 elif choice ==  'Residuals_summary':
                     self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
                 elif choice == 'Statistics':
-                    self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
+                    self.Statistics[arc]             = self.getData_stats_endOfFile_iieout()
+                elif choice == 'Trajectory_orbfil':
+#                     print('TESTTESTTEST')
+                    self.Trajectory_orbfil[arc]      = self.getData_Trajectory_orbfil()
                 else:
 #                     print('Error in PygeodynReader.getData()')
 #                     print('The requested output [', choice, '] does not match any inputs')

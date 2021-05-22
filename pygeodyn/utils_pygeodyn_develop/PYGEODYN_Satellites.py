@@ -91,7 +91,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #         self.g2b_file = 'icesat2g2b_pce_287_289A.gz'   # fort.40
         self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
-        self.ephem_file = 'ephem1430.data_2025.gz'
+        self.ephem_file     = 'ephem1430.data_2025.gz'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
         
 
@@ -104,7 +104,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.arc_length = '54hr'
 
         
-    def set_file_paths_for_multiple_arcs(self, arc_val, iarc):
+    def set_file_paths_for_multiple_arcs(self, arc_val, iarc, unzip_and_loadpaths=False):
         '''
         Handles the Arc naming conventions
         Construct a way to read in the satellite specific filenames.
@@ -134,19 +134,21 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                                    self.den_model+'/'+  
                                    self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
         file_name =   self.ARC         
-        print('        ')
-        if self.action == 'read':
+#         print('        ')
+        if unzip_and_loadpaths == True:
+            pass
+        elif self.action == 'read':
             print('     Loading ... ', file_name,' ' ,sep = '')
-#         print('     File path: ')
-#         print('     Loading ', self.path_to_model ,'.../',file_name,' ' ,sep = '')
         else:
             pass
         
         
         ####  save the specific file names as "private members" with the _filename convention
         self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
+        self._orbfil_filename = self.path_to_model + 'ORBITS/'+ file_name+'_orb1'
         self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
         self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
+#         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
         
         time.sleep(1)
@@ -195,14 +197,14 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #         print(os.getcwd())
             
         shutil.copyfile(ORIG_iisset_file, self.TMPDIR_arc +'/'+iisset_file+'.bz2')
-        print(self.TMPDIR_arc)
+#         print(self.TMPDIR_arc)
         
         os.chdir(self.TMPDIR_arc)
         os.system('bunzip2 -v '+ '*.bz2')
         os.chdir('/data/geodyn_proj/pygeodyn')
         
         iisset_file = self.TMPDIR_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
-        print(iisset_file)
+#         print(iisset_file)
         
         #### --------------------------------------------------------------------
         #### identify the cards we do not want in the setup file
@@ -287,7 +289,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
         add_hours_dt = pd.Series(pd.to_timedelta(9,'h'))
 
-        drag_date_1 = (epoch_start_dt+add_hours_dt).dt.strftime('%y%m%d%H%M%S').values[0]
+        drag_date_1 = (epoch_start_dt+add_hours_dt).dt.strftime(  '%y%m%d%H%M%S').values[0]
         drag_date_2 = (epoch_start_dt+add_hours_dt*2).dt.strftime('%y%m%d%H%M%S').values[0]
         drag_date_3 = (epoch_start_dt+add_hours_dt*3).dt.strftime('%y%m%d%H%M%S').values[0]
         drag_date_4 = (epoch_start_dt+add_hours_dt*4).dt.strftime('%y%m%d%H%M%S').values[0]
@@ -361,8 +363,37 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         ##### Putting in the options is one of the hardest parts of using GEODYN
         #####    They require VERY specific inputs depending on the run type.  
         card_strings = {}
-#                                  1234567890 
-        card_strings['ORBFIL'] =  'ORBFIL2 31       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
+        
+        
+            #####  ORBFIL KEY ------ Requests output of trajectory file(s) on specified unit(s) 
+            #####                           on the last iteration of the run.
+            #####
+            #####   columns      Orbit output option
+            #####    7           Coordinate system of output
+            #####                      0 - True of date (default)
+            #####                      1 - True of reference date 
+            #####                   ** 2 - Mean of year 2000    
+            #####    8           Switch indicating whether trajectory file is for a single 
+            #####                  satellite or a set of satellites.
+            #####                   ** 0 - Single satellite 0 0
+            #####                      1 - Set of satellites. This option has meaning 
+            #####                            only when used in conjunction with sets of 
+            #####                            satellites (See EPOCH and SLAVE option cards
+            #####                            for more details ). If satellite ID in columns
+            #####                            18-24 is a master satellite , then the trajectory
+            #####                          for all satellites in the set will be output.
+            #####  9-11           Mandatory unit number for trajectory file. All trajectory 
+            #####                  files within an arc must have unique unit numbers. 
+            #####                  The suggested unit number starts at 130.
+            #####  18-25        Satellite ID. This field must contain a valid ID.
+            #####  25-44        START date and time for trajectory output (YYMMDDHHMMSS.SS).
+            #####  45-59        STOP  date and time for trajectory output (YYMMDDHHMMSS.SS).
+            #####  60-72        Time interval between successive trajectory outputs.
+
+            
+#                                  12345678901234567 
+        card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
+    
         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
         #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
@@ -594,13 +625,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             
                         else:
                             f.write(line)
-        print('    ','Changing starting vector:')
-        print('    ','Orig:')
-        print('    ',line_ELEMS11)
-        print(line_ELEMS2)
-        print('    ','PCE Update:')
-        print('    ',card_strings['ELEMS1'],' \n')
-        print('    ',card_strings['ELEMS2'],' \n')
+        self.verboseprint('    ','Orig:')
+        self.verboseprint('    ','    ',line_ELEMS11.rstrip('\n'))
+        self.verboseprint('    ','    ',line_ELEMS2.rstrip('\n'))
+        self.verboseprint('    ','PCE Update:')
+        self.verboseprint('    ','    ',card_strings['ELEMS1'])
+        self.verboseprint('    ','    ',card_strings['ELEMS2'])
         
         ####----------------------------------------------------------------------
         #### Add three lines to the start of the file.  This is the GLOBAL TITLE
@@ -666,35 +696,35 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
 
     #### overwrite some methods from CONTROL:
-    def print_runparameters_to_notebook(self):
-        '''
-        This method just prints to the run parameters to the notebook for user tracking.
-        The original method is overwritten to account for the fact that we have a external attitude file
+#     def print_runparameters_to_notebook(self):
+#         '''
+#         This method just prints to the run parameters to the notebook for user tracking.
+#         The original method is overwritten to account for the fact that we have a external attitude file
         
-        '''
-        self.verboseprint('ICESat2 -- print_runparameters_to_notebook()')
+#         '''
+#         self.verboseprint('ICESat2 -- print_runparameters_to_notebook()')
 
-        self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
+#         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
 
-        print(self.run_ID,"    Density Model:     " ,self.DEN_DIR)
-        print(self.run_ID,"    GEODYN Version:    " ,self.GDYN_version)
-        print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
-        print(self.run_ID,"    ARC run:           " ,self.ARC)
-        print(self.run_ID,"    Output directory:  " ,self.OUTPUTDIR)
-        print(self.run_ID,"    Call Options:      " ,self.options_in)
+#         print(self.run_ID,"    Density Model:     " ,self.DEN_DIR)
+#         print(self.run_ID,"    GEODYN Version:    " ,self.GDYN_version)
+#         print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
+#         print(self.run_ID,"    ARC run:           " ,self.ARC)
+#         print(self.run_ID,"    Output directory:  " ,self.OUTPUTDIR)
+#         print(self.run_ID,"    Call Options:      " ,self.options_in)
 
-        print(self.run_ID,"    EXAT File:    " ,self._EXTATTITUDE_filename)
+#         print(self.run_ID,"    EXAT File:    " ,self._EXTATTITUDE_filename)
 
-        if os.path.exists(self._INPUT_filename):
-            self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
-        else:
-            print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
+#         if os.path.exists(self._INPUT_filename):
+#             self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
+#         else:
+#             print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
 
-        if os.path.exists(self._G2B_filename):
-            self.verboseprint(self.tabtab,"FORT.40 (g2b)   file:  ", self._G2B_filename)
-        else:
-            print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
+#         if os.path.exists(self._G2B_filename):
+#             self.verboseprint(self.tabtab,"FORT.40 (g2b)   file:  ", self._G2B_filename)
+#         else:
+#             print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
 
             
             

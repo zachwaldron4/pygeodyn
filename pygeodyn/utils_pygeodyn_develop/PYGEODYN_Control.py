@@ -113,8 +113,6 @@ class PygeodynController(UtilControl_Tools):
 
 #         else:
 #             self.multiprocess_flag = True
-
-        
         
         
     def setup_directories_and_geodyn_input(self):
@@ -131,7 +129,7 @@ class PygeodynController(UtilControl_Tools):
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         print(self.run_ID,"    Current Time =     ", current_time)
-        print()
+        print(self.run_ID)
 
         ####-------------------------------------------------------------
         ####       Setup Directory Structure 
@@ -173,11 +171,11 @@ class PygeodynController(UtilControl_Tools):
 
         ## Input file directories (ftn 05)
         self.INPUTDIR  = path_run_inputs + '/setups'
-        DIRGRAV   = path_run_inputs + '/gravity'
-        G2BDIR    = path_run_inputs + '/g2b'
-        ATGRAVDIR = path_run_inputs + '/atgrav'
-        EPHEMDIR  = path_run_inputs + '/ephem'
-        self.EXATDIR = path_run_inputs + '/external_attitude'
+        DIRGRAV   = path_run_inputs     + '/gravity'
+        G2BDIR    = path_run_inputs     + '/g2b'
+        ATGRAVDIR = path_run_inputs     + '/atgrav'
+        EPHEMDIR  = path_run_inputs     + '/ephem'
+        self.EXATDIR = path_run_inputs  + '/external_attitude'
 
         
         #---- Planetary Ephemeris
@@ -195,7 +193,8 @@ class PygeodynController(UtilControl_Tools):
         #----- External Attitude File
         #          done in the satellite class
 #         self._EXTATTITUDE_filename = self.EXATDIR +'/'
-            
+        self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
+
     
         #### Remove old TMPDIR version and remake it 
 #         os.system('rm -rf '+self.TMPDIR_arc)
@@ -210,13 +209,12 @@ class PygeodynController(UtilControl_Tools):
         #---- Input iisset file (fort.05)
         self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +'.bz2'
         
-        print(self.run_ID,"    Begin cleaning iisset:   ", self._INPUT_filename)
+        print(self.run_ID,"    Cleaning iisset... :   ", self._INPUT_filename)
 #         print(self.run_ID,"        copy and bunzip2")
 
         self.clean_iisset_file()
         
         self._INPUT_filename      = self.TMPDIR_arc  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
-        print(self.run_ID,"    Cleaned iisset in /tmp: ", self._INPUT_filename)
 
         
     def make_output_directories(self):
@@ -234,7 +232,7 @@ class PygeodynController(UtilControl_Tools):
         #     If the below directories do not exists, build them: 
         self.make_directory_check_exist(self.OUTPUTDIR) 
         self.make_directory_check_exist(self.OUTPUTDIR+'/ORBITS/')
-        self.make_directory_check_exist(self.OUTPUTDIR+'/RESIDS/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/RESIDS/')
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/PUNCH/')
         self.make_directory_check_exist(self.OUTPUTDIR+'/IIEOUT/')
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/TELEM/')
@@ -254,24 +252,41 @@ class PygeodynController(UtilControl_Tools):
         '''
         self.verboseprint('Original -- print_runparameters_to_notebook()')
 
-        print(self.run_ID,"    Density Model:     " ,self.DEN_DIR)
-        print(self.run_ID,"    GEODYN Version:    " ,self.GDYN_version)
-#         print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
-        print(self.run_ID,"    ARC run:           " ,self.ARC)
-        print(self.run_ID,"    Output directory:  " ,self.OUTPUTDIR)
-#         print(self.run_ID,"    Call Options:      " ,self.options_in)
+#                     longest_line = '|'+' File:'+self._iieout_filename
+#                     print('+','—'*len(longest_line))
+#                     print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
+#                     print('|',)
+#                     print('|', ' File:',self._iieout_filename )
+#                     print('|', ' Line number:',line_no )
+#                     print('',)
+#                     print('',line.rstrip("\n"))
+#                     print('',)
+#                     print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+#                     print('+','—'*len(longest_line))
+        
+        longest_line = '|      '+self.run_ID+"    Output directory:  " + self.OUTPUTDIR
+        
+        print('+','—'*len(longest_line))
+        print('|')
+        print('|','---------------------- Some run information ----------------------')
+        print('| ',self.run_ID,"    IISSET Cleaned     " , 'tmp/cleaned_setup'+'_' + self.arcdate_for_files)
+        print('| ',self.run_ID,"    Density Model:     " , self.DEN_DIR)
+        print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)
+        print('| ',self.run_ID,"    ARC run:           " , self.ARC)
+        print('| ',self.run_ID,"    Output directory:  " , self.OUTPUTDIR)
+        print('| ',self.run_ID,"    EXAT File:         " , self._EXTATTITUDE_filename)
+        print('|')
+        print('+','—'*len(longest_line))
 
-        print(self.run_ID,"    EXAT File:    " ,self._EXTATTITUDE_filename)
+        if os.path.exists(self._INPUT_filename):
+            self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
+        else:
+            print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
 
-#         if os.path.exists(self._INPUT_filename):
-#             self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
-#         else:
-#             print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
-
-#         if os.path.exists(self._G2B_filename):
-#             self.verboseprint(self.tabtab,"FORT.40 (g2b)   file:  ", self._G2B_filename)
-#         else:
-#             print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
+        if os.path.exists(self._G2B_filename):
+            self.verboseprint(self.tabtab,"FORT.40 (g2b)   file:  ", self._G2B_filename)
+        else:
+            print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
 
     def prepare_tmpdir_for_geodyn_run(self):
         '''  This it the base version of this method.
@@ -548,8 +563,8 @@ class PygeodynController(UtilControl_Tools):
 #                         'ftn10': '/aeiout' ,
                         'fort.8': 'ascii_xyz',
                         'fort.10': 'ascii_kep',
-                        'fort.30': 'orbfil',
                         'fort.31': 'orbfil2',
+                        'fort.131': 'orbfil',
                         'fort.99': 'densityfil',
                         'fort.98': 'msis_in_file',
                         'fort.101':'msis_out_file' ,
@@ -557,7 +572,7 @@ class PygeodynController(UtilControl_Tools):
                         }
         for i,val in enumerate(output_files):
             if not os.path.exists(val):
-                print('File is not in',self.run_ID,':',val,'--', output_files[val] )
+                self.verboseprint('File is not in',self.run_ID,':',val,'--', output_files[val] )
             else:
                 pass
 
@@ -566,9 +581,8 @@ class PygeodynController(UtilControl_Tools):
         os.system('mv ftn97 telem')
         os.system('mv fort.8 ascii_xyz')
         os.system('mv fort.10 ascii_kep')
-        os.system('mv fort.30 orbfil')
-        os.system('mv fort.31 orbfil2')
-        os.system('mv fort.99 densityfil')
+        os.system('mv fort.131 orbfil')
+        os.system('mv fort.99  densityfil')
         os.system('mv fort.98 msis_in_file')
         os.system('mv fort.101 msis_out_file')
         os.system('mv fort.103 msis_SWI_file')
@@ -611,18 +625,16 @@ class PygeodynController(UtilControl_Tools):
         ### We compress any files that are not frequently used in their ascii form
         ###   I use gzip for very large files (speed needed) and bzip2 for all others              
 #         os.system('bzip2 -v giis.input')
-        os.system('bzip2 -v Resid')
+#         os.system('bzip2 -v Resid')
         os.system('bzip2 -v orbfil')
-        os.system('bzip2 -v orbfil2')
         os.system('bzip2 -v densityfil')
         os.system('bzip2 -v ascii_xyz')
 #         os.system('bzip2 -v ascii_kep')
 #         os.system('bzip2 -v punch.gdn')
 
 #         os.system('cp giis.input.bz2  '+self.OUTPUTDIR+'/IISSET/'+ self.ARC+'.bz2')
-        os.system('cp Resid.bz2 '      +self.OUTPUTDIR+'/RESIDS/'  +self.ARC+     '.bz2')
+#         os.system('cp Resid.bz2 '      +self.OUTPUTDIR+'/RESIDS/'  +self.ARC+     '.bz2')
         os.system('cp orbfil.bz2 '     +self.OUTPUTDIR+'/ORBITS/'  +self.ARC+'_orb1.bz2')
-        os.system('cp orbfil2.bz2 '    +self.OUTPUTDIR+'/ORBITS/'  +self.ARC+'_orb2.bz2')
         os.system('cp densityfil.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     '.bz2')
         os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
 #         os.system('cp ascii_kep.bz2 '  +self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+     '.bz2')
@@ -639,10 +651,10 @@ class PygeodynController(UtilControl_Tools):
 
         #### Go up 3 levels and delete the temporary directories:
         os.chdir('../../')
-        print(self.tabtab,'BACK TWO LEVELS: ',os.getcwd())
+#         print(self.tabtab,'BACK TWO LEVELS: ',os.getcwd())
         print(self.tabtab,'Deleting: ',self.SERIES)
 
-        os.system('rm -rf'+'' +''+self.SERIES)
+        os.system('rm -rf'+' ' +self.SERIES)
         
 #         os.system('rm -rf '+self.TMPDIR_arc)
 

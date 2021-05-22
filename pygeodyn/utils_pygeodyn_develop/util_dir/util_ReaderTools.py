@@ -141,7 +141,7 @@ class UtilReader_Tools:
 #         print('num_iters',line_text)
 
         num_iters = float(line_text[38:42])
-        self.total_iterations = int(num_iters)
+        self.total_iterations = int(num_iters) - 1
 
         if len(str(self.total_iterations)) == 1:
              self.str_iteration = ' '+str(self.total_iterations)  # add a space if the iteration number is not double digit
@@ -218,6 +218,8 @@ class UtilReader_Tools:
 #             print('FINAL ARC-- Deleting extra keys from 0th dim')
                      #             print(self.__dict__.keys())
             os.chdir(self.path_to_model+'DENSITY/')
+            os.system('bzip2 -v '+'*')
+            os.chdir(self.path_to_model+'ORBITS/')
             os.system('bzip2 -v '+'*')
 
             for i_del in to_move_and_delete:         

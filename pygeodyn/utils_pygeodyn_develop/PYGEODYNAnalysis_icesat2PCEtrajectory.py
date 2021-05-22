@@ -133,12 +133,12 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
         str_run_param = 'run_parameters'+ arc
         final_iter = obj_m1.__dict__[str_run_param]['str_iteration']
 
-        index_pce_x = obj_m1.Residuals_obs[arc][final_iter]['StatSatConfig'] == 'PCE X    '
-        index_pce_y = obj_m1.Residuals_obs[arc][final_iter]['StatSatConfig'] == 'PCE Y    '
-        index_pce_z = obj_m1.Residuals_obs[arc][final_iter]['StatSatConfig'] == 'PCE Z    '
+        index_pce_x = obj_m1.Residuals_obs[arc]['StatSatConfig'] == 'PCE X    '
+        index_pce_y = obj_m1.Residuals_obs[arc]['StatSatConfig'] == 'PCE Y    '
+        index_pce_z = obj_m1.Residuals_obs[arc]['StatSatConfig'] == 'PCE Z    '
 
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_x][::10],
-                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_x][::10]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_x][::10],
+                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_x][::10]*1e2,
                                  name= 'PCE X',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -147,8 +147,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=1, col=1,
                                  )
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_y][::10],
-                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_y][::10]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_y][::10],
+                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_y][::10]*1e2,
                                  name= 'PCE Y',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -157,8 +157,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=2, col=1,
                                  )
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc][final_iter]['Date'][index_pce_z][::10],
-                                 y=obj_m1.Residuals_obs[arc][final_iter]['Residual'][index_pce_z][::10]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_z][::10],
+                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_z][::10]*1e2,
                                  name= 'PCE Z',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -167,10 +167,10 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=3, col=1,
                                  )
-        arc_date_1 = obj_m1.Residuals_obs[arc][final_iter]['Date'].iloc[0]
-        arc_date_2 = obj_m1.Residuals_obs[arc][final_iter]['Date'].iloc[-1]
+        arc_date_1 = obj_m1.Residuals_obs[arc]['Date'].iloc[0]
+        arc_date_2 = obj_m1.Residuals_obs[arc]['Date'].iloc[-1]
 
-        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc][final_iter]['Residual'] ),arc_date_1, arc_date_2,i_arc, False)
+        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ),arc_date_1, arc_date_2,i_arc, False)
 
         fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
@@ -304,8 +304,8 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
                                    ),
                                    row=1, col=1,
                                    )
-        arc_date_1 = obj_m1.Residuals_obs[arc][final_iter]['Date'].iloc[0]
-        arc_date_2 = obj_m1.Residuals_obs[arc][final_iter]['Date'].iloc[-1]
+        arc_date_1 = obj_m1.Residuals_obs[arc]['Date'].iloc[0]
+        arc_date_2 = obj_m1.Residuals_obs[arc]['Date'].iloc[-1]
 
         fig = add_arc_background_w_text(fig, 2.2, arc_date_1, arc_date_2, i_arc, False)
 
@@ -1144,9 +1144,9 @@ def plot_ScaleDensity_with_CdScaleFactor(fig, obj_m1, plot_num, decimation):
                                       secondary_y=False,
                                        row=1, col=1,
                                        )
-        arc_date_1 = obj_m1.Residuals_obs[arc][final_iter]['Date'].iloc[0]
-        arc_date_2 = obj_m1.Residuals_obs[arc][final_iter]['Date'].iloc[-1]
-        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc][final_iter]['Residual'] ),
+        arc_date_1 = obj_m1.Residuals_obs[arc]['Date'].iloc[0]
+        arc_date_2 = obj_m1.Residuals_obs[arc]['Date'].iloc[-1]
+        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ),
                                             arc_date_1, arc_date_2, i_arc, False)
 
     fig.add_trace(go.Scattergl(x=obj_m1_stats['all_dates'],
