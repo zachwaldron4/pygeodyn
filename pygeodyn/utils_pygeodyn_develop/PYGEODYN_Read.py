@@ -65,7 +65,6 @@ class PygeodynReader(UtilReader_Tools):
 #             self.arc = params['arc']
 #             print('Calling pygeodyn with multiple arcs...')
 #             pass
-      
     
         
     def read_binary_ORBFIL(self ):
@@ -77,6 +76,84 @@ class PygeodynReader(UtilReader_Tools):
         # Fortran calls
         import subprocess
         import os
+        
+        def MJDS_to_YYMMDDHHMMSS(input_ModJulianDay_secs):
+            '''
+            This function takes modified julian day seconds (MJDS) as input 
+            and returns a date_string in the format YYMMDDHHMMSS.
+
+            '''
+
+        #             input_ModJulianDay_secs = self.rvg_data['data']['MJDSEC_secs_timeGPS']
+
+            ### Modified Julian Date conversion
+            # *  MODIFIED JULIAN DAY = JULIAN DAY - GEODYN REFERENCE TIME IN JD
+
+            #########################################
+            # Define some constants
+            SECDAY              = 86400
+            geodyn_ref_time_mjd = 30000
+            jd_0                = 2400000.5
+            d36525              = 365.25
+            d122                = 122.1
+            d30600              = 30.6001
+            half                = 0.5
+            ib                  = -15
+            d17209              = 1720996.5
+
+            ######  CONVERT FROM MJDS TO MJD
+            # Inputs:
+            MJDS = input_ModJulianDay_secs
+            #
+            MJD = (MJDS/SECDAY) + geodyn_ref_time_mjd
+
+            ######  CONVERT FROM MJD TO YMD
+            # Note from zach-- I took this calculation from geodyn...
+            # There is more going on here than I understand, 
+            # but I want to stay on their level of accuracy
+            #
+            JD = MJD + jd_0                  #  Convert to JulianDay
+            c  = int( JD + half ) + 1537     # ??   sorry, i'm   ??
+            nd = int( (c - d122) / d36525 )  # ??   not sure     ??
+            e  = int( d36525 * nd )          # ??   what this    ??
+            nf = int( ( c - e ) / d30600 )   # ??   all is       ??
+            # ----
+            frac = (JD + half) - int( JD + half )           # frac of day leftover
+            iday = c - e - int( d30600 * nf ) + frac        # day
+            imonth  = nf -  1   - 12 * int( nf / 14 )       # month
+            iyyyy = nd - 4715 - int(  ( 7 + imonth ) / 10 ) # YYYY
+            #
+            ##### Use modular division to get 2 digit year
+            iyear =  iyyyy % 100 
+            #
+            #### Return YYMMDD 
+            yymmdd = int(iyear * 10000 + imonth * 100 + iday)
+
+
+            ##### Calculate Hours, Minutes, seconds
+            isec_mjd  =  MJDS % 86400
+
+            ihour    = isec_mjd/3600
+            iminutes = (ihour % 1)*60
+            isec     = (iminutes % 1)*60 
+
+            isec_str      = str(int(isec))
+            ihour_str = str(int(ihour))
+            iminutes_str  = str(int(iminutes))
+
+            if len(ihour_str)==1:
+                ihour_str = '0'+ihour_str
+            if len(iminutes_str)==1:
+                iminutes_str = '0'+iminutes_str
+            if len(isec_str)==1:
+                isec_str = '0'+isec_str
+
+            #hhmmss  =  int((ihour*10000) + (iminutes*100) + isec)
+            hhmmss  =  ihour_str + iminutes_str + isec_str
+            YYMMDDHHMMSS = str(yymmdd) + '-' + str(hhmmss)
+
+            return(YYMMDDHHMMSS)
+
 
         orb_fil= self._orbfil_filename
         
@@ -302,8 +379,13 @@ class PygeodynReader(UtilReader_Tools):
 
 
         data_record_df = pd.DataFrame.from_dict(data_dict_sat_packets, orient='columns')
+        
+        #### Convert the MJDSECS to Gregorian Datetime
+        yymmdd_str = [MJDS_to_YYMMDDHHMMSS(x) for x in data_record_df['MJDSEC ET'] ]
+        dates_dt = [pd.to_datetime( x, format='%y%m%d-%H%M%S') for x in yymmdd_str]
+        data_record_df.insert(0, 'Date', dates_dt)
 
-
+                      
         self.orbfil_dict = {}
         self.orbfil_dict['header'] = header
         self.orbfil_dict['data_record'] = data_record_df
@@ -1661,9 +1743,53 @@ class PygeodynReader(UtilReader_Tools):
         return(dict_stats)
         
         
+    def grab_PCE_ascii(self, start, stop):
         
+        self.StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt'
+
+        os.system('bunzip2'+' '+self.StateVector_epochs_datafile+'.bz2')
         
-        
+        epoch_start_dt_STR = str(epoch_start_dt)
+        date_in_file_flag = False
+
+        with open(self.StateVector_epochs_datafile, 'r') as f:
+            for line_no, line_text in enumerate(f):
+                
+                if epoch_start_dt_STR in line_text:
+                    date_in_file_flag= True
+                    print('    ','xyzline',line_no,line_text)
+
+                    break
+                
+
+
+
+#         xyzline = pd.read_csv(self.StateVector_epochs_datafile, 
+#                     skiprows = line_no, 
+#                     nrows=1,           
+#                     sep = '\s+',
+#                     dtype=str,
+#                     names = [
+#                             'Date',
+#                             'X',
+#                             'Y',
+#                             'Z',
+#                             'X_dot',
+#                             'Y_dot',
+#                             'Z_dot',
+#                           ],
+#                     )
+#         print(xyzline['X'].values[0].ljust(20))
+#         X     =  xyzline['X'].values[0].ljust(20)     #'  -745933.8926940708'
+#         Y     =  xyzline['Y'].values[0].ljust(20)     #'  -4864983.834066438'
+#         Z     =  xyzline['Z'].values[0].ljust(20)     #'    4769954.60524261'
+#         X_dot =  xyzline['X_dot'].values[0].ljust(20) #'  457.44564954037634'
+#         Y_dot =  xyzline['Y_dot'].values[0].ljust(20) #'   5302.381564886811'
+#         Z_dot =  xyzline['Z_dot'].values[0].ljust(20) #'    5463.55571622269'
+    
+#         os.system('bzip2'+' '+self.StateVector_epochs_datafile)
+        ##### -------------------------------------------------------------------------------------------
+        #### --------------------------------------------------------------------------------------------
         
         
         
@@ -1702,7 +1828,8 @@ class PygeodynReader(UtilReader_Tools):
     def getData_stats_endOfFile_iieout(self):
         return(self.read_statistics_iieout())
 
-    
+    def getData_PCE(self):
+        return(self.grab_PCE_ascii())
 
 #     def getData_UserChoose(self, inputlist):
     

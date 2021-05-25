@@ -548,14 +548,14 @@ class PygeodynPreprocessing:
 #         df_traj_txt_big.insert(0, 'first_int', df_traj_txt_big['MJDSEC_secs_timeGPS'].astype(int))
 
 #         del df_traj_txt['Date']
-        del df_traj_txt_big['MJDSEC_secs_timeGPS']
+#         del df_traj_txt_big['MJDSEC_secs_timeGPS']
 
         #### The first floating point of TRAJ.txt is just 
         #        the sum of words 2 and 3 of the RVG data record
 #         sum_words_2_and_3 = df_traj_txt_big['RSEC_fractional_secs'] + df_traj_txt_big['GPS_offset_secs_utc']
 #         df_traj_txt_big.insert(1, 'first_float', sum_words_2_and_3)
-        del df_traj_txt_big['RSEC_fractional_secs'] 
-        del df_traj_txt_big['GPS_offset_secs_utc']
+#         del df_traj_txt_big['RSEC_fractional_secs'] 
+#         del df_traj_txt_big['GPS_offset_secs_utc']
 
         ##### Save as a txt file with pandas built-in function.
         #### BZIP2 the file and move it to the setup directory
