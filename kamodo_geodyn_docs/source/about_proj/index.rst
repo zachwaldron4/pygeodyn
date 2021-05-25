@@ -1,7 +1,0 @@
-
-About
-=====
-
-.. toctree::
-     about.md
-
