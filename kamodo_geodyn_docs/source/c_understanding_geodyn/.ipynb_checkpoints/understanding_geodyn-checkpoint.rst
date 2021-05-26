@@ -9,8 +9,11 @@ GEODYN is an orbit determination and geodetic parameter estimation program. User
 
 
 GEODYN is a combination of three programs: TDF, GEODYN_IIS and GEODYN_IIE:
+
 * TDF (Tracking Data Formatter) is a program converting GEODYN input data in various types of ASCII formats, to a Binary file Format (G2B). The GEODYN program GEODYN_IIS reads input data in the G2B format.
+
 * GEODYN_IIS (Scheduling) is the program that reads input data, ancillary data files and the user's setup options. According to these options GEODYN_IIS prepares and outputs two files: the data file (Fort 11) and the Interface file (Fort 41). Descriptions are provided in volume 5 of the GII Documentation.
+
 * GEODYN_IIE (Execution) reads the two files created by GEODYN_IIS and processes the data. Each measurement type is processed by the appropriate modeling routines and applies the models selected in GEODYN_IIS. GEODYN_II performs satellite orbit determination and creates computed observables. These are used along with the provided measured observations in a statistical least squares scheme. GEODYN_IIE then provides solutions of requested geophysical parameters or updated orbits. Large scale solutions may be performed by GEODYN by saving normal matrices and combining them later using an external program.
 
 .. note:: The version of GEODYN II used by the CCMC on the AWS server is the full GEODYN II program (not the SGP Version).  This simply means that it has a few additional capabilities beyond orbit determination of earth orbiting satellites and geophysical parameter estimation.  The ``pygeodyn`` program has been constructed to simplify the efforts of running GEODYN and reading its output.
