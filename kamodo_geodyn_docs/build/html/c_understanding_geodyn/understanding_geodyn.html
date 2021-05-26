@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>GEODYN Details &mdash; Kamodo-GEODYN Documentation tbd documentation</title>
+  <title>Overview of GEODYN Internal Programs &mdash; Kamodo-GEODYN Documentation tbd documentation</title>
   
 
   
@@ -39,8 +39,8 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Demo: Running GEODYN" href="Demo__Run_Geodyn.html" />
-    <link rel="prev" title="Installing miniconda3 :" href="../b_getting_started/installs_and_techtips.html" />
+    <link rel="next" title="Modifying Subroutines:" href="modify_subroutines.html" />
+    <link rel="prev" title="Installations and Technical Tips" href="../b_getting_started/installs_and_techtips.html" />
     <link href="../_static/style.css" rel="stylesheet" type="text/css">
 
 </head>
@@ -93,15 +93,15 @@
 <li class="toctree-l1"><a class="reference internal" href="../a_about_proj/about.html#kamodo">Kamodo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../a_about_proj/about.html#geodyn">GEODYN</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Getting Started</span></p>
+<p class="caption"><span class="caption-text">Getting Started on AWS</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/gettingstarted.html">Accessing AWS</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/accessing_AWS.html">Access the AWS Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/accessing_AWS.html">Accessing AWS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/accessing_AWS.html#access-the-aws-server">Access the AWS Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../b_getting_started/accessing_AWS.html#activating-a-jupyter-environment-set-port-forwarding">Activating a Jupyter environment (set port forwarding):</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/gettingstarted.html#navigating-aws">Navigating AWS</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/navigating_AWS.html">Directory Structure of the GEODYN Project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/navigating_AWS.html">Navigating AWS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#directory-structure-of-the-geodyn-project">Directory Structure of the GEODYN Project</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#directories-and-files-of-importance">Directories and Files of Importance</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#geodyn-output-readers">GEODYN output readers:</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#msis-evaluation-notebooks">MSIS Evaluation Notebooks:</a></li>
@@ -115,78 +115,32 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/gettingstarted.html#installations-and-technical-tips">Installations and Technical Tips</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html">Installing miniconda3 :</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html">Installations and Technical Tips</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html#installing-miniconda3">Installing miniconda3 :</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html#installing-kamodo">Installing Kamodo:</a></li>
 </ul>
 </li>
 </ul>
 <p class="caption"><span class="caption-text">Understanding GEODYN</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">GEODYN Details</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#preprocessing-pce-data">Preprocessing PCE Data</a><ul class="simple">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview of GEODYN Internal Programs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#important-input-and-outputs">Important Input and Outputs</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modifying GEODYN</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modify_subroutines.html">Modifying Subroutines:</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modify_subroutines.html#including-density-output">Including Density Output:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modify_subroutines.html#other-modifications">Other Modifications:</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#demonstrations">Demonstrations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Demo__Run_Geodyn.html">Demo: Running GEODYN</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Locations-of-requisite-files-and-scripts">Locations of requisite files and scripts</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Demo__Run_Geodyn.html#GEODYN-IIS-and-IIE-executables:">GEODYN IIS and IIE executables:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__Run_Geodyn.html#Setup-Files-(Unit-5)-to-read-into-GEODYN:">Setup Files (Unit 5) to read into GEODYN:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__Run_Geodyn.html#Script-that-runs-GEODYN:">Script that runs GEODYN:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__Run_Geodyn.html#GEODYN-Output:">GEODYN Output:</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Running-GEODYN:">Running GEODYN:</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Demo__Run_Geodyn.html#Inside-the-GEODYN-script:">Inside the GEODYN script:</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_setup_file.html">Demo: The Setup File</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#Location">Location</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#Card-Options">Card Options</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#DRAG">DRAG</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#OBSVU">OBSVU</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#RESIDU">RESIDU</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#ORBFIL">ORBFIL</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#ORBTVU">ORBTVU</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#ATMDEN">ATMDEN</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#ACCEL9">ACCEL9</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html">Demo: Reading Data</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_output_explained.html#Adjusted-Parameters">Adjusted Parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_output_explained.html#Trajectory-Data">Trajectory Data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_output_explained.html#Density-Data">Density Data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_output_explained.html#Residual-Data">Residual Data</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#modifying-subroutines-in-fortran">Modifying Subroutines in Fortran</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modify_subroutines.html">Modifying Subroutines:</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="modify_subroutines.html#including-density-output">Including Density Output:</a></li>
-<li class="toctree-l3"><a class="reference internal" href="modify_subroutines.html#other-modifications">Other Modifications:</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#adding-the-newer-msis-versions">Adding the Newer MSIS Versions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="msis_edits.html">Upgrading MSIS in GEODYN:</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#drhodz-modification">DRHODZ Modification</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="drhodz_doc.html">DRHODZ Documentation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
-<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="msis_edits.html">Upgrading MSIS in GEODYN:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="drhodz_doc.html">DRHODZ Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
 </ul>
 </li>
 </ul>
@@ -249,6 +203,63 @@
 </ul>
 </li>
 </ul>
+<p class="caption"><span class="caption-text">Descriptive Notebooks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Demo__Run_Geodyn.html">Demo: Running GEODYN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Demo__Run_Geodyn.html#Locations-of-requisite-files-and-scripts">Locations of requisite files and scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#GEODYN-IIS-and-IIE-executables:">GEODYN IIS and IIE executables:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Setup-Files-(Unit-5)-to-read-into-GEODYN:">Setup Files (Unit 5) to read into GEODYN:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Script-that-runs-GEODYN:">Script that runs GEODYN:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#GEODYN-Output:">GEODYN Output:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Demo__Run_Geodyn.html#Running-GEODYN:">Running GEODYN:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Inside-the-GEODYN-script:">Inside the GEODYN script:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Demo__geodyn_setup_file.html">Demo: The Setup File</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_setup_file.html#Location">Location</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_setup_file.html#Card-Options">Card Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#DRAG">DRAG</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Demo__geodyn_setup_file.html#CONDRG">CONDRG</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#OBSVU">OBSVU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#RESIDU">RESIDU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ORBFIL">ORBFIL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ORBTVU">ORBTVU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ATMDEN">ATMDEN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ACCEL9">ACCEL9</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Demo__geodyn_output_explained.html">Demo: Reading Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Adjusted-Parameters">Adjusted Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Trajectory-Data">Trajectory Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Density-Data">Density Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Residual-Data">Residual Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html">Reading and Processing .RVG binary files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#The-goal-here:">The goal here:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#Methodology-for-pre-processing-the-binary-files:">Methodology for pre-processing the binary files:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#Info-on-the-binary-files:">Info on the binary files:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#1)-Dump-the-data-into-usable-format-with-scipy.io.FortranFile">1) Dump the data into usable format with <code class="docutils literal notranslate"><span class="pre">scipy.io.FortranFile</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#1.a-Look-at-the-data-for-a-few-files-to-see-the-discontinuities.">1.a Look at the data for a few files to see the discontinuities.</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#Construct-G2B-files">Construct G2B files</a></li>
+</ul>
+<p class="caption"><span class="caption-text">To do</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../todo.html">To do list:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../todo.html#notes">Notes:</a></li>
+</ul>
 
             
           
@@ -296,7 +307,7 @@
     
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>GEODYN Details</li>
+      <li>Overview of GEODYN Internal Programs</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -339,98 +350,183 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="geodyn-details">
-<h1>GEODYN Details<a class="headerlink" href="#geodyn-details" title="Permalink to this headline">¶</a></h1>
-<ol class="arabic simple">
-<li><p>Add the slides detailing the GEODYN flow</p></li>
-</ol>
-<p>2. Add info on IIS/IIE
-3.</p>
+<div class="section" id="overview-of-geodyn-internal-programs">
+<h1>Overview of GEODYN Internal Programs<a class="headerlink" href="#overview-of-geodyn-internal-programs" title="Permalink to this headline">¶</a></h1>
+<p>The following is summarized from the <a class="reference external" href="https://space-geodesy.nasa.gov/techniques/tools/GEODYN/GEODYN.html">SGP Website</a>.</p>
+<p>GEODYN is an orbit determination and geodetic parameter estimation program. Users of GEODYN input estimates of orbital parameters (such as the initial satellite state and solar radiation coefficients) and geodetic parameters (such as tracking station coordinates). GEODYN then computes orbits from the input parameters and can also compute theoretical values of satellite tracking observations using the input geodetic parameters. GEODYN can compare the theoretical values of tracking observations with real tracking observations to refine the input values of orbital and geodetic parameters.</p>
+<p>GEODYN is a combination of three programs: TDF, GEODYN_IIS and GEODYN_IIE:
+* TDF (Tracking Data Formatter) is a program converting GEODYN input data in various types of ASCII formats, to a Binary file Format (G2B). The GEODYN program GEODYN_IIS reads input data in the G2B format.
+* GEODYN_IIS (Scheduling) is the program that reads input data, ancillary data files and the user’s setup options. According to these options GEODYN_IIS prepares and outputs two files: the data file (Fort 11) and the Interface file (Fort 41). Descriptions are provided in volume 5 of the GII Documentation.
+* GEODYN_IIE (Execution) reads the two files created by GEODYN_IIS and processes the data. Each measurement type is processed by the appropriate modeling routines and applies the models selected in GEODYN_IIS. GEODYN_II performs satellite orbit determination and creates computed observables. These are used along with the provided measured observations in a statistical least squares scheme. GEODYN_IIE then provides solutions of requested geophysical parameters or updated orbits. Large scale solutions may be performed by GEODYN by saving normal matrices and combining them later using an external program.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The version of GEODYN II used by the CCMC on the AWS server is the full GEODYN II program (not the SGP Version).  This simply means that it has a few additional capabilities beyond orbit determination of earth orbiting satellites and geophysical parameter estimation.  The <code class="docutils literal notranslate"><span class="pre">pygeodyn</span></code> program has been constructed to simplify the efforts of running GEODYN and reading its output.</p>
 </div>
-<div class="section" id="preprocessing-pce-data">
-<h1>Preprocessing PCE Data<a class="headerlink" href="#preprocessing-pce-data" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">TDF</span></code> program is not used in <code class="docutils literal notranslate"><span class="pre">Pygeodyn</span></code> (for now).  Instead we employ our own preprocessing codes.</p>
 </div>
+<p>The generalized flow of GEODYN (as it is relevant to our density work) can be summarized into the following flow chart:</p>
+<img alt="../_images/geodyn_flow.png" src="../_images/geodyn_flow.png" />
 </div>
-<div class="section" id="demonstrations">
-<h1>Demonstrations<a class="headerlink" href="#demonstrations" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="Demo__Run_Geodyn.html">Demo: Running GEODYN</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Demo__Run_Geodyn.html#Locations-of-requisite-files-and-scripts">Locations of requisite files and scripts</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#GEODYN-IIS-and-IIE-executables:">GEODYN IIS and IIE executables:</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Setup-Files-(Unit-5)-to-read-into-GEODYN:">Setup Files (Unit 5) to read into GEODYN:</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Script-that-runs-GEODYN:">Script that runs GEODYN:</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#GEODYN-Output:">GEODYN Output:</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__Run_Geodyn.html#Running-GEODYN:">Running GEODYN:</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Demo__Run_Geodyn.html#Inside-the-GEODYN-script:">Inside the GEODYN script:</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="Demo__geodyn_setup_file.html">Demo: The Setup File</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_setup_file.html#Location">Location</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_setup_file.html#Card-Options">Card Options</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#DRAG">DRAG</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#OBSVU">OBSVU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#RESIDU">RESIDU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ORBFIL">ORBFIL</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ORBTVU">ORBTVU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ATMDEN">ATMDEN</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Demo__geodyn_setup_file.html#ACCEL9">ACCEL9</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="Demo__geodyn_output_explained.html">Demo: Reading Data</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Adjusted-Parameters">Adjusted Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Trajectory-Data">Trajectory Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Density-Data">Density Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Demo__geodyn_output_explained.html#Residual-Data">Residual Data</a></li>
-</ul>
-</li>
-</ul>
+<div class="section" id="important-input-and-outputs">
+<h1>Important Input and Outputs<a class="headerlink" href="#important-input-and-outputs" title="Permalink to this headline">¶</a></h1>
+<p>In order to construct a successful run, the user must collect the appropriate input files (satellite and tracking data type dependent) and point then to the correct Fortran units when running IIS.  Below is a description of the GEODYN input and output files that we have come across.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 7%" />
+<col style="width: 34%" />
+<col style="width: 5%" />
+<col style="width: 18%" />
+<col style="width: 4%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Input Type</p></th>
+<th class="head"><p>Desc. Name</p></th>
+<th class="head"><p>Example File Name</p></th>
+<th class="head"><p>Format</p></th>
+<th class="head"><p>Unit (<code class="docutils literal notranslate"><span class="pre">ftn#</span></code>, <code class="docutils literal notranslate"><span class="pre">fort.#</span></code>)</p></th>
+<th class="head"><p>Info</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Setup File (CARD deck)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iisset</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iisset.2018.287</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>5</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Tracking data</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">G2B</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">icesat2g2b_pce_312_328</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>40</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Atmospheric gravity file</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">atgrav</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>18</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>General gravity field file</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gravity</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">eigen-6c.gfc_20080101_do_200_fix.grv</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>12</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Planetary Ephemeris file</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iisset</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ephem1430.data_2025</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>1</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Solar Flux, Ap, Kp, Polar motion, A1-UTC, etc.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gdntable</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gdntable.data</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>2</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>External Attitude</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">EXAT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">EXAT01.2018.287</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>EXAT01</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>External attitude files are not necessary for cannonball runs (spherical satellites).</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The gdntable is a common file across runs and only needs to be updated to include the right times.</p>
 </div>
-<div class="section" id="modifying-subroutines-in-fortran">
-<h1>Modifying Subroutines in Fortran<a class="headerlink" href="#modifying-subroutines-in-fortran" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="modify_subroutines.html">Modifying Subroutines:</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modify_subroutines.html#including-density-output">Including Density Output:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modify_subroutines.html#other-modifications">Other Modifications:</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
-<div class="section" id="adding-the-newer-msis-versions">
-<h1>Adding the Newer MSIS Versions<a class="headerlink" href="#adding-the-newer-msis-versions" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="msis_edits.html">Upgrading MSIS in GEODYN:</a></li>
-</ul>
-</div>
-</div>
-<div class="section" id="drhodz-modification">
-<h1>DRHODZ Modification<a class="headerlink" href="#drhodz-modification" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="drhodz_doc.html">DRHODZ Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 16%" />
+<col style="width: 24%" />
+<col style="width: 5%" />
+<col style="width: 18%" />
+<col style="width: 4%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Output File / Products</p></th>
+<th class="head"><p>Desc. Name</p></th>
+<th class="head"><p>Controlling Card</p></th>
+<th class="head"><p>Format</p></th>
+<th class="head"><p>Unit (<code class="docutils literal notranslate"><span class="pre">ftn#</span></code>, <code class="docutils literal notranslate"><span class="pre">fort.#</span></code>)</p></th>
+<th class="head"><p>Info</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>IIEOUT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iieout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PRNTVU</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>6</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>IISOUT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iisout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PRNTVU</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>6</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Trajectory File</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">orbfil</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ORBFIL</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>user choose: 130-230</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Trajectory Printouts</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">XYZ_TRAJ</span></code>, <code class="docutils literal notranslate"><span class="pre">KEP_TRAJ</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ORBTVU</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>8 (xyz), 10 (kep)</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Residual File</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">resid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RESIDU</span></code></p></td>
+<td><p>binary</p></td>
+<td><p>19</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Printed Residuals (printed to <code class="docutils literal notranslate"><span class="pre">iieout</span></code>)</p></td>
+<td><p>loc. in <code class="docutils literal notranslate"><span class="pre">iieout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OBSVU</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>6</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Adjusted Parameters (printed to <code class="docutils literal notranslate"><span class="pre">iieout</span></code>)</p></td>
+<td><p>loc. in <code class="docutils literal notranslate"><span class="pre">iieout</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TERMVU</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>6</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Density File (manually added)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">densityfil</span></code></p></td>
+<td><p>Manually added WRITE in <code class="docutils literal notranslate"><span class="pre">DRAG.f90</span></code></p></td>
+<td><p>ascii</p></td>
+<td><p>99</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
@@ -439,8 +535,8 @@
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="Demo__Run_Geodyn.html" class="btn btn-neutral float-right" title="Demo: Running GEODYN" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="../b_getting_started/installs_and_techtips.html" class="btn btn-neutral float-left" title="Installing miniconda3 :" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modify_subroutines.html" class="btn btn-neutral float-right" title="Modifying Subroutines:" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../b_getting_started/installs_and_techtips.html" class="btn btn-neutral float-left" title="Installations and Technical Tips" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

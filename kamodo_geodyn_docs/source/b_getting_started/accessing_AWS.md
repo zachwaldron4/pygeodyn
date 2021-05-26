@@ -1,3 +1,4 @@
+# Accessing AWS
 
 ## Access the AWS Server
 1. SSH into the AWS server and enter your username and password:<br>

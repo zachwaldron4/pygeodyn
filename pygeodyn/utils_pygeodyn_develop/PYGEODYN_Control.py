@@ -365,21 +365,21 @@ class PygeodynController(UtilControl_Tools):
         if self.satellite =='starlette':
             if not os.path.exists(self.TMPDIR_arc+'/ftn05.bz2'):
                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint(self.tabtab,'copying          : iieout file')
+                self.verboseprint(self.tabtab,'copying          : input file')
             else:
-                self.verboseprint(self.tabtab,'copied           : iieout file')
+                self.verboseprint(self.tabtab,'copied           : input file')
 
             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
                 os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint(self.tabtab,'file not zipped  : iieout file')
+                self.verboseprint(self.tabtab,'file not zipped  : input file')
             else:
-                self.verboseprint(self.tabtab,'file not zipped  : iieout file')
+                self.verboseprint(self.tabtab,'file not zipped  : input file')
         else:
             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05')
-                self.verboseprint(self.tabtab,'copying          : iieout file')
+                self.verboseprint(self.tabtab,'copying          : input file')
             else:
-                self.verboseprint(self.tabtab,'copied           : iieout file')
+                self.verboseprint(self.tabtab,'copied           : input file')
 
         if not os.path.exists(self.TMPDIR_arc+'/giis.input'):
             os.system('cp  '+self.TMPDIR_arc+'/ftn05 '+self.TMPDIR_arc+'/giis.input')
