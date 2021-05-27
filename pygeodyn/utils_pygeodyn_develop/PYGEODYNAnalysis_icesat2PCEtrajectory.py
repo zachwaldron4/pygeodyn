@@ -6,7 +6,6 @@ import pandas as pd
     #### Computer function
 import os
 import os.path
-import sys
 import subprocess
 import shutil
 import time
@@ -33,6 +32,9 @@ col2 = px.colors.qualitative.Plotly[1]
 col3 = px.colors.qualitative.Plotly[2]
 
 
+import sys
+sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+from common_functions          import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW
 
 
 
@@ -174,7 +176,7 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
 
         fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
-    fig.update_layout(title="Observation Residuals")
+#     fig.update_layout(title="Observation Residuals (T.O.R.)")
     fig.update_layout(
                     autosize=False,
                     width=900,
@@ -550,15 +552,17 @@ def ARCOVERLAP_2arcs_ObsResids_XYZ(fig, obj_m1, plot_num, arc1, arc2):
 def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
     
     ###### GET THE PCE DATA:
-    StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/StateVector_epochs.txt'
+    StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+#     os.system('bunzip2 -v '+ StateVector_epochs_datafile +'.bz2')
+    
     first_arc = arc1
     last_arc  = arc2
-    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date'].iloc[3],
-    last_arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][last_arc]['data_record']['Date'].iloc[-2]
+    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date_UTC'].iloc[3],
+    last_arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][last_arc]['data_record']['Date_UTC'].iloc[-2]
     first_arc_first_time_str =  str(first_arc_first_time[0])#.replace( "'",' ') 
     last_arc_last_time =  str(last_arc_last_time)#.replace( "'",' ') 
 
-    with open(StateVector_epochs_datafile, 'r') as f:
+    with open(StateVector_PCE_datafile, 'r') as f:
         for line_no, line_text in enumerate(f):
             if first_arc_first_time_str in line_text:
                 first_line = line_no
@@ -566,28 +570,34 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
                 last_line = line_no
                 break
 
-    PCE_data = pd.read_csv(StateVector_epochs_datafile, 
+    PCE_data = pd.read_csv(StateVector_PCE_datafile, 
                 skiprows = first_line, 
                 nrows=last_line- first_line,           
                 sep = '\s+',
                 dtype=str,
                 names = [
                         'Date',
+                        'MJDSECs', 
+                        'RSECS', #(fractional secs)
+                        'GPS offset', # (UTC - GPS offset (secs))
                         'X',
                         'Y',
                         'Z',
                         'X_dot',
                         'Y_dot',
                         'Z_dot',
-                          ],)
-    
+                        'YYMMDDhhmmss',
+                            ],)
+
+#     os.system('bzip2 -v '+ StateVector_epochs_datafile )
+
     PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
 
     orbfil_arc1 = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']
-    orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date'])
+    orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
 
     orbfil_arc2 = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']
-    orbfil_arc2['Date_pd'] = pd.to_datetime(orbfil_arc2 ['Date'])
+    orbfil_arc2['Date_pd'] = pd.to_datetime(orbfil_arc2 ['Date_UTC'])
 
     
     
@@ -596,75 +606,10 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
     C_2 = pd.merge(left=orbfil_arc2, left_on='Date_pd',
              right=PCE_data, right_on='Date_pd')
 
-#     C_1['X_resid (PCE-orbfil)'] = C_1['X'].astype(float) - C_1['Satellite Inertial X coordinate'].astype(float)
-#     C_2['X_resid (PCE-orbfil)'] = C_2['X'].astype(float) - C_2['Satellite Inertial X coordinate'].astype(float)
 
-#     C_1['Y_resid (PCE-orbfil)'] = C_1['Y'].astype(float) - C_1['Satellite Inertial Y coordinate'].astype(float)
-#     C_2['Y_resid (PCE-orbfil)'] = C_2['Y'].astype(float) - C_2['Satellite Inertial Y coordinate'].astype(float)
-
-#     C_1['Z_resid (PCE-orbfil)'] = C_1['Z'].astype(float) - C_1['Satellite Inertial Z coordinate'].astype(float)
-#     C_2['Z_resid (PCE-orbfil)'] = C_2['Z'].astype(float) - C_2['Satellite Inertial Z coordinate'].astype(float)
-
-    # arc_date_1 =  pd.to_datetime( '181109-210109', format='%y%m%d-%H%M%S') 
-    # arc_date_2 =  pd.to_datetime( '181110-024159', format='%y%m%d-%H%M%S') 
-    
     
 
-    def Convert_cartesian_to_RSW(state_vector):
-        '''
-        ###### The Satellite Coordinate System:
-        ### often used to describe orbital errors, relative positions, and displacements of satellite orbits. 
-        ### The RSW system moves with the satellite and is sometimes given the letters RTN (radial, transverse, and normal). 
-        ### The R axis always points from the Earth’s center along the radius vector toward the satellite as it moves through the orbit. 
-        ### The S axis points in the direction of (but not necessarily parallel to) the velocity vector and is perpendicular to the radius vector—an important distinction.
-        ### The S axis is usually not aligned with the velocity vector except for circular orbits or for elliptical orbits at apogee and perigee. In
-
-        ### Radial positions and displacements are parallel to the position vector (along the R axis).
-        ### Along-track or transverse displacements are normal to the position vector (along the S axis).
-        ### Finally, cross-track positions are normal to the plane defined by the current position and velocity vectors (along the W axis).
-
-
-        ##### Radial component:
-        ###    Radial positions and displacements are parallel
-        ###    to the position vector (along the R axis).
-
-
-        ##### Along track or Transverse
-        ###   normal to the position vector (along the S axis)
-
-        ##### Cross track
-        ###   normal to the plane defined by the current 
-        ###   position and velocity vectors (along the W axis)
-
-        '''
-
-        r_vec = state_vector[:3]    # np.array([X,   Y,   Z   ])
-        v_vec = state_vector[-3:]    # np.array([Xdot,Ydot,Zdot])
-        r_vec_norm = np.linalg.norm(r_vec)
-
-        R_hat = r_vec/r_vec_norm
-        W_hat = (np.cross(r_vec,v_vec)) / np.linalg.norm(np.cross(r_vec,v_vec))
-        S_hat = np.cross(R_hat, W_hat)
-
-
-        ###  
-        ##         R_vec_ijk = T * R_vec_rsw
-        ###
-        ###    where, T = [ R_hat | S_hat | W_hat ]
-        ###
-        ###    so...
-        ###
-        ###        R_vec_rsw =   R_vec_ijk * T^-1
-        transmat_RSW =  np.transpose(np.array([R_hat, W_hat, S_hat]))
-        inverse_transmat_RSW = np.linalg.inv(transmat_RSW)
-
-
-        r_vec_RSW = np.matmul(r_vec, inverse_transmat_RSW )
-        r = r_vec_RSW[0]
-        s = r_vec_RSW[1]
-        w = r_vec_RSW[2]
-        return r
-
+    
 
     X = C_1['Satellite Inertial X coordinate']
     Y = C_1['Satellite Inertial Y coordinate']
@@ -692,12 +637,12 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
         col = col1
         x_annot = 1.05
         y_annot = .97
-        m_size = 2
+        m_size = 3
     elif plot_num == 1:
         x_annot = 1.05
         y_annot = .8
         col = col2
-        m_size = 2
+        m_size = 2.5
     elif plot_num == 2:
         x_annot = 1.05
         y_annot = .55 
@@ -727,7 +672,7 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
                              name= 'PCE',
                              mode='markers',
                              marker=dict(color=col, opacity=0.3,
-                             size=m_size,),
+                             size=m_size+1,),
                              showlegend=False,
                              ),
                              secondary_y=False,
@@ -735,7 +680,7 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
                              )        
     ####--------------------- Residual  ---------------------
 
-    resid = np.array(Radial_comp_orbfil) - np.array(Radial_comp_PCE)
+    resid = (np.array(Radial_comp_PCE) - np.array(Radial_comp_orbfil))*1e2
     
     fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
                                y=resid[::data_skip],
@@ -750,14 +695,17 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
                              )
 
     ### Start of second arc
-    overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date'].iloc[0]
+    overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date_UTC'].iloc[0]
     ### End of first arc
-    overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date'].iloc[-1]
+    overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date_UTC'].iloc[-1]
     fig.add_vrect(  x0=overlap_start, x1=overlap_end,
                     fillcolor='LightSkyBlue', opacity=0.2,
                     layer="below", line_width=0)
 
-    fig.update_layout(title="Arc Overlap Analysis: Radial Component + Predicted Window (light blue window)")
+    fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
+
+    
+    fig.update_layout(title="RSW Coord. System + Predicted Window (light blue window)")
     fig.update_layout(
                     autosize=False,
                     width=800,
@@ -766,7 +714,7 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
                     legend= {'itemsizing': 'constant'})
 
     fig.update_yaxes( title=" Radial (meters)",exponentformat= 'power',row=1, col=1)
-    fig.update_yaxes( title=" residual (meters",       exponentformat= 'power',row=2, col=1)
+    fig.update_yaxes( title="Residuals (cm)",       exponentformat= 'power',row=2, col=1)
 
     fig.update_xaxes( title="Date", row=2, col=1)
 
@@ -776,6 +724,185 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
     return(fig)
 
 
+
+
+
+
+def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
+    
+    ###### GET THE PCE DATA:
+    StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+#     os.system('bunzip2 -v '+ StateVector_epochs_datafile +'.bz2')
+
+    
+    first_arc = arc1
+    last_arc  = arc2
+    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date_UTC'].iloc[3],
+    last_arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][last_arc]['data_record']['Date_UTC'].iloc[-2]
+    first_arc_first_time_str =  str(first_arc_first_time[0])#.replace( "'",' ') 
+    last_arc_last_time =  str(last_arc_last_time)#.replace( "'",' ') 
+    
+    
+    ####---------------------------------------------------------
+    with open(StateVector_PCE_datafile, 'r') as f:
+        for line_no, line_text in enumerate(f):
+            if first_arc_first_time_str in line_text:
+                first_line = line_no
+            elif last_arc_last_time in line_text:
+                last_line = line_no
+                break
+    PCE_data = pd.read_csv(StateVector_PCE_datafile, 
+                skiprows = first_line, 
+                nrows=last_line- first_line,           
+                sep = '\s+',
+                dtype=str,
+                names = [
+                        'Date',
+                        'MJDSECs', 
+                        'RSECS', #(fractional secs)
+                        'GPS offset', # (UTC - GPS offset (secs))
+                        'X',
+                        'Y',
+                        'Z',
+                        'X_dot',
+                        'Y_dot',
+                        'Z_dot',
+                        'YYMMDDhhmmss',
+                            ],)
+#     os.system('bzip2 -v '+ StateVector_epochs_datafile )
+
+    ####---------------------------------------------------------
+    
+    PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
+
+    orbfil_arc1 = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']
+    orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
+
+    orbfil_arc2 = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']
+    orbfil_arc2['Date_pd'] = pd.to_datetime(orbfil_arc2 ['Date_UTC'])
+
+    
+    
+    C_1 = pd.merge(left=orbfil_arc1, left_on='Date_pd',
+         right=PCE_data, right_on='Date_pd')
+    C_2 = pd.merge(left=orbfil_arc2, left_on='Date_pd',
+             right=PCE_data, right_on='Date_pd')
+
+
+    
+
+    
+
+    X = C_1['Satellite Inertial X coordinate']
+    Y = C_1['Satellite Inertial Y coordinate']
+    Z = C_1['Satellite Inertial Z coordinate']
+    Xdot = C_1['Satellite Inertial X velocity']
+    Ydot = C_1['Satellite Inertial Y velocity']
+    Zdot = C_1['Satellite Inertial Z velocity']
+    state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+
+    InTrack_comp_orbfil = [Convert_cartesian_to_NTW(x) for x in state_vector]
+
+    X = C_1['X'].astype(float)
+    Y = C_1['Y'].astype(float)
+    Z = C_1['Z'].astype(float)
+    Xdot = C_1['X_dot'].astype(float)
+    Ydot = C_1['Y_dot'].astype(float)
+    Zdot = C_1['Z_dot'].astype(float)
+    state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+
+    InTrack_comp_PCE = [Convert_cartesian_to_NTW(x) for x in state_vector]
+    
+    model_m1 = obj_m1.__dict__['global_params']['den_model']
+
+    if plot_num == 0:
+        col = col1
+        x_annot = 1.05
+        y_annot = .97
+        m_size = 3
+    elif plot_num == 1:
+        x_annot = 1.05
+        y_annot = .8
+        col = col2
+        m_size = 2.5
+    elif plot_num == 2:
+        x_annot = 1.05
+        y_annot = .55 
+        col = col3    
+        m_size = 2
+
+
+#     for i, arc in enumerate([arc1 , arc2]):
+#         i_arc = i+1
+    data_skip = 7
+    ####--------------------- INTRACK Component  ---------------------
+    fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
+                             y=InTrack_comp_orbfil[::data_skip],
+                             name= 'Orbfil',
+                             mode='markers',
+                             marker=dict(color=col,
+                             size=m_size,),
+                             showlegend=False,
+                             ),
+                             secondary_y=False,
+                             row=1, col=1,
+                             )
+
+    fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
+                             y=InTrack_comp_PCE[::data_skip],
+                             name= 'PCE',
+                             mode='markers',
+                             marker=dict(color=col, opacity=0.3,
+                             size=m_size+1,),
+                             showlegend=False,
+                             ),
+                             secondary_y=False,
+                             row=1, col=1,
+                             )        
+    ####--------------------- Residual  ---------------------
+
+
+    resid = (np.array(InTrack_comp_PCE) - np.array(InTrack_comp_orbfil))*1e2
+    
+    fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
+                               y=resid[::data_skip],
+                             name= '(PCE-orbfil)',
+                             mode='markers',
+                             marker=dict(color=col,
+                             size=m_size,),
+                             showlegend=False,
+                             ),
+                             secondary_y=False,
+                             row=2, col=1,
+                             )
+
+    ### Start of second arc
+    overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date_UTC'].iloc[0]
+    ### End of first arc
+    overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date_UTC'].iloc[-1]
+    fig.add_vrect(  x0=overlap_start, x1=overlap_end,
+                    fillcolor='LightSkyBlue', opacity=0.2,
+                    layer="below", line_width=0)
+
+    fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
+
+    fig.update_layout(title="NTW Coord. System + Predicted Window (light blue window)")
+    fig.update_layout(
+                    autosize=False,
+                    width=800,
+                    height=600,
+                    font=dict(size=12),
+                    legend= {'itemsizing': 'constant'})
+
+    fig.update_yaxes( title=" In-Track (meters)",exponentformat= 'power',row=1, col=1)
+    fig.update_yaxes( title="Residuals (cm)",       exponentformat= 'power',row=2, col=1)
+
+    fig.update_xaxes( title="Date", row=2, col=1)
+
+    fig.update_yaxes(title_text="Residuals (cm)", row=1, col=1, secondary_y=True, color='SkyBlue')
+
+
+    return(fig)
 
 
 
@@ -838,7 +965,7 @@ def plot_residual_meas_summary(fig, obj_m1, plot_num):
 
 
     fig.update_layout(
-        title="Residual Measurement Summary on Final Iteration",
+        title="Residual Summary Per Arc on Final Iteration",
         )
     fig.update_yaxes(title_text="Residual [cm]", row=1, col=1)
     fig.update_yaxes(title_text="RMS", row=2, col=1)

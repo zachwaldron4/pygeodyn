@@ -3,7 +3,7 @@
 Overview of GEODYN Internal Programs
 ---------------------------------------
 
-The following is summarized from the `SGP Website <https://space-geodesy.nasa.gov/techniques/tools/GEODYN/GEODYN.html>`_.
+The following is summarized from the `SGP Website <https://space-geodesy.nasa.gov/techniques/tools/GEODYN/GEODYN.html>`_:
 
 GEODYN is an orbit determination and geodetic parameter estimation program. Users of GEODYN input estimates of orbital parameters (such as the initial satellite state and solar radiation coefficients) and geodetic parameters (such as tracking station coordinates). GEODYN then computes orbits from the input parameters and can also compute theoretical values of satellite tracking observations using the input geodetic parameters. GEODYN can compare the theoretical values of tracking observations with real tracking observations to refine the input values of orbital and geodetic parameters.
 

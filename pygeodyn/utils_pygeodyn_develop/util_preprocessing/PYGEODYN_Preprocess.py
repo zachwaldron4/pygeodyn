@@ -7,6 +7,12 @@ import time
 import subprocess
 import os
 
+
+import sys
+sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+from common_functions          import MJDS_to_YYMMDDHHMMSS
+
+
 class PygeodynPreprocessing:
     
     
@@ -295,90 +301,86 @@ class PygeodynPreprocessing:
 
 
 
-
-
     def RVG_Files_add_datetime_column(self):
         '''
         This function includes an additional function to convert the MJDSecs to datetime string.
         
         '''
         
-        def MJDS_to_YYMMDDHHMMSS(input_ModJulianDay_secs):
-            '''
-            This function takes modified julian day seconds (MJDS) as input 
-            and returns a date_string in the format YYMMDDHHMMSS.
+#         def MJDS_to_YYMMDDHHMMSS(input_ModJulianDay_secs):
+#             '''
+#             This function takes modified julian day seconds (MJDS) as input 
+#             and returns a date_string in the format YYMMDDHHMMSS.
+#             '''
 
-            '''
+#             #########################################
+#             # Define some constants
+#             SECDAY              = 86400
+#             geodyn_ref_time_mjd = 30000
+#             jd_0                = 2400000.5
+#             d36525              = 365.25
+#             d122                = 122.1
+#             d30600              = 30.6001
+#             half                = 0.5
+#             ib                  = -15
+#             d17209              = 1720996.5
 
-#             input_ModJulianDay_secs = self.rvg_data['data']['MJDSEC_secs_timeGPS']
+#             ######  CONVERT FROM MJDS TO MJD
+#             # Inputs:
+#             MJDS = input_ModJulianDay_secs
+#             #
+#             MJD = (MJDS/SECDAY) + geodyn_ref_time_mjd
 
-            ### Modified Julian Date conversion
-            # *  MODIFIED JULIAN DAY = JULIAN DAY - GEODYN REFERENCE TIME IN JD
-
-            #########################################
-            # Define some constants
-            SECDAY              = 86400
-            geodyn_ref_time_mjd = 30000
-            jd_0                = 2400000.5
-            d36525              = 365.25
-            d122                = 122.1
-            d30600              = 30.6001
-            half                = 0.5
-            ib                  = -15
-            d17209              = 1720996.5
-
-            ######  CONVERT FROM MJDS TO MJD
-            # Inputs:
-            MJDS = input_ModJulianDay_secs
-            #
-            MJD = (MJDS/SECDAY) + geodyn_ref_time_mjd
-
-            ######  CONVERT FROM MJD TO YMD
-            # Note from zach-- I took this calculation from geodyn...
-            # There is more going on here than I understand, 
-            # but I want to stay on their level of accuracy
-            #
-            JD = MJD + jd_0                  #  Convert to JulianDay
-            c  = int( JD + half ) + 1537     # ??   sorry, i'm   ??
-            nd = int( (c - d122) / d36525 )  # ??   not sure     ??
-            e  = int( d36525 * nd )          # ??   what this    ??
-            nf = int( ( c - e ) / d30600 )   # ??   all is       ??
-            # ----
-            frac = (JD + half) - int( JD + half )           # frac of day leftover
-            iday = c - e - int( d30600 * nf ) + frac        # day
-            imonth  = nf -  1   - 12 * int( nf / 14 )       # month
-            iyyyy = nd - 4715 - int(  ( 7 + imonth ) / 10 ) # YYYY
-            #
-            ##### Use modular division to get 2 digit year
-            iyear =  iyyyy % 100 
-            #
-            #### Return YYMMDD 
-            yymmdd = int(iyear * 10000 + imonth * 100 + iday)
+#             ######  CONVERT FROM MJD TO YMD
+#             # Note from zach-- I took this calculation from geodyn...
+#             # There is more going on here than I understand, 
+#             # but I want to stay on their level of accuracy
+#             #
+#             JD = MJD + jd_0                  #  Convert to JulianDay
+#             c  = int( JD + half ) + 1537     # ??   sorry, i'm   ??
+#             nd = int( (c - d122) / d36525 )  # ??   not sure     ??
+#             e  = int( d36525 * nd )          # ??   what this    ??
+#             nf = int( ( c - e ) / d30600 )   # ??   all is       ??
+#             # ----
+#             frac = (JD + half) - int( JD + half )           # frac of day leftover
+#             iday = c - e - int( d30600 * nf ) + frac        # day
+#             imonth  = nf -  1   - 12 * int( nf / 14 )       # month
+#             iyyyy = nd - 4715 - int(  ( 7 + imonth ) / 10 ) # YYYY
+#             #
+#             ##### Use modular division to get 2 digit year
+#             iyear =  iyyyy % 100 
+#             #
+#             #### Return YYMMDD 
+#             yymmdd = int(iyear * 10000 + imonth * 100 + iday)
 
 
-            ##### Calculate Hours, Minutes, seconds
-            isec_mjd  =  MJDS % 86400
+#             ##### Calculate Hours, Minutes, seconds
+#             isec_mjd  =  MJDS % 86400
 
-            ihour    = isec_mjd/3600
-            iminutes = (ihour % 1)*60
-            isec     = (iminutes % 1)*60 
+#             ihour    = isec_mjd/3600
+#             iminutes = (ihour % 1)*60
+#             isec     = (iminutes % 1)*60 
 
-            isec_str      = str(int(isec))
-            ihour_str = str(int(ihour))
-            iminutes_str  = str(int(iminutes))
+#             ihour_str = str(int((ihour)))
+#             iminutes_str  = str(int((iminutes)))
+#             isec_str      = str(int(round(isec)))
 
-            if len(ihour_str)==1:
-                ihour_str = '0'+ihour_str
-            if len(iminutes_str)==1:
-                iminutes_str = '0'+iminutes_str
-            if len(isec_str)==1:
-                isec_str = '0'+isec_str
+#             if len(ihour_str)==1:
+#                 ihour_str = '0'+ihour_str
+#             if len(iminutes_str)==1:
+#                 iminutes_str = '0'+iminutes_str
+#             if len(isec_str)==1:
+#                 isec_str = '0'+isec_str
 
-            #hhmmss  =  int((ihour*10000) + (iminutes*100) + isec)
-            hhmmss  =  ihour_str + iminutes_str + isec_str
-            YYMMDDHHMMSS = str(yymmdd) + '-' + str(hhmmss)
+#             #hhmmss  =  int((ihour*10000) + (iminutes*100) + isec)
+#             hhmmss  =  ihour_str + iminutes_str + isec_str
+#             YYMMDDHHMMSS = str(yymmdd) + '-' + str(hhmmss)
             
-            return(YYMMDDHHMMSS)
+#             return(YYMMDDHHMMSS)
+
+   
+
+
 
         
         rvg_file = self.rvg_data
@@ -398,6 +400,8 @@ class PygeodynPreprocessing:
         
         
         self.rvg_data['data'].insert(0, 'Date', dates)
+        self.rvg_data['data']['yymmdd_str'] = yymmdd_str
+
 #         return(dates)
 
 

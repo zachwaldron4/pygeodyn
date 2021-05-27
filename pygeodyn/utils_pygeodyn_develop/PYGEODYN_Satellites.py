@@ -23,6 +23,9 @@ sys.path.insert(0, '/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/')
 from PYGEODYN_Control import PygeodynController
 from PYGEODYN_Read    import PygeodynReader
 
+# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+# from common_functions          import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
+
 
 #=======================================
 #-------------ICESAT2 CLASS-------------
@@ -252,8 +255,14 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             'DRAG             9946114',
                             'DRAG   0 0',
                             'MBIAS',
-#                             'ORBFIL',
-#                             'RESID',
+                           # 
+                            'SATPAR',
+                            'EPOCH',
+                            'ELEMS1',
+                            'ELEMS2',
+                           #
+                            'ORBTVU',
+                            'RESID',
                           ] 
         #### --------------------------------------------------------------------
         ##### Grab the EPOCH start and end times
@@ -337,16 +346,19 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     sep = '\s+',
                     dtype=str,
                     names = [
-                            'Date',
-                            'X',
-                            'Y',
-                            'Z',
-                            'X_dot',
-                            'Y_dot',
-                            'Z_dot',
-                          ],
-                    )
-#         print(xyzline['X'].values[0].ljust(20))
+                        'Date',
+                        'MJDSECs', 
+                        'RSECS', #(fractional secs)
+                        'GPS offset', # (UTC - GPS offset (secs))
+                        'X',
+                        'Y',
+                        'Z',
+                        'X_dot',
+                        'Y_dot',
+                        'Z_dot',
+                        'YYMMDDhhmmss',
+                            ],)
+
         X     =  xyzline['X'].values[0].ljust(20)     #'  -745933.8926940708'
         Y     =  xyzline['Y'].values[0].ljust(20)     #'  -4864983.834066438'
         Z     =  xyzline['Z'].values[0].ljust(20)     #'    4769954.60524261'
@@ -393,7 +405,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             
 #                                  12345678901234567 
         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
-    
         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
         #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
@@ -456,10 +467,13 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
         card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
         
-        card_strings['SATPAR   13']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
 
         ### Fix the coordinate system... PCE Data was in J2000
-        card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
+#         card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
+#         card_strings['SATPAR   13']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
+        card_strings['REFSYS']  = 'REFSYS193310        '+epoch_start+'0'
+        card_strings['EPOCH'] = 'EPOCH               '+epoch_start+epoch_start+epoch_end
+        card_strings['SATPAR']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
         card_strings['ELEMS1']  = 'ELEMS11             '+X+''+Y+''+Z+''   
         card_strings['ELEMS2']  = 'ELEMS2              '+X_dot+''+Y_dot+''+Z_dot+''
                 
@@ -543,34 +557,29 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         #####   then delete all the SATPAR,EPOCH,ELEMS110, ELEMS2 and restore the ones we saved
         #####-----------------------------------------------------------------------------
 
-        ##### read in all lines of the file and save them
-        with open(iisset_file, "r") as f:
-            lines_all = f.readlines()    
-        ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
-        with open(iisset_file, "w") as f:
-            for iline, line in enumerate(lines_all):
-                if 'SATPAR' in line:
-                    if SAT_ID in line:
-                        save_SATPAR = iline+1
-                        save_EPOCH = iline+2
-                        save_ELEMS11 = iline+3
-                        save_ELEMS2 = iline+4
-                       
-                elif 'SATPAR'in line:
-                    pass
-                elif 'EPOCH'in line:
-                    pass
-                elif 'ELEMS1'in line:
-                    pass
-                elif 'ELEMS2'in line:
-                    pass
-                else:
-                    f.write(line)
+#         ##### read in all lines of the file and save them
+#         with open(iisset_file, "r") as f:
+#             lines_all = f.readlines()    
+#         ##### Re-write the file line-by-line WITHOUT the cards that we want to remove    
+#         with open(iisset_file, "w") as f:
+#             for iline, line in enumerate(lines_all):
+#                 if 'SATPAR' in line:
+#                     pass
+#                 elif 'SATPAR'in line:
+#                     pass
+#                 elif 'EPOCH'in line:
+#                     pass
+#                 elif 'ELEMS1'in line:
+#                     pass
+#                 elif 'ELEMS2'in line:
+#                     pass
+#                 else:
+#                     f.write(line)
                     
-        line_SATPAR  = linecache.getline(iisset_file, save_SATPAR)
-        line_EPOCH   = linecache.getline(iisset_file, save_EPOCH)
-        line_ELEMS11 = linecache.getline(iisset_file, save_ELEMS11)
-        line_ELEMS2  = linecache.getline(iisset_file, save_ELEMS2)
+#         line_SATPAR  = linecache.getline(iisset_file, save_SATPAR)
+#         line_EPOCH   = linecache.getline(iisset_file, save_EPOCH)
+#         line_ELEMS11 = linecache.getline(iisset_file, save_ELEMS11)
+#         line_ELEMS2  = linecache.getline(iisset_file, save_ELEMS2)
 
         ####----------------------------------------------------------------------
         #### REMOVE CARDS:: rewrite the file without the cards we specified in the cards_to_remove dict
@@ -614,20 +623,26 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             else: 
                                 f.write(card_strings[card] + ' \n')
                                 switch_cardcount += 1
-
-                        elif (('REFSYS' in line) and (switch_2 == True)):
-                            f.write(line)
-                            f.write(card_strings['SATPAR   13'] + ' \n')
-                            f.write(line_EPOCH)
-                            f.write(card_strings['ELEMS1']      + ' \n')
-                            f.write(card_strings['ELEMS2']      + ' \n')
-                            switch_2 = False
-                            
                         else:
                             f.write(line)
-        self.verboseprint('    ','Orig:')
-        self.verboseprint('    ','    ',line_ELEMS11.rstrip('\n'))
-        self.verboseprint('    ','    ',line_ELEMS2.rstrip('\n'))
+                            
+        ##### Write our satellite parameters back in         
+        with open(iisset_file, "w") as f:
+            for line in lines_all:
+                if (('REFSYS' in line) and (switch_2 == True)):
+                    f.write(card_strings['REFSYS']  + ' \n')
+                    f.write(card_strings['SATPAR']  + ' \n')
+                    f.write(card_strings['EPOCH']   + ' \n')
+                    f.write(card_strings['ELEMS1']  + ' \n')
+                    f.write(card_strings['ELEMS2']  + ' \n')
+                    switch_2 = False
+                else:
+                    f.write(line)
+
+                    
+#         self.verboseprint('    ','Orig:')
+#         self.verboseprint('    ','    ',line_ELEMS11.rstrip('\n'))
+#         self.verboseprint('    ','    ',line_ELEMS2.rstrip('\n'))
         self.verboseprint('    ','PCE Update:')
         self.verboseprint('    ','    ',card_strings['ELEMS1'])
         self.verboseprint('    ','    ',card_strings['ELEMS2'])

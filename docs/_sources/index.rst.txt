@@ -60,6 +60,7 @@ Pygeodyn is a wrapper that allows one to read, run, and interpret data from NASA
    c_understanding_geodyn/Demo__geodyn_setup_file.ipynb
    c_understanding_geodyn/Demo__geodyn_output_explained.ipynb
    examples_notebooks/preprocessing_rvgs_to_ascii.ipynb
+   examples_notebooks/read_orbfil_binary.ipynb
 
 
 .. toctree:: 

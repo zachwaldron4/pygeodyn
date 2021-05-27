@@ -6,7 +6,6 @@ import pandas as pd
     #### Computer function
 import os
 import os.path
-import sys
 import subprocess
 import shutil
 import time
@@ -17,10 +16,12 @@ import copy
 #### ----------------------------------------
 #### ----------------------------------------
 
+import sys
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
 
 # from util_Set_Inputs           import UtilSetInputs
 from util_ReaderTools          import UtilReader_Tools
+from common_functions          import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
 
 
 class PygeodynReader(UtilReader_Tools):
@@ -66,100 +67,26 @@ class PygeodynReader(UtilReader_Tools):
 #             print('Calling pygeodyn with multiple arcs...')
 #             pass
     
+    
+    
+    
+    
+    def read_binary_ORBFIL(self):
         
-    def read_binary_ORBFIL(self ):
         from scipy.io import FortranFile
-        import numpy as np
-        import pandas as pd
-        from collections import namedtuple
-        import time
+#         import numpy as np
+#         import pandas as pd
+#         from collections import namedtuple
+#         import time
         # Fortran calls
-        import subprocess
-        import os
-        
-        def MJDS_to_YYMMDDHHMMSS(input_ModJulianDay_secs):
-            '''
-            This function takes modified julian day seconds (MJDS) as input 
-            and returns a date_string in the format YYMMDDHHMMSS.
-
-            '''
-
-        #             input_ModJulianDay_secs = self.rvg_data['data']['MJDSEC_secs_timeGPS']
-
-            ### Modified Julian Date conversion
-            # *  MODIFIED JULIAN DAY = JULIAN DAY - GEODYN REFERENCE TIME IN JD
-
-            #########################################
-            # Define some constants
-            SECDAY              = 86400
-            geodyn_ref_time_mjd = 30000
-            jd_0                = 2400000.5
-            d36525              = 365.25
-            d122                = 122.1
-            d30600              = 30.6001
-            half                = 0.5
-            ib                  = -15
-            d17209              = 1720996.5
-
-            ######  CONVERT FROM MJDS TO MJD
-            # Inputs:
-            MJDS = input_ModJulianDay_secs
-            #
-            MJD = (MJDS/SECDAY) + geodyn_ref_time_mjd
-
-            ######  CONVERT FROM MJD TO YMD
-            # Note from zach-- I took this calculation from geodyn...
-            # There is more going on here than I understand, 
-            # but I want to stay on their level of accuracy
-            #
-            JD = MJD + jd_0                  #  Convert to JulianDay
-            c  = int( JD + half ) + 1537     # ??   sorry, i'm   ??
-            nd = int( (c - d122) / d36525 )  # ??   not sure     ??
-            e  = int( d36525 * nd )          # ??   what this    ??
-            nf = int( ( c - e ) / d30600 )   # ??   all is       ??
-            # ----
-            frac = (JD + half) - int( JD + half )           # frac of day leftover
-            iday = c - e - int( d30600 * nf ) + frac        # day
-            imonth  = nf -  1   - 12 * int( nf / 14 )       # month
-            iyyyy = nd - 4715 - int(  ( 7 + imonth ) / 10 ) # YYYY
-            #
-            ##### Use modular division to get 2 digit year
-            iyear =  iyyyy % 100 
-            #
-            #### Return YYMMDD 
-            yymmdd = int(iyear * 10000 + imonth * 100 + iday)
-
-
-            ##### Calculate Hours, Minutes, seconds
-            isec_mjd  =  MJDS % 86400
-
-            ihour    = isec_mjd/3600
-            iminutes = (ihour % 1)*60
-            isec     = (iminutes % 1)*60 
-
-            isec_str      = str(int(isec))
-            ihour_str = str(int(ihour))
-            iminutes_str  = str(int(iminutes))
-
-            if len(ihour_str)==1:
-                ihour_str = '0'+ihour_str
-            if len(iminutes_str)==1:
-                iminutes_str = '0'+iminutes_str
-            if len(isec_str)==1:
-                isec_str = '0'+isec_str
-
-            #hhmmss  =  int((ihour*10000) + (iminutes*100) + isec)
-            hhmmss  =  ihour_str + iminutes_str + isec_str
-            YYMMDDHHMMSS = str(yymmdd) + '-' + str(hhmmss)
-
-            return(YYMMDDHHMMSS)
+#         import subprocess
+#         import os
 
 
         orb_fil= self._orbfil_filename
-        
+
         f = FortranFile(orb_fil, 'r')
 
-#         print(' TEST PRINT HERE') 
         #### -----------------------------------------------------
         #### ------------------- HEADER RECORD -------------------
         #### -----------------------------------------------------
@@ -181,7 +108,7 @@ class PygeodynReader(UtilReader_Tools):
         header['Arc Number.']                                                    = a[4-1]
         header['Global Iteration Number']                                        = a[5-1]
         header['Inner Iteration Number']                                         = a[6-1]
-        header['Number of satellites on this file']                              = a[7-1]  # upper lmit of 50
+        header['Number of satellites on this file']                              = a[7-1]  # upper limit of 50
         header['Actual number of words per satellite per time point']            = a[8-1]
         header['Number of words of data per time point (NWDATA=NSATS*NWDSAT)']   = a[9-1]
         header['Number of time points per Data Buffer (NTIMBF)']                 = a[10-1]
@@ -291,7 +218,6 @@ class PygeodynReader(UtilReader_Tools):
 #         data_dict_sat_packets['Q(4)']                            =[]
 
         while end_datarecord == False:
-
             ### Read in each data buffer
             a = f.read_record(float)
 
@@ -304,8 +230,11 @@ class PygeodynReader(UtilReader_Tools):
                 counter = 0
                 for itime in np.arange( (6)   ,   ((NTB+5)  +1)  ):
                     index_times = int(itime)
-                    data_dict_times[counter] = MJDSBF + a[index_times-1] 
+                    data_dict_times[counter] = str(MJDSBF + a[index_times-1] )
                     counter+=1
+
+        #             if counter <= 100:
+        #                 print(MJDSBF + a[index_times-1])
 
 
                 #### Right Ascension of Greenwich Values (radians) for each time in Buffer.
@@ -331,7 +260,6 @@ class PygeodynReader(UtilReader_Tools):
 
                 for i in np.arange(first_sat_first_time, last_sat_last_time  , 24):
                     index = int(i)
-
 
                     data_dict_sat_packets['MJDSEC ET'].append(data_dict_times[counter])
                     data_dict_sat_packets['Satellite Inertial X coordinate'].append(a[(index +1) - 2])
@@ -379,18 +307,30 @@ class PygeodynReader(UtilReader_Tools):
 
 
         data_record_df = pd.DataFrame.from_dict(data_dict_sat_packets, orient='columns')
-        
-        #### Convert the MJDSECS to Gregorian Datetime
-        yymmdd_str = [MJDS_to_YYMMDDHHMMSS(x) for x in data_record_df['MJDSEC ET'] ]
-        dates_dt = [pd.to_datetime( x, format='%y%m%d-%H%M%S') for x in yymmdd_str]
-        data_record_df.insert(0, 'Date', dates_dt)
 
-                      
+        #### Save as a dictionary
         self.orbfil_dict = {}
         self.orbfil_dict['header'] = header
         self.orbfil_dict['data_record'] = data_record_df
 
+        ##### Convert from Terrestrial time to UTC:
+        MJDS_UTC = [Convert_ET_TDT_to_UTC(float(x), 37) for x in self.orbfil_dict['data_record']['MJDSEC ET'] ]
+
+        ##### Calculate the Gregorian Calendar date:
+        yymmdd_str = [MJDS_to_YYMMDDHHMMSS(x) for x in MJDS_UTC]
+
+        ##### Compute date as Datetime object:
+        dates_dt_UTC = [pd.to_datetime( x, format='%y%m%d-%H%M%S') for x in yymmdd_str]
+        
+        
+        self.orbfil_dict['data_record']["Date_UTC"] = dates_dt_UTC
+        self.orbfil_dict['data_record']["MJDS_UTC"] = MJDS_UTC
+
         return(self.orbfil_dict)
+    
+    
+    
+
 
 
                         
