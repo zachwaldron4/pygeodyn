@@ -1,9 +1,12 @@
 
+GEODYN Overview
+===========================================
 
-Overview of GEODYN Internal Programs
+
+GEODYN Internal Programs
 ---------------------------------------
 
-The following is summarized from the `SGP Website <https://space-geodesy.nasa.gov/techniques/tools/GEODYN/GEODYN.html>`_.
+The following is summarized from the `SGP Website <https://space-geodesy.nasa.gov/techniques/tools/GEODYN/GEODYN.html>`_:
 
 GEODYN is an orbit determination and geodetic parameter estimation program. Users of GEODYN input estimates of orbital parameters (such as the initial satellite state and solar radiation coefficients) and geodetic parameters (such as tracking station coordinates). GEODYN then computes orbits from the input parameters and can also compute theoretical values of satellite tracking observations using the input geodetic parameters. GEODYN can compare the theoretical values of tracking observations with real tracking observations to refine the input values of orbital and geodetic parameters.
 
@@ -27,8 +30,8 @@ The generalized flow of GEODYN (as it is relevant to our density work) can be su
 
 
 
-Important Input and Outputs
----------------------------------------
+Important Files: Inputs and Outputs
+-----------------------------------------
 
 In order to construct a successful run, the user must collect the appropriate input files (satellite and tracking data type dependent) and point then to the correct Fortran units when running IIS.  Below is a description of the GEODYN input and output files that we have come across.
 
@@ -77,21 +80,44 @@ In order to construct a successful run, the user must collect the appropriate in
 
 
 
-.. ### IIS
-.. Description (Listed from Vol 5 page 5)
-..  - GEODYN IIS program reads and interprets the option cards  
-..  - Reads the input observation data  
-..  - Read the optional gravity model, station geodetics, and area/mass files  
-..  - Extracts ephemeris data from necessary files and tables given the input time periods
-..  - Rearranges the data into vector form to minimize the amount of data manipulation in IIE
-..  - Output is put into 2 files  
-..      - (Fort 11) One contains the data from IIS, and the other, (Fort 41) contains all the information to run IIE (i.e. user selection, appropriate ephemeris, flux, polar motion and time .. data; the pointers and the sizes for the dynamic arrays; the defaults for all model parameters; and all control information needed to output the requested files.
-..         
-.. 
-.. ### IIE
-.. Description (Listed from Vol 5 page 5)  
-..  - IIE performs all the computations normally associated with satellite orbit and geodetic parameter estimation programs.  
-..  - IIE is written to run efficiently on vector processing computers without having to handle the I/O intensive parts that are performed by IIS.
-.. 
-.. 
-.. A GEODYN run is based on the user inputs that get inputted into the run as a CARD.  The full set of CARDS is referred to as the deck. The deck is located at ```RUNS>INPUTS>iisset_start``` .. within our file structure. Information on each of the CARDS is in the Volume 3 Documentation.
+
+Drag Assessment: Output Products
+----------------------------------------------------------
+
+1. RMS of Fit
+
+**Location**: ``iieout`` file
+**Header**  : ``RESIDUAL SUMMARY BY MEASUREMENT TYPE FOR ARC ## INNER ITERATION ## OF GLOBAL ITERATION 1``  
+
+2. Residuals (Tracking data - orbit determination )
+
+**Location**: ``iieout`` file
+**Header**  : ``OBSERVATION RESIDUALS FOR ARC ## FOR INNER ITERATION ## OF GLOBAL ITERATION 1``  
+
+
+3. Adjusted Parameters  (Cd and state vector)
+
+**Location**: ``iieout`` file
+**Header**  : ``#ARC ## PARAMETER ADJUSTMENT SUMMARY FOR INNER ITERATION ## OF GLOBAL ITERATION 1``  
+
+
+4. Density (model ouput)
+
+**Location**: Density file 
+**Header**  : ``#ARC ## PARAMETER ADJUSTMENT SUMMARY FOR INNER ITERATION ## OF GLOBAL ITERATION 1``  
+
+
+
+5. Arc Overlaps
+
+Must run multiple arcs and look at the above outputs during the periods of overlap to check for consistency
+
+
+
+6. Compare Trajectory (+ Orbit Predictions)
+
+**Location**: ``ORBFIL``
+
+Using the ``EPOCH`` and ``ORBFIL`` card, we can extend out the final date to some period later than the final time of selected data.  This makes our POD be some time period where out parameters are being adjusted using the traking data (time is selected with the ``SELECT`` card) and then our orbit continues to propagate using those iterated conditions (adjusted parameters) to the final time identified by ``EPOCH`` and ``ORBFIL``.  We then can compare these output products externally.
+
+

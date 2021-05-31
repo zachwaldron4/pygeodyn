@@ -26,18 +26,16 @@ Pygeodyn is a wrapper that allows one to read, run, and interpret data from NASA
 .. toctree:: 
    :maxdepth: 3 
    :caption: Understanding GEODYN
-
+   
    c_understanding_geodyn/understanding_geodyn
-
+   c_understanding_geodyn/the_setup_deck
 
 .. toctree:: 
    :maxdepth: 3 
    :caption: Modifying GEODYN
 
-   c_understanding_geodyn/modify_subroutines.md
-   c_understanding_geodyn/msis_edits
-   c_understanding_geodyn/drhodz_doc
-   c_understanding_geodyn/pygeodyn_drho_dz_eval.ipynb
+   d_modifying_geodyn/modify_subroutines_rst.rst
+   d_modifying_geodyn/pygeodyn_drho_dz_eval.ipynb
    
    
 .. toctree:: 
@@ -49,7 +47,7 @@ Pygeodyn is a wrapper that allows one to read, run, and interpret data from NASA
    :maxdepth: 3 
    :caption: Assessing Density Model Performance
 
-   d_density_model_evaluation/density_assessments
+   e_density_model_evaluation/density_assessments
 
 
 .. toctree:: 

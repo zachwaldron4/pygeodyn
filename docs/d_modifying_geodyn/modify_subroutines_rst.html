@@ -1,0 +1,599 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Modifying GEODYN &mdash; Kamodo-GEODYN Documentation tbd documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine." href="pygeodyn_drho_dz_eval.html" />
+    <link rel="prev" title="Understanding the Setup file/Card deck" href="../c_understanding_geodyn/the_setup_deck.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Kamodo-GEODYN Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../a_about_proj/about.html">Project Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../a_about_proj/about.html#kamodo">Kamodo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../a_about_proj/about.html#geodyn">GEODYN</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Getting Started on AWS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/accessing_AWS.html">Accessing AWS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/accessing_AWS.html#access-the-aws-server">Access the AWS Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/accessing_AWS.html#activating-a-jupyter-environment-set-port-forwarding">Activating a Jupyter environment (set port forwarding):</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/navigating_AWS.html">Navigating AWS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#directory-structure-of-the-geodyn-project">Directory Structure of the GEODYN Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#directories-and-files-of-importance">Directories and Files of Importance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#geodyn-output-readers">GEODYN output readers:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#msis-evaluation-notebooks">MSIS Evaluation Notebooks:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#geodyn-source-code">GEODYN Source Code:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#geodyn-starlette-runs">GEODYN Starlette Runs:</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#starlette-run-directory">Starlette Run Directory:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../b_getting_started/navigating_AWS.html#starlette-run-output">Starlette Run Output:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html">Installations and Technical Tips</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html#installing-miniconda3">Installing miniconda3 :</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../b_getting_started/installs_and_techtips.html#installing-kamodo">Installing Kamodo:</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Understanding GEODYN</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../c_understanding_geodyn/understanding_geodyn.html">GEODYN Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/understanding_geodyn.html#geodyn-internal-programs">GEODYN Internal Programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/understanding_geodyn.html#important-files-inputs-and-outputs">Important Files: Inputs and Outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/understanding_geodyn.html#drag-assessment-output-products">Drag Assessment: Output Products</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html">Understanding the Setup file/Card deck</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#example-icesat2-with-pce-data-trajectory-analysis">Example: ICESat2 with PCE Data– Trajectory Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#initial-setup-deck"><strong>Initial setup deck:</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#modified-cards"><strong>Modified Cards:</strong></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#orbfil">ORBFIL:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#obsvu">OBSVU:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#prntvu">PRNTVU:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#atmden">ATMDEN:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#cardname">CARDNAME:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Modifying GEODYN</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Modifying GEODYN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#list-of-major-modifications">List of Major Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#modification-details">Modification Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#print-model-density">1) Print Model Density</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#iieout-density-model-identifier">2) iieout density model identifier</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#and-4-include-msise00-and-msise2-into-the-geodyn-source-code">3) and 4) Include MSISe00 and MSISe2 into the GEODYN Source code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#modying-the-msis-drhodz-calculation">5) Modying the MSIS DRHODZ Calculation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#remove-the-atgrav-printing-to-iis-iieout">6) Remove the ATGRAV printing to IIS/IIEOUT</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Assessing Density Model Performance</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../e_density_model_evaluation/density_assessments.html">Starlette Satellite (SLR Data)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../e_density_model_evaluation/density_assessments.html#msis-version-comparisons">MSIS Version Comparisons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html">MSIS Version Evaluation- Multiple Arcs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Details:">Details:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Background:">Background:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Relative-model-performance:">Relative model performance:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Load-the-simulations-over-all-arcs">Load the simulations over all arcs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Set-the-plot-configurations">Set the plot configurations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Details-and-Background:">Details and Background:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Cd-Analysis">Cd Analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Adjusted-Cd-Plot-(timeseries)">Adjusted Cd Plot (timeseries)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Scale-Density-with-the-Cd-scale-factor:">Scale Density with the Cd scale factor:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Density-output-Analysis">Density output Analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Density-timeseries-plot">Density timeseries plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Orbit-averaged-Density-Plot">Orbit averaged Density Plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Composite-Plots,-density,-cd,-activity-indicies">Composite Plots, density, cd, activity indicies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#id1">Details:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#id2">Analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Observed-Residuals-timeseries-plot">Observed Residuals timeseries plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Residual-Measurement-Summary-plots-(RMS-of-fit)">Residual Measurement Summary plots (RMS of fit)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Residuals-–-station-summary">Residuals – station summary</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../e_density_model_evaluation/density_assessments.html#icesat2-satellite-pce-data">ICESat2 Satellite (PCE Data)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html">A Trajectory Analysis using the ICESat2 Satellite</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-0:-Pre-processing-the-PCE-data-into-a-G2B-file">Step 0: Pre-processing the PCE data into a G2B file</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#PygeodynPreprocessing">PygeodynPreprocessing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-1:-Run-GEODYN-using-Pygeodyn-with-the-ICESat2-configuration">Step 1: Run GEODYN using Pygeodyn with the ICESat2 configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-1.1:-Run-with-MSIS2">Step 1.1: Run with MSIS2</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-1.2:-Run-with-DTM87-for-comparison">Step 1.2: Run with DTM87 for comparison</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-1.2:-Run-with-Jaachia-71-Model-for-comparison">Step 1.2: Run with Jaachia 71 Model for comparison</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Read-GEODYN-Output-using-PygeodynRead-functionality">Read GEODYN Output using PygeodynRead functionality</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Get-MSIS2-Data">Get MSIS2 Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Get-DTM87-Data">Get DTM87 Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Get-Jaachia-71-Data">Get Jaachia 71 Data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Analyze-output">Analyze output</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#1.-Residuals-of-the-POD-across-many-arcs">1. Residuals of the POD across many arcs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Looking-at-the-arc-overlap-time:">Looking at the arc overlap time:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#PCE-Data-and-the-Orbit-File:">PCE Data and the Orbit File:</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Residual-Component-Trajectory:">Residual Component Trajectory:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Descriptive Notebooks</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html">Demo: Running GEODYN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#Locations-of-requisite-files-and-scripts">Locations of requisite files and scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#GEODYN-IIS-and-IIE-executables:">GEODYN IIS and IIE executables:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#Setup-Files-(Unit-5)-to-read-into-GEODYN:">Setup Files (Unit 5) to read into GEODYN:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#Script-that-runs-GEODYN:">Script that runs GEODYN:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#GEODYN-Output:">GEODYN Output:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#Running-GEODYN:">Running GEODYN:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__Run_Geodyn.html#Inside-the-GEODYN-script:">Inside the GEODYN script:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html">Demo: The Setup File</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#Location">Location</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#Card-Options">Card Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#DRAG">DRAG</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#CONDRG">CONDRG</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#OBSVU">OBSVU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#RESIDU">RESIDU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#ORBFIL">ORBFIL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#ORBTVU">ORBTVU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#ATMDEN">ATMDEN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_setup_file.html#ACCEL9">ACCEL9</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_output_explained.html">Demo: Reading Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_output_explained.html#Adjusted-Parameters">Adjusted Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_output_explained.html#Trajectory-Data">Trajectory Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_output_explained.html#Density-Data">Density Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/Demo__geodyn_output_explained.html#Residual-Data">Residual Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html">Reading and Processing .RVG binary files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#The-goal-here:">The goal here:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#Methodology-for-pre-processing-the-binary-files:">Methodology for pre-processing the binary files:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#Info-on-the-binary-files:">Info on the binary files:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#1)-Dump-the-data-into-usable-format-with-scipy.io.FortranFile">1) Dump the data into usable format with <code class="docutils literal notranslate"><span class="pre">scipy.io.FortranFile</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#1.a-Look-at-the-data-for-a-few-files-to-see-the-discontinuities.">1.a Look at the data for a few files to see the discontinuities.</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_notebooks/preprocessing_rvgs_to_ascii.html#Construct-G2B-files">Construct G2B files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_notebooks/read_orbfil_binary.html">Reading the Binary Orbit File</a></li>
+</ul>
+<p class="caption"><span class="caption-text">To do</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../todo.html">To do list:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../todo.html#notes">Notes:</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Kamodo-GEODYN Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Modifying GEODYN</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/d_modifying_geodyn/modify_subroutines_rst.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="modifying-geodyn">
+<h1>Modifying GEODYN<a class="headerlink" href="#modifying-geodyn" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="list-of-major-modifications">
+<h2>List of Major Modifications<a class="headerlink" href="#list-of-major-modifications" title="Permalink to this headline">¶</a></h2>
+<p>Below is a list of all the major modification made to the version of GEODYN on the AWS server:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 37%" />
+<col style="width: 19%" />
+<col style="width: 25%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mod #</p></th>
+<th class="head"><p>Short Description</p></th>
+<th class="head"><p>Directory of edit</p></th>
+<th class="head"><p>Files Edited</p></th>
+<th class="head"><p>Output</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>Print Model Density</p></td>
+<td><p><cite>IIE/pygeodyn_MODS/</cite></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DRAG.f90</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fort.99</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iieout</span></code> density model identifier</p></td>
+<td><p><cite>IIE/pygeodyn_MODS/</cite></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SUMMRY.f90</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iieout</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>Include MSISe00  to GEODYN Source code</p></td>
+<td><p><cite>IIE/pygeodyn_MODS/</cite></p></td>
+<td><p>See the Adding MSIS docs</p></td>
+<td><p>see docs</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>Include MSIS 2.0 to GEODYN Source code</p></td>
+<td><p><cite>IIE/pygeodyn_MODS/</cite></p></td>
+<td><p>See the Adding MSIS docs</p></td>
+<td><p>see docs</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>Modying the MSIS DRHODZ Calculation</p></td>
+<td><p><cite>IIE/pygeodyn_MODS/</cite></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MSIS.f90</span></code></p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>Remove the ATGRAV printing to IIS/IIEOUT</p></td>
+<td><p><cite>IIS/ORIG/</cite></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALLOAD.f90</span></code></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If one modifies the GEODYN source code, you must recompile using the compiler script in that directory to reconstruct the executable.</p>
+</div>
+</div>
+<div class="section" id="modification-details">
+<h2>Modification Details<a class="headerlink" href="#modification-details" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="print-model-density">
+<h3>1) Print Model Density<a class="headerlink" href="#print-model-density" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description:</strong></p>
+<ul class="simple">
+<li><p>If on the last iteration and 200 seconds have passed (<code class="docutils literal notranslate"><span class="pre">IF(LSTINR.AND.FSSTRT.GT.200.D0)</span> <span class="pre">THEN</span></code>), it prints the parameters to a file <code class="docutils literal notranslate"><span class="pre">fort.99</span></code> using the format stored at <code class="docutils literal notranslate"><span class="pre">7000</span></code> (arbitrary value).  The format is such that there are 14 parameters being stored and 14 data-types being identified for each parameter.</p></li>
+</ul>
+<p><strong>Fortran WRITE Formatting:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">F12.1</span></code>   – reserves 12 spaces (including ‘.’ and ‘-‘) for a real floating-point number with 1 decimal place.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2I8</span></code>     – reserves 8 spaces for an integer.  The 2 at the front indicates to do this twice.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2F12.4</span></code>  – reserves 12 spaces (including ‘.’ and ‘-‘) for a real floating-point number with 4 decimal place.  The 2 indicates to do this twice.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2D20.11</span></code> – the D specifier is for the exponential form of decimal double-precision items.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">6(3X,F12.4)</span></code> – <cite>3x</cite> places 3 spaces before the <cite>F12.4</cite>.  The 6 and parenthesis indicates to repeat the formation 6 times.</p></li>
+</ul>
+<p><strong>Code to include:</strong></p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="c">!     ##########    WRITE TO A DENSITY FILE        ##############</span>
+<span class="c">!</span>
+  <span class="mi">160</span> <span class="k">CONTINUE</span>
+<span class="c">!</span>
+      <span class="k">if</span><span class="p">(</span><span class="n">kentry</span><span class="p">.</span><span class="n">eq</span><span class="p">.</span><span class="mi">1</span><span class="p">)</span><span class="k">then</span>
+<span class="k">          WRITE</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="o">*</span><span class="p">)</span> <span class="s1">&#39;CHECK DENSITY UNITS: rho=&#39;</span><span class="p">,</span> <span class="n">RHO</span>
+          <span class="k">WRITE</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="o">*</span><span class="p">)</span> <span class="s1">&#39;CHECK DENSITY UNITS: drhodz=&#39;</span><span class="p">,</span> <span class="n">DRHODZ</span>
+      <span class="k">endif</span>
+<span class="k">      </span><span class="n">XDOTR</span><span class="o">=</span><span class="n">XDOT</span><span class="o">+</span><span class="n">THDOT</span><span class="o">*</span><span class="n">HTSCAL</span><span class="o">*</span><span class="n">Y</span>
+      <span class="n">YDOTR</span><span class="o">=</span><span class="n">YDOT</span><span class="o">-</span><span class="n">THDOT</span><span class="o">*</span><span class="n">HTSCAL</span><span class="o">*</span><span class="n">X</span>
+      <span class="k">IF</span><span class="p">(</span><span class="n">LSTINR</span><span class="p">.</span><span class="nb">AND</span><span class="p">.</span><span class="n">FSSTRT</span><span class="p">.</span><span class="n">GT</span><span class="p">.</span><span class="mi">20</span><span class="mf">0.D0</span><span class="p">)</span> <span class="k">THEN</span>
+<span class="k">        WRITE</span><span class="p">(</span><span class="mi">99</span><span class="p">,</span><span class="mi">7000</span><span class="p">)</span> <span class="n">FSSTRT</span><span class="p">,</span><span class="n">IYMD</span><span class="p">,</span><span class="n">IHMS</span><span class="p">,</span><span class="n">XLATD</span><span class="p">,</span><span class="n">XLOND</span><span class="p">,</span><span class="n">ALTI</span><span class="p">,</span><span class="n">RHO</span><span class="p">,</span><span class="n">DRHODZ</span><span class="p">,</span>    <span class="p">&amp;</span>
+     <span class="p">&amp;</span>                 <span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span><span class="n">XDOT</span><span class="p">,</span><span class="n">YDOT</span><span class="p">,</span><span class="n">ZDOT</span>
+<span class="c">!    FSSTRT -- Elapsed seconds since initial epoch</span>
+<span class="c">!    IYMD   -- YYMMDD of current epoch</span>
+<span class="c">!    IHMS   -- HHMMSS of current epoch</span>
+<span class="c">!    XLATD  -- Lat of Space station (degrees)</span>
+<span class="c">!    XLOND  -- Lon of Space station (degrees)</span>
+<span class="c">!    ALTI   -- Hieght of Space station above elipsoid (M)</span>
+<span class="c">!    RHO    -- Density of atmosphere (KG/M^3)</span>
+<span class="c">!    DRHODZ -- Change in density of atmosphere with height (KG/M^3/M)</span>
+<span class="c">!    X      -- X component of position vector</span>
+<span class="c">!    Y      -- Y component of position vector</span>
+<span class="c">!    Z      -- Z component of position vector</span>
+<span class="c">!    XDOT   -- X component of velocity vector</span>
+<span class="c">!    YDOT   -- Y component of velocity vector</span>
+<span class="c">!    ZDOT   -- Z component of velocity vector</span>
+<span class="c">!</span>
+ <span class="mi">7000</span>   <span class="k">FORMAT</span><span class="p">(</span><span class="n">F12</span><span class="p">.</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="n">I8</span><span class="p">,</span><span class="mi">2</span><span class="n">F12</span><span class="p">.</span><span class="mi">4</span><span class="p">,</span><span class="n">F12</span><span class="p">.</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="n">D20</span><span class="p">.</span><span class="mi">11</span><span class="p">,</span><span class="mi">3</span><span class="n">F15</span><span class="p">.</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="n">F15</span><span class="p">.</span><span class="mi">6</span><span class="p">)</span>
+      <span class="k">ENDIF</span>
+<span class="k">      </span><span class="n">GO</span> <span class="n">TO</span> <span class="mi">200</span>
+<span class="c">!</span>
+<span class="c">!################################################################</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="iieout-density-model-identifier">
+<h3>2) iieout density model identifier<a class="headerlink" href="#iieout-density-model-identifier" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description:</strong></p>
+<p>There was an error where the IIEOUT printout showed the that atmospheric model being used was “JAACHIA9999” when MSIS86 was selected.  The <code class="docutils literal notranslate"><span class="pre">SUMMRY.f90</span></code> subroutine was edited to fix this.</p>
+<p><strong>Code to include:</strong></p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span>!(Line 365)
+!!!!  900 WRITE(IOUT6,10500) IYATDN(JATDEN)
+!!!!      WRITE(IUNT88,10500) IYATDN(JATDEN)
+      IF(IATDN.EQ.2) WRITE(6,10551)
+      IF(IATDN.EQ.4) WRITE(6,10552)
+      IF(IATDN.EQ.5) WRITE(6,10553)
+  950 CONTINUE
+
+...
+
+!(Line 880)
+10551 FORMAT(&#39; ATMOSPHERIC DENSITY MODEL  USED: JAACHIA 71&#39;)
+10552 FORMAT(&#39; ATMOSPHERIC DENSITY MODEL  USED: FRENCH DTM&#39;)
+10553 FORMAT(&#39; ATMOSPHERIC DENSITY MODEL  USED: MSIS&#39;)
+```
+</pre></div>
+</div>
+</div>
+<div class="section" id="and-4-include-msise00-and-msise2-into-the-geodyn-source-code">
+<h3>3) and 4) Include MSISe00 and MSISe2 into the GEODYN Source code<a class="headerlink" href="#and-4-include-msise00-and-msise2-into-the-geodyn-source-code" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description</strong>:</p>
+<dl class="simple">
+<dt>We upgraded GEODYN to include the newer versions of the MSIS empirical models.</dt><dd><p>These are:</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p>NRLMSISE-00</p></li>
+<li><p>NRLMSISe2.0</p></li>
+</ul>
+<p>For an in-depth explanation on this process,  <a class="reference external" href="../_static/msis_gII_update_instructions.pdf">please see the included detailed PDF</a>.</p>
+</div>
+<div class="section" id="modying-the-msis-drhodz-calculation">
+<h3>5) Modying the MSIS DRHODZ Calculation<a class="headerlink" href="#modying-the-msis-drhodz-calculation" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description</strong>:</p>
+<p><code class="docutils literal notranslate"><span class="pre">DRHODZ</span></code> is the calculation of the partial derivative of density with respect to altitude.  It is calculated in the subroutines of each respective density model and returned to the DRAG.f90 subroutine to then be used in the drag acceleration calculation.  The calculation of <code class="docutils literal notranslate"><span class="pre">DRHODZ</span></code> in <code class="docutils literal notranslate"><span class="pre">MSIS.f90</span></code> had a few errors which we fixed. We also modified this calculation to include Anomolous Oxygen (an included output in MSISe00 and MSISe2) and <code class="docutils literal notranslate"><span class="pre">O2</span></code> which was omitted previously.</p>
+<p>For an in-depth explanation on this process,  <a class="reference external" href="../_static/DrhoDz_Modification.pdf">please see the included detailed PDF</a>.</p>
+</div>
+<div class="section" id="remove-the-atgrav-printing-to-iis-iieout">
+<h3>6) Remove the ATGRAV printing to IIS/IIEOUT<a class="headerlink" href="#remove-the-atgrav-printing-to-iis-iieout" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description</strong>:</p>
+<p>When constructing the final <code class="docutils literal notranslate"><span class="pre">iieout</span></code> file, the printout from <code class="docutils literal notranslate"><span class="pre">iisout</span></code> is appended to the front of the <code class="docutils literal notranslate"><span class="pre">iieout</span></code> to allow for a complete view of the run output.  The <code class="docutils literal notranslate"><span class="pre">iisout</span></code> printout had a line of code (nested in the <code class="docutils literal notranslate"><span class="pre">IIS/ORIG/ALLOAD.f90</span></code> subroutine) that was likely meant for debugging, but had been left in the version of GEODYN handed down to us.  This line printed all of the gravitational coefficients from the <code class="docutils literal notranslate"><span class="pre">ATGRAV</span></code> file to <code class="docutils literal notranslate"><span class="pre">iisout</span></code>, using up about ~60000 lines and ~80 MB of storage space per <code class="docutils literal notranslate"><span class="pre">iieout</span></code> file…</p>
+<p>I commented out these lines in <code class="docutils literal notranslate"><span class="pre">ALLOAD.f90</span></code> to remove the unnecssary prints and save space in the final <code class="docutils literal notranslate"><span class="pre">iieout</span></code> file.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="pygeodyn_drho_dz_eval.html" class="btn btn-neutral float-right" title="Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine." accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../c_understanding_geodyn/the_setup_deck.html" class="btn btn-neutral float-left" title="Understanding the Setup file/Card deck" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Zach Waldron.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

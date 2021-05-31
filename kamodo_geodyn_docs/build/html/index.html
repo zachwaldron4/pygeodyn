@@ -122,24 +122,48 @@
 </ul>
 <p class="caption"><span class="caption-text">Understanding GEODYN</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html">Overview of GEODYN Internal Programs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#important-input-and-outputs">Important Input and Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html">GEODYN Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#geodyn-internal-programs">GEODYN Internal Programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#important-files-inputs-and-outputs">Important Files: Inputs and Outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#drag-assessment-output-products">Drag Assessment: Output Products</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html">Understanding the Setup file/Card deck</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#example-icesat2-with-pce-data-trajectory-analysis">Example: ICESat2 with PCE Data– Trajectory Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#initial-setup-deck"><strong>Initial setup deck:</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#modified-cards"><strong>Modified Cards:</strong></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#orbfil">ORBFIL:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#obsvu">OBSVU:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#prntvu">PRNTVU:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#atmden">ATMDEN:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#cardname">CARDNAME:</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">Modifying GEODYN</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/modify_subroutines.html">Modifying Subroutines:</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/modify_subroutines.html#including-density-output">Including Density Output:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/modify_subroutines.html#other-modifications">Other Modifications:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html">Modifying GEODYN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#list-of-major-modifications">List of Major Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#modification-details">Modification Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#print-model-density">1) Print Model Density</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#iieout-density-model-identifier">2) iieout density model identifier</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#and-4-include-msise00-and-msise2-into-the-geodyn-source-code">3) and 4) Include MSISe00 and MSISe2 into the GEODYN Source code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#modying-the-msis-drhodz-calculation">5) Modying the MSIS DRHODZ Calculation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#remove-the-atgrav-printing-to-iis-iieout">6) Remove the ATGRAV printing to IIS/IIEOUT</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/msis_edits.html">Upgrading MSIS in GEODYN:</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/drhodz_doc.html">DRHODZ Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
 </ul>
 </li>
 </ul>
@@ -147,34 +171,34 @@
 </ul>
 <p class="caption"><span class="caption-text">Assessing Density Model Performance</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="d_density_model_evaluation/density_assessments.html">Starlette Satellite (SLR Data)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="d_density_model_evaluation/density_assessments.html#msis-version-comparisons">MSIS Version Comparisons</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html">MSIS Version Evaluation- Multiple Arcs</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Details:">Details:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Background:">Background:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Relative-model-performance:">Relative model performance:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Load-the-simulations-over-all-arcs">Load the simulations over all arcs</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Set-the-plot-configurations">Set the plot configurations</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Details-and-Background:">Details and Background:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Cd-Analysis">Cd Analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Adjusted-Cd-Plot-(timeseries)">Adjusted Cd Plot (timeseries)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Scale-Density-with-the-Cd-scale-factor:">Scale Density with the Cd scale factor:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Density-output-Analysis">Density output Analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Density-timeseries-plot">Density timeseries plot</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Orbit-averaged-Density-Plot">Orbit averaged Density Plot</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Composite-Plots,-density,-cd,-activity-indicies">Composite Plots, density, cd, activity indicies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#id1">Details:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#id2">Analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Observed-Residuals-timeseries-plot">Observed Residuals timeseries plot</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Residual-Measurement-Summary-plots-(RMS-of-fit)">Residual Measurement Summary plots (RMS of fit)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Residuals-–-station-summary">Residuals – station summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="e_density_model_evaluation/density_assessments.html">Starlette Satellite (SLR Data)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="e_density_model_evaluation/density_assessments.html#msis-version-comparisons">MSIS Version Comparisons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html">MSIS Version Evaluation- Multiple Arcs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Details:">Details:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Background:">Background:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Relative-model-performance:">Relative model performance:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Load-the-simulations-over-all-arcs">Load the simulations over all arcs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Set-the-plot-configurations">Set the plot configurations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Details-and-Background:">Details and Background:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Cd-Analysis">Cd Analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Adjusted-Cd-Plot-(timeseries)">Adjusted Cd Plot (timeseries)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Scale-Density-with-the-Cd-scale-factor:">Scale Density with the Cd scale factor:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Density-output-Analysis">Density output Analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Density-timeseries-plot">Density timeseries plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Orbit-averaged-Density-Plot">Orbit averaged Density Plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Composite-Plots,-density,-cd,-activity-indicies">Composite Plots, density, cd, activity indicies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#id1">Details:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#id2">Analysis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Observed-Residuals-timeseries-plot">Observed Residuals timeseries plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Residual-Measurement-Summary-plots-(RMS-of-fit)">Residual Measurement Summary plots (RMS of fit)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html#Residuals-–-station-summary">Residuals – station summary</a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="d_density_model_evaluation/density_assessments.html#icesat2-satellite-pce-data">ICESat2 Satellite (PCE Data)</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="e_density_model_evaluation/density_assessments.html#icesat2-satellite-pce-data">ICESat2 Satellite (PCE Data)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html">A Trajectory Analysis using the ICESat2 Satellite</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-0:-Pre-processing-the-PCE-data-into-a-G2B-file">Step 0: Pre-processing the PCE data into a G2B file</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#PygeodynPreprocessing">PygeodynPreprocessing</a></li>
@@ -395,26 +419,43 @@ Pygeodyn is a wrapper that allows one to read, run, and interpret data from NASA
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Understanding GEODYN</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html">Overview of GEODYN Internal Programs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#important-input-and-outputs">Important Input and Outputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html">GEODYN Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#geodyn-internal-programs">GEODYN Internal Programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#important-files-inputs-and-outputs">Important Files: Inputs and Outputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/understanding_geodyn.html#drag-assessment-output-products">Drag Assessment: Output Products</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html">Understanding the Setup file/Card deck</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#example-icesat2-with-pce-data-trajectory-analysis">Example: ICESat2 with PCE Data– Trajectory Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#initial-setup-deck"><strong>Initial setup deck:</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="c_understanding_geodyn/the_setup_deck.html#modified-cards"><strong>Modified Cards:</strong></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Modifying GEODYN</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/modify_subroutines.html">Modifying Subroutines:</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/modify_subroutines.html#including-density-output">Including Density Output:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/modify_subroutines.html#other-modifications">Other Modifications:</a></li>
+<li class="toctree-l1"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html">Modifying GEODYN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#list-of-major-modifications">List of Major Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#modification-details">Modification Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#print-model-density">1) Print Model Density</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#iieout-density-model-identifier">2) iieout density model identifier</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#and-4-include-msise00-and-msise2-into-the-geodyn-source-code">3) and 4) Include MSISe00 and MSISe2 into the GEODYN Source code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#modying-the-msis-drhodz-calculation">5) Modying the MSIS DRHODZ Calculation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/modify_subroutines_rst.html#remove-the-atgrav-printing-to-iis-iieout">6) Remove the ATGRAV printing to IIS/IIEOUT</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/msis_edits.html">Upgrading MSIS in GEODYN:</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/drhodz_doc.html">DRHODZ Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="c_understanding_geodyn/pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html">Investigating the modification of the DRHODZ variable in the MSIS.f90 subroutine.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Want-to-show:">Want to show:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Import-base-parameters">Import base parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Load-different-versions">Load different versions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Read-Data-into-Objects">Read Data into Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="d_modifying_geodyn/pygeodyn_drho_dz_eval.html#Plot-Results">Plot Results</a></li>
 </ul>
 </li>
 </ul>
@@ -426,14 +467,14 @@ Pygeodyn is a wrapper that allows one to read, run, and interpret data from NASA
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Assessing Density Model Performance</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="d_density_model_evaluation/density_assessments.html">Starlette Satellite (SLR Data)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="d_density_model_evaluation/density_assessments.html#msis-version-comparisons">MSIS Version Comparisons</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="d_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html">MSIS Version Evaluation- Multiple Arcs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="e_density_model_evaluation/density_assessments.html">Starlette Satellite (SLR Data)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="e_density_model_evaluation/density_assessments.html#msis-version-comparisons">MSIS Version Comparisons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="e_density_model_evaluation/pygeodyn_compare_msisversions_allarcs.html">MSIS Version Evaluation- Multiple Arcs</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="d_density_model_evaluation/density_assessments.html#icesat2-satellite-pce-data">ICESat2 Satellite (PCE Data)</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="e_density_model_evaluation/density_assessments.html#icesat2-satellite-pce-data">ICESat2 Satellite (PCE Data)</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html">A Trajectory Analysis using the ICESat2 Satellite</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-0:-Pre-processing-the-PCE-data-into-a-G2B-file">Step 0: Pre-processing the PCE data into a G2B file</a></li>
 <li class="toctree-l3"><a class="reference internal" href="examples_notebooks/ICESat2_TrajectoryAnalysis_IN.html#Step-1:-Run-GEODYN-using-Pygeodyn-with-the-ICESat2-configuration">Step 1: Run GEODYN using Pygeodyn with the ICESat2 configuration</a></li>
