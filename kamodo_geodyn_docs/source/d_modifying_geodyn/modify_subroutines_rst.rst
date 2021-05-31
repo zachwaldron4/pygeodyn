@@ -115,14 +115,14 @@ There was an error where the IIEOUT printout showed the that atmospheric model b
           IF(IATDN.EQ.4) WRITE(6,10552)
           IF(IATDN.EQ.5) WRITE(6,10553)
       950 CONTINUE
-
+    !
     ...
-
+    !
     !(Line 880)
     10551 FORMAT(' ATMOSPHERIC DENSITY MODEL  USED: JAACHIA 71')
     10552 FORMAT(' ATMOSPHERIC DENSITY MODEL  USED: FRENCH DTM')
     10553 FORMAT(' ATMOSPHERIC DENSITY MODEL  USED: MSIS')
-    ```
+    
     
     
     
@@ -142,7 +142,7 @@ We upgraded GEODYN to include the newer versions of the MSIS empirical models.
 * NRLMSISE-00  
 * NRLMSISe2.0
 
-For an in-depth explanation on this process,  `please see the included detailed PDF <../_static/msis_gII_update_instructions.pdf>`_. 
+For an in-depth explanation on this process,  `please see the included MSIS PDF <../_static/msis_gII_update_instructions.pdf>`_. 
 
 
 
@@ -158,7 +158,7 @@ For an in-depth explanation on this process,  `please see the included detailed 
 
 ``DRHODZ`` is the calculation of the partial derivative of density with respect to altitude.  It is calculated in the subroutines of each respective density model and returned to the DRAG.f90 subroutine to then be used in the drag acceleration calculation.  The calculation of ``DRHODZ`` in ``MSIS.f90`` had a few errors which we fixed. We also modified this calculation to include Anomolous Oxygen (an included output in MSISe00 and MSISe2) and ``O2`` which was omitted previously.
 
-For an in-depth explanation on this process,  `please see the included detailed PDF <../_static/DrhoDz_Modification.pdf>`_. 
+For an in-depth explanation on this process,  `please see the included DRHODZ PDF <../_static/DrhoDz_Modification.pdf>`_. 
 
 
 

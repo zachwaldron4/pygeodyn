@@ -130,6 +130,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Understanding the Setup file/Card deck</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setup-deck-structure"><strong>Setup Deck Structure:</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#example-icesat2-with-pce-data-trajectory-analysis">Example: ICESat2 with PCE Data– Trajectory Analysis</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#initial-setup-deck"><strong>Initial setup deck:</strong></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#modified-cards"><strong>Modified Cards:</strong></a><ul>
@@ -431,19 +432,66 @@
 <li><p>Unit/fort/ftn 5</p></li>
 </ul>
 </div>
+<div class="section" id="setup-deck-structure">
+<h2><strong>Setup Deck Structure:</strong><a class="headerlink" href="#setup-deck-structure" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Global Title line 1        |   These are just three lines of strings that
+Global Title line 2        |   make up the first 3 lines of iisset.
+Global Title line 3        |   If missing IIS will give a cryptic error.
+Global Card 1...
+Global Card 2...
+Global Card 3...
+etc.
+.
+.
+.
+ENDGLB
+Arc title line 1           |   Same as above, except designates the ARC Section Title
+Arc title line 2           |
+Arc title line 3           |   If missing IIS will give a cryptic error.
+REFSYS
+SATPAR                     ---
+EPOCH                      |   These four lines are repeated for
+ELEMS1                     |   each satellite in the arc
+ELEMS2                     ---
+etc.
+.
+.
+.
+DATA
+SELECT
+etc.
+.
+.
+.
+DELETE
+DELETE
+DELETE
+etc.
+.
+.
+.
+ENDARC
+</pre></div>
+</div>
+</div>
 <div class="section" id="example-icesat2-with-pce-data-trajectory-analysis">
 <h2>Example: ICESat2 with PCE Data– Trajectory Analysis<a class="headerlink" href="#example-icesat2-with-pce-data-trajectory-analysis" title="Permalink to this headline">¶</a></h2>
 <p>This section represents a sample of the choices that were made for the iisset deck when constructing the Trajectory Analysis of the ICESat2 satellite tracked by PCE data.</p>
+<div class="section" id="initial-setup-deck">
+<h3><strong>Initial setup deck:</strong><a class="headerlink" href="#initial-setup-deck" title="Permalink to this headline">¶</a></h3>
+<p>We made our Trajectory Analysis runs by editing some provided setup files.  These initial files were from a reduced dynamics run of the ICESat2 Satellites orbit.  These decks are actually the ones there were used to CREATE our PCE data.</p>
+<p><a class="reference external" href="../pdfs_slides_images/cleaned_setup_2018313">For reference, here is an example setup file after it has been modified!</a>.</p>
+</div>
+<div class="section" id="modified-cards">
+<h3><strong>Modified Cards:</strong><a class="headerlink" href="#modified-cards" title="Permalink to this headline">¶</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The choices that were made here may be very different from other run types featuring different satellites that may be tracked by different datatypes.</p>
 </div>
-<div class="section" id="initial-setup-deck">
-<h3><strong>Initial setup deck:</strong><a class="headerlink" href="#initial-setup-deck" title="Permalink to this headline">¶</a></h3>
-<p>We by editing some provided setup files.  These initial files were from a reduced dynamics run of the ICESat2 Satellites orbit.  These decks are actually the ones there were used to CREATE our PCE data.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>What follows here is a snippet of the choices we made a why.  Volume 3 of GEODYN should be referred to for all Card options and choices.</p>
 </div>
-<div class="section" id="modified-cards">
-<h3><strong>Modified Cards:</strong><a class="headerlink" href="#modified-cards" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="orbfil">
 <h4>ORBFIL:<a class="headerlink" href="#orbfil" title="Permalink to this headline">¶</a></h4>
 <blockquote>
@@ -533,11 +581,9 @@
 <div class="section" id="atmden">
 <h4>ATMDEN:<a class="headerlink" href="#atmden" title="Permalink to this headline">¶</a></h4>
 <blockquote>
-<div><p><strong>Example</strong>: <code class="docutils literal notranslate"><span class="pre">ATMDEN</span>&#160; <span class="pre">87</span></code> (87 is DTM (v87))</p>
-<dl class="simple">
+<div><dl class="simple">
 <dt><strong>Notes:</strong></dt><dd><ul class="simple">
-<li><p>Note 1</p></li>
-<li><p>Note 2</p></li>
+<li><p>Use this card to select which density model will be used in the run</p></li>
 </ul>
 </dd>
 </dl>

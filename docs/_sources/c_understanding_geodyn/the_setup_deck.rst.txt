@@ -38,24 +38,74 @@ When making a GEODYN run the CARD deck is what controls GEODYN's many options.  
     * iisset
     * Unit/fort/ftn 5
     
+**Setup Deck Structure:**
+===========================
+
+.. code-block:: 
+
+    Global Title line 1        |   These are just three lines of strings that
+    Global Title line 2        |   make up the first 3 lines of iisset.
+    Global Title line 3        |   If missing IIS will give a cryptic error.
+    Global Card 1...
+    Global Card 2...
+    Global Card 3...
+    etc.
+    .
+    .
+    .
+    ENDGLB
+    Arc title line 1           |   Same as above, except designates the ARC Section Title
+    Arc title line 2           |    
+    Arc title line 3           |   If missing IIS will give a cryptic error.
+    REFSYS                   
+    SATPAR                     ---
+    EPOCH                      |   These four lines are repeated for 
+    ELEMS1                     |   each satellite in the arc
+    ELEMS2                     ---
+    etc.
+    .
+    .
+    .
+    DATA
+    SELECT
+    etc.
+    .
+    .
+    .
+    DELETE
+    DELETE
+    DELETE
+    etc.
+    .
+    .
+    .
+    ENDARC
+    
+    
+    
 
 
 Example: ICESat2 with PCE Data-- Trajectory Analysis
 ========================================================
 
-
 This section represents a sample of the choices that were made for the iisset deck when constructing the Trajectory Analysis of the ICESat2 satellite tracked by PCE data.
 
-.. note:: The choices that were made here may be very different from other run types featuring different satellites that may be tracked by different datatypes.
 
 **Initial setup deck:**
 ------------------------
 
-We by editing some provided setup files.  These initial files were from a reduced dynamics run of the ICESat2 Satellites orbit.  These decks are actually the ones there were used to CREATE our PCE data.
+We made our Trajectory Analysis runs by editing some provided setup files.  These initial files were from a reduced dynamics run of the ICESat2 Satellites orbit.  These decks are actually the ones there were used to CREATE our PCE data.
+
+
+`For reference, here is an example setup file after it has been modified! <../pdfs_slides_images/cleaned_setup_2018313>`_. 
 
 
 **Modified Cards:**
 --------------------
+
+.. note:: The choices that were made here may be very different from other run types featuring different satellites that may be tracked by different datatypes.
+
+.. note:: What follows here is a snippet of the choices we made a why.  Volume 3 of GEODYN should be referred to for all Card options and choices.
 
 
 ORBFIL:
@@ -146,6 +196,8 @@ PRNTVU:
             ####     21          Adjusted station baselines  
             ####     22          Correlations for adjusted parameters.                             
             ####     23          Shadow crossing. 
+            
+            
 ......
 
 
@@ -154,11 +206,9 @@ PRNTVU:
 
 ATMDEN:
 ^^^^^^^^^
-    **Example**: ``ATMDEN  87`` (87 is DTM (v87)) 
-    
+
     **Notes:**  
-     - Note 1  
-     - Note 2
+     - Use this card to select which density model will be used in the run
 
 
 

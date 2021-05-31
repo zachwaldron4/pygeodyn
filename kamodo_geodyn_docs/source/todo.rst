@@ -1,17 +1,22 @@
 To do list:
 --------------
 
-1. Add the slides detailing the GEODYN flow 
-2. Add info on IIS/IIE
-3. Add the preprocessing section
-4. Add notebooks to the Descriptive Notebook section
-    1. Preprocessing notebook
-    2. Orbitfile notebook
+- Add the slides detailing the GEODYN flow 
 
-5. Add a bit about Coordinate Frames?
+- Add a bit about Coordinate Frames, perhaps under understanding geodyn?
 
+- finish adding the edits to the setup file
 
+- fix the preprocesssing descriptive notebook:
+    - better title,
+    - remove G2b from first heading level
+    - fix messed up text in description
+
+- fix the orbfil reading desc. notebook
+    - better title
+    - fix messed up math text in description
 
 
 Notes:
 -------
+

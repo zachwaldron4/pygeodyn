@@ -130,6 +130,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html">Understanding the Setup file/Card deck</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#setup-deck-structure"><strong>Setup Deck Structure:</strong></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#example-icesat2-with-pce-data-trajectory-analysis">Example: ICESat2 with PCE Data– Trajectory Analysis</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#initial-setup-deck"><strong>Initial setup deck:</strong></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../c_understanding_geodyn/the_setup_deck.html#modified-cards"><strong>Modified Cards:</strong></a><ul>
@@ -502,21 +503,20 @@
 <p><strong>Description:</strong></p>
 <p>There was an error where the IIEOUT printout showed the that atmospheric model being used was “JAACHIA9999” when MSIS86 was selected.  The <code class="docutils literal notranslate"><span class="pre">SUMMRY.f90</span></code> subroutine was edited to fix this.</p>
 <p><strong>Code to include:</strong></p>
-<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span>!(Line 365)
-!!!!  900 WRITE(IOUT6,10500) IYATDN(JATDEN)
-!!!!      WRITE(IUNT88,10500) IYATDN(JATDEN)
-      IF(IATDN.EQ.2) WRITE(6,10551)
-      IF(IATDN.EQ.4) WRITE(6,10552)
-      IF(IATDN.EQ.5) WRITE(6,10553)
-  950 CONTINUE
-
-...
-
-!(Line 880)
-10551 FORMAT(&#39; ATMOSPHERIC DENSITY MODEL  USED: JAACHIA 71&#39;)
-10552 FORMAT(&#39; ATMOSPHERIC DENSITY MODEL  USED: FRENCH DTM&#39;)
-10553 FORMAT(&#39; ATMOSPHERIC DENSITY MODEL  USED: MSIS&#39;)
-```
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="c">!(Line 365)</span>
+<span class="c">!!!!  900 WRITE(IOUT6,10500) IYATDN(JATDEN)</span>
+<span class="c">!!!!      WRITE(IUNT88,10500) IYATDN(JATDEN)</span>
+      <span class="k">IF</span><span class="p">(</span><span class="n">IATDN</span><span class="p">.</span><span class="n">EQ</span><span class="p">.</span><span class="mi">2</span><span class="p">)</span> <span class="k">WRITE</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">10551</span><span class="p">)</span>
+      <span class="k">IF</span><span class="p">(</span><span class="n">IATDN</span><span class="p">.</span><span class="n">EQ</span><span class="p">.</span><span class="mi">4</span><span class="p">)</span> <span class="k">WRITE</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">10552</span><span class="p">)</span>
+      <span class="k">IF</span><span class="p">(</span><span class="n">IATDN</span><span class="p">.</span><span class="n">EQ</span><span class="p">.</span><span class="mi">5</span><span class="p">)</span> <span class="k">WRITE</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">10553</span><span class="p">)</span>
+  <span class="mi">950</span> <span class="k">CONTINUE</span>
+<span class="c">!</span>
+<span class="p">...</span>
+<span class="c">!</span>
+<span class="c">!(Line 880)</span>
+<span class="mi">10551</span> <span class="k">FORMAT</span><span class="p">(</span><span class="s1">&#39; ATMOSPHERIC DENSITY MODEL  USED: JAACHIA 71&#39;</span><span class="p">)</span>
+<span class="mi">10552</span> <span class="k">FORMAT</span><span class="p">(</span><span class="s1">&#39; ATMOSPHERIC DENSITY MODEL  USED: FRENCH DTM&#39;</span><span class="p">)</span>
+<span class="mi">10553</span> <span class="k">FORMAT</span><span class="p">(</span><span class="s1">&#39; ATMOSPHERIC DENSITY MODEL  USED: MSIS&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -531,13 +531,13 @@
 <li><p>NRLMSISE-00</p></li>
 <li><p>NRLMSISe2.0</p></li>
 </ul>
-<p>For an in-depth explanation on this process,  <a class="reference external" href="../_static/msis_gII_update_instructions.pdf">please see the included detailed PDF</a>.</p>
+<p>For an in-depth explanation on this process,  <a class="reference external" href="../_static/msis_gII_update_instructions.pdf">please see the included MSIS PDF</a>.</p>
 </div>
 <div class="section" id="modying-the-msis-drhodz-calculation">
 <h3>5) Modying the MSIS DRHODZ Calculation<a class="headerlink" href="#modying-the-msis-drhodz-calculation" title="Permalink to this headline">¶</a></h3>
 <p><strong>Description</strong>:</p>
 <p><code class="docutils literal notranslate"><span class="pre">DRHODZ</span></code> is the calculation of the partial derivative of density with respect to altitude.  It is calculated in the subroutines of each respective density model and returned to the DRAG.f90 subroutine to then be used in the drag acceleration calculation.  The calculation of <code class="docutils literal notranslate"><span class="pre">DRHODZ</span></code> in <code class="docutils literal notranslate"><span class="pre">MSIS.f90</span></code> had a few errors which we fixed. We also modified this calculation to include Anomolous Oxygen (an included output in MSISe00 and MSISe2) and <code class="docutils literal notranslate"><span class="pre">O2</span></code> which was omitted previously.</p>
-<p>For an in-depth explanation on this process,  <a class="reference external" href="../_static/DrhoDz_Modification.pdf">please see the included detailed PDF</a>.</p>
+<p>For an in-depth explanation on this process,  <a class="reference external" href="../_static/DrhoDz_Modification.pdf">please see the included DRHODZ PDF</a>.</p>
 </div>
 <div class="section" id="remove-the-atgrav-printing-to-iis-iieout">
 <h3>6) Remove the ATGRAV printing to IIS/IIEOUT<a class="headerlink" href="#remove-the-atgrav-printing-to-iis-iieout" title="Permalink to this headline">¶</a></h3>
