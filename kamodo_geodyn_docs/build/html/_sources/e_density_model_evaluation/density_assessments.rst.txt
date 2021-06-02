@@ -14,4 +14,5 @@ ICESat2 Satellite (PCE Data)
 ==================================
 
 .. toctree::
-   ../examples_notebooks/ICESat2_TrajectoryAnalysis_IN.ipynb
+   ../examples_notebooks/ICESat2_TrajectoryAnalysis_DensityModels.ipynb
+   ../examples_notebooks/ICESat2_TrajectoryAnalysis_MSISModels.ipynb

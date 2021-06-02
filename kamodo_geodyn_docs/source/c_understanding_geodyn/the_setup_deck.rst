@@ -97,7 +97,7 @@ This section represents a sample of the choices that were made for the iisset de
 We made our Trajectory Analysis runs by editing some provided setup files.  These initial files were from a reduced dynamics run of the ICESat2 Satellites orbit.  These decks are actually the ones there were used to CREATE our PCE data.
 
 
-`For reference, here is an example setup file after it has been modified! <../pdfs_slides_images/cleaned_setup_2018313>`_. 
+`For reference, here is an example setup file after it has been modified! <../_static/cleaned_setup_2018313>`_. 
 
 
 **Modified Cards:**

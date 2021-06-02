@@ -6,6 +6,10 @@
    "source": [
     "# Demo: Running GEODYN\n",
     "\n",
+    "\n",
+    "**This notebook explains some of the internal Pygeodyn functionality outside of Pygeodyn itself.  To see the most up-to-date methods for using Pygeodyn, refer to the example notebooks.**\n",
+    "\n",
+    "\n",
     "**Details:**\n",
     "This notebook demonstrates how to run GEODYN from the command line.\n",
     "\n"
@@ -27,22 +31,20 @@
   {
    "cell_type": "code",
    "execution_count": 1,
-   "metadata": {
-    "scrolled": false
-   },
+   "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/geodyn_code/\r\n",
-      "├── GEODYN -> /geodyn\r\n",
-      "├── IIE\r\n",
-      "├── IIS\r\n",
-      "├── modified_subroutines\r\n",
-      "└── RUNS\r\n",
-      "\r\n",
-      "4 directories, 1 file\r\n"
+      "/data/geodyn_proj/geodyn_code/\n",
+      "├── GEODYN -> /geodyn\n",
+      "├── IIE\n",
+      "├── IIS\n",
+      "├── modified_subroutines\n",
+      "└── RUNS\n",
+      "\n",
+      "4 directories, 1 file\n"
      ]
     }
    ],
@@ -68,25 +70,25 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/st/setups/\r\n",
-      "├── alldens_edit_script\r\n",
-      "├── dtm87_acceloff\r\n",
-      "├── dtm87_accelon\r\n",
-      "├── edit_script_singlearc_singleden\r\n",
-      "├── jaachia71_acceloff\r\n",
-      "├── jaachia71_accelon\r\n",
-      "├── msis_acceloff\r\n",
-      "├── msis_accelon\r\n",
-      "├── st030914_2wk.bz2\r\n",
-      "├── st030928_2wk.bz2\r\n",
-      "├── st031012_2wk.bz2\r\n",
-      "├── st031026_2wk.bz2\r\n",
-      "├── st031109_2wk.bz2\r\n",
-      "├── st031123_2wk.bz2\r\n",
-      "├── st031207_2wk.bz2\r\n",
-      "└── st031221_2wk.bz2\r\n",
-      "\r\n",
-      "6 directories, 10 files\r\n"
+      "/data/geodyn_proj/runs_geodyn/st/setups/\n",
+      "├── alldens_edit_script\n",
+      "├── dtm87_acceloff\n",
+      "├── dtm87_accelon\n",
+      "├── edit_script_singlearc_singleden\n",
+      "├── jaachia71_acceloff\n",
+      "├── jaachia71_accelon\n",
+      "├── msis_acceloff\n",
+      "├── msis_accelon\n",
+      "├── st030914_2wk.bz2\n",
+      "├── st030928_2wk.bz2\n",
+      "├── st031012_2wk.bz2\n",
+      "├── st031026_2wk.bz2\n",
+      "├── st031109_2wk.bz2\n",
+      "├── st031123_2wk.bz2\n",
+      "├── st031207_2wk.bz2\n",
+      "└── st031221_2wk.bz2\n",
+      "\n",
+      "6 directories, 10 files\n"
      ]
     }
    ],
@@ -103,17 +105,17 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/st/setups/msis_accelon/\r\n",
-      "├── st030914_2wk.bz2\r\n",
-      "├── st030928_2wk.bz2\r\n",
-      "├── st031012_2wk.bz2\r\n",
-      "├── st031026_2wk.bz2\r\n",
-      "├── st031109_2wk.bz2\r\n",
-      "├── st031123_2wk.bz2\r\n",
-      "├── st031207_2wk.bz2\r\n",
-      "└── st031221_2wk.bz2\r\n",
-      "\r\n",
-      "0 directories, 8 files\r\n"
+      "/data/geodyn_proj/runs_geodyn/st/setups/msis_accelon/\n",
+      "├── st030914_2wk.bz2\n",
+      "├── st030928_2wk.bz2\n",
+      "├── st031012_2wk.bz2\n",
+      "├── st031026_2wk.bz2\n",
+      "├── st031109_2wk.bz2\n",
+      "├── st031123_2wk.bz2\n",
+      "├── st031207_2wk.bz2\n",
+      "└── st031221_2wk.bz2\n",
+      "\n",
+      "0 directories, 8 files\n"
      ]
     }
    ],
@@ -138,15 +140,15 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/st/scripts\r\n",
-      "├── geodyn_st\r\n",
-      "├── msis2_geodyn_st\r\n",
-      "├── orig_geodyn_zach\r\n",
-      "├── output_text.txt\r\n",
-      "├── run_all_arcs_single_den\r\n",
-      "└── run_all_dens\r\n",
-      "\r\n",
-      "0 directories, 6 files\r\n"
+      "/data/geodyn_proj/runs_geodyn/st/scripts\n",
+      "├── geodyn_st\n",
+      "├── msis2_geodyn_st\n",
+      "├── orig_geodyn_zach\n",
+      "├── output_text.txt\n",
+      "├── run_all_arcs_single_den\n",
+      "└── run_all_dens\n",
+      "\n",
+      "0 directories, 6 files\n"
      ]
     }
    ],
@@ -180,24 +182,24 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/results/st/\r\n",
-      "├── dtm87\r\n",
-      "├── goco05s\r\n",
-      "├── goco05s_dtm87\r\n",
-      "├── goco05s_dtm87_accelon\r\n",
-      "├── goco05s_jaachia71\r\n",
-      "├── goco05s_jaachia71_accelon\r\n",
-      "├── goco05s_msis00_accelon\r\n",
-      "├── goco05s_msis2_accelon\r\n",
-      "├── goco05s_msis86\r\n",
-      "├── goco05s_msis86_acceloff\r\n",
-      "├── goco05s_msis86_accelon\r\n",
-      "├── jaachia71\r\n",
-      "├── msis00\r\n",
-      "├── msis2\r\n",
-      "└── msis86\r\n",
-      "\r\n",
-      "15 directories, 0 files\r\n"
+      "/data/geodyn_proj/runs_geodyn/results/st/\n",
+      "├── dtm87\n",
+      "├── goco05s\n",
+      "├── goco05s_dtm87\n",
+      "├── goco05s_dtm87_accelon\n",
+      "├── goco05s_jaachia71\n",
+      "├── goco05s_jaachia71_accelon\n",
+      "├── goco05s_msis00_accelon\n",
+      "├── goco05s_msis2_accelon\n",
+      "├── goco05s_msis86\n",
+      "├── goco05s_msis86_acceloff\n",
+      "├── goco05s_msis86_accelon\n",
+      "├── jaachia71\n",
+      "├── msis00\n",
+      "├── msis2\n",
+      "└── msis86\n",
+      "\n",
+      "15 directories, 0 files\n"
      ]
     }
    ],
@@ -214,11 +216,11 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/results/st/msis2/\r\n",
-      "├── msis2_acceloff\r\n",
-      "└── msis2_accelon\r\n",
-      "\r\n",
-      "2 directories, 0 files\r\n"
+      "/data/geodyn_proj/runs_geodyn/results/st/msis2/\n",
+      "├── msis2_acceloff\n",
+      "└── msis2_accelon\n",
+      "\n",
+      "2 directories, 0 files\n"
      ]
     }
    ],
@@ -235,21 +237,21 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/results/st/msis2/msis2_accelon/\r\n",
-      "├── all_outputs\r\n",
-      "├── DENSITY\r\n",
-      "├── EMAT\r\n",
-      "├── IIEOUT\r\n",
-      "├── IISSET\r\n",
-      "├── KEP_TRAJ\r\n",
-      "├── orbits\r\n",
-      "├── PUNCH\r\n",
-      "├── RESIDS\r\n",
-      "├── sumry\r\n",
-      "├── TELEM\r\n",
-      "└── XYZ_TRAJ\r\n",
-      "\r\n",
-      "12 directories, 0 files\r\n"
+      "/data/geodyn_proj/runs_geodyn/results/st/msis2/msis2_accelon/\n",
+      "├── all_outputs\n",
+      "├── DENSITY\n",
+      "├── EMAT\n",
+      "├── IIEOUT\n",
+      "├── IISSET\n",
+      "├── KEP_TRAJ\n",
+      "├── orbits\n",
+      "├── PUNCH\n",
+      "├── RESIDS\n",
+      "├── sumry\n",
+      "├── TELEM\n",
+      "└── XYZ_TRAJ\n",
+      "\n",
+      "12 directories, 0 files\n"
      ]
     }
    ],
@@ -273,10 +275,10 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "/data/geodyn_proj/runs_geodyn/results/st/msis2/msis2_accelon/IIEOUT/\r\n",
-      "└── st030914_2wk.goco05s\r\n",
-      "\r\n",
-      "0 directories, 1 file\r\n"
+      "/data/geodyn_proj/runs_geodyn/results/st/msis2/msis2_accelon/IIEOUT/\n",
+      "└── st030914_2wk.goco05s\n",
+      "\n",
+      "0 directories, 1 file\n"
      ]
     }
    ],
@@ -703,7 +705,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.8.5"
+   "version": "3.8.8"
   },
   "toc-autonumbering": false,
   "toc-showcode": false,

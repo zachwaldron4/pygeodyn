@@ -1,0 +1,3 @@
+/data/data_geodyn/inputs/icesat2/pre_processing/
+TRAJ.txt
+g2b_pce

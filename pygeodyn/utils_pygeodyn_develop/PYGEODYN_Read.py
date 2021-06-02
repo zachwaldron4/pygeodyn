@@ -19,55 +19,42 @@ import copy
 import sys
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
 
-# from util_Set_Inputs           import UtilSetInputs
-from util_ReaderTools          import UtilReader_Tools
+### Import the Classes from the Tools
+# from util_classtools import Util_Tools
 from common_functions          import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
 
 
-class PygeodynReader(UtilReader_Tools):
+class PygeodynReader:
     # UtilTools and all of its methods are now inherited in our main functions
        
     #### read in the input and store as members
-    def __init__(self, params):  
-        self.satellite         = params['satellite']
-        self.den_model         = params['den_model']
-        self.SpecialRun_name   = params['SpecialRun_name']
-        self.verbose           = params['verbose']
-        self.arc_input         = params['arc']
-#         self.empirical_accels = params['empirical_accels']
-#         self.options_in       = params['options_in']
-#         self.run_ID           = params['run_ID']        
+    def __init__(self):  
+#         print('4 ---- check ---- init PygeodynReader class')
+        pass
+    
+#         self.request_data = params['request_data'] 
 
-            
-        self.set_density_model_setup_params( self.den_model )
-#         self.set_acceleration_params( self.empirical_accels )
-        
-        #### The below interprets that no input has been given for special name
-        if self.SpecialRun_name == None:
-            self.SpecialRun_name = ''
-        else:
-            self.SpecialRun_name = params['SpecialRun_name']
+#         self.satellite         = params['satellite']
+#         self.den_model         = params['den_model']
+#         self.SpecialRun_name   = params['SpecialRun_name']
+#         self.verbose           = params['verbose']
+#         self.arc_input         = params['arc']
+#         self.set_density_model_setup_params( self.den_model )
 
-#         if np.size(params['arc']) == 1:
-#             self.arc = params['arc']
-            
-#             self.path_to_model = ('/data/data_geodyn/results/'+
-#                                        self.SATELLITE_dir +'/'+
-#                                        self.den_model+'/'+  
-#                                        self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
-
-#             ####  save the specific file names as "private members" with the _filename convention
-# #             print(filename)
-#             self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
-#             self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
-#             self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
-#             #### the _filenames are now stored into self as members and can be passed to the next class
+#         #### The below interprets that no input has been given for special name
+#         if self.SpecialRun_name == None:
+#             self.SpecialRun_name = ''
 #         else:
-#             self.arc = params['arc']
-#             print('Calling pygeodyn with multiple arcs...')
-#             pass
-    
-    
+#             self.SpecialRun_name = params['SpecialRun_name']
+
+
+
+#######         self.empirical_accels = params['empirical_accels']
+#######         self.options_in       = params['options_in']
+#######         self.run_ID           = params['run_ID']        
+#######         self.set_acceleration_params( self.empirical_accels )
+
+
     
     
     
@@ -1976,15 +1963,20 @@ class PygeodynReader(UtilReader_Tools):
 
 
     def getData(self):
-        data_keys = [
-                    'AdjustedParams',
-#                     'Trajectory_xyz',
-                    'Trajectory_orbfil',
-                    'Density',
-                    'Residuals_obs',
-                    'Residuals_summary',
-                    'Statistics',
-                    ]
+#         data_keys = [
+#                     'AdjustedParams',
+# #                     'Trajectory_xyz',
+#                     'Trajectory_orbfil',
+#                     'Density',
+#                     'Residuals_obs',
+#                     'Residuals_summary',
+#                     'Statistics',
+#                     ]
+        
+#         print('5 ---- check ---- init PygeodynReader.getData func')
+
+    
+        data_keys = self.request_data
 
         #### Make dictionaries to store arc in a loop
         self.AdjustedParams    = {}
@@ -1999,11 +1991,16 @@ class PygeodynReader(UtilReader_Tools):
         
         ##### Go thru the files once and unzip them
         
+        
         self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1, True )
-        os.chdir(self.path_to_model+'DENSITY/')
-        os.system('bunzip2 -v '+'*')
-        os.chdir(self.path_to_model+'ORBITS/')
-        os.system('bunzip2 -v '+'*')
+        
+        if os.path.exists(self.path_to_model+'DENSITY/'):
+            os.chdir(self.path_to_model+'DENSITY/')
+            os.system('bunzip2 -v '+'*')
+            
+        if os.path.exists(self.path_to_model+'ORBITS/'):
+            os.chdir(self.path_to_model+'ORBITS/')
+            os.system('bunzip2 -v '+'*')
 
         
         for iarc, arc in enumerate(self.arc_input):

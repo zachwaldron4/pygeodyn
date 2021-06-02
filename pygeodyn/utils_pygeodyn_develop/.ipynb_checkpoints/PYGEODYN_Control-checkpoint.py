@@ -31,16 +31,14 @@ import copy
 
 
 import sys
-sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
 
 
 ### Import the Classes from the Tools
-# from util_Set_Inputs            import UtilSetInputs
-from util_ControlTools          import UtilControl_Tools
+# from util_classtools import Util_Tools
 
 
-
-class PygeodynController(UtilControl_Tools):
+class PygeodynController():
     """ PygeodynController class documentation
     
     Description: 
@@ -82,37 +80,30 @@ class PygeodynController(UtilControl_Tools):
                
     """
 
-    def __init__(self, params):  
-        # CHANGEABLE INPUTS
-        self.satellite        = params['satellite']
-        self.den_model        = params['den_model']
-        self.SpecialRun_name  = params['SpecialRun_name']
-        self.arc_input        = params['arc']
-        self.verbose          = params['verbose']
-#         self.empirical_accels = params['empirical_accels']
-#         self.options_in       = params['options_in']
-#         self.run_ID           = params['run_ID']        
+    def __init__(self):  
+#         print('Test-- init PygeodynController class')
+#         print('4 ---- check ---- init PygeodynController class')
+        pass
+    
+    
+#         #######   CHANGEABLE INPUTS
+#         self.satellite        = params['satellite']
+#         self.den_model        = params['den_model']
+#         self.SpecialRun_name  = params['SpecialRun_name']
+#         self.arc_input        = params['arc']
+#         self.verbose          = params['verbose']
+#         self.set_density_model_setup_params( self.den_model )
 
+#         ########   HARDCODED INPUTS:    
+#         #------ Point to the GEODYN executables
+#         self.GDYN_version     = 'pygeodyn_MODS'
+#         self.G2SDIR      = '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
+#         self.G2EDIR      = '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
+
+
+    
         
-        # get self.DEN_DIR 
-        self.set_density_model_setup_params( self.den_model )
 
-        
-        #### Hardcoded constants:    
-        self.tabtab = '       '
-        #------ Point to the GEODYN executables
-        self.GDYN_version     = 'pygeodyn_MODS'
-        self.G2SDIR      = '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
-        self.G2EDIR      = '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
-
-#         #### Modifiable
-        
-#         if np.size(self.arc_input) == 1:
-#             self.ARC = self.arc_input
-#             self.multiprocess_flag = False
-
-#         else:
-#             self.multiprocess_flag = True
         
         
     def setup_directories_and_geodyn_input(self):
