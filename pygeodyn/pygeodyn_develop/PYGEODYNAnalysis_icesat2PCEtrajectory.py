@@ -652,7 +652,7 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
 
 #     for i, arc in enumerate([arc1 , arc2]):
 #         i_arc = i+1
-    data_skip = 7
+    data_skip = 14
     ####--------------------- Radial Component  ---------------------
 
     fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
@@ -834,7 +834,7 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
 
 #     for i, arc in enumerate([arc1 , arc2]):
 #         i_arc = i+1
-    data_skip = 7
+    data_skip = 14
     ####--------------------- INTRACK Component  ---------------------
     fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
                              y=InTrack_comp_orbfil[::data_skip],
@@ -877,7 +877,11 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
                              )
 
     ### Start of second arc
-    overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date_UTC'].iloc[0]
+#     overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date_UTC'].iloc[0]
+#     ### End of first arc
+#     overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date_UTC'].iloc[-1]
+    
+    overlap_start = obj_m1.__dict__['Residuals_obs'][arc1]['Date'].iloc[-1]
     ### End of first arc
     overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date_UTC'].iloc[-1]
     fig.add_vrect(  x0=overlap_start, x1=overlap_end,

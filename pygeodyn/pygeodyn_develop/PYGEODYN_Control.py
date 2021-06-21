@@ -183,9 +183,10 @@ class PygeodynController():
         #        SOLRAD_filename = ARCFIL+'.'+self.GRAVITY
         #----- External Attitude File
         #          done in the satellite class
-#         self._EXTATTITUDE_filename = self.EXATDIR +'/'
-        self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
-
+        if not self.external_attitude:
+            pass
+        else:
+            self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
     
         #### Remove old TMPDIR version and remake it 
 #         os.system('rm -rf '+self.TMPDIR_arc)
@@ -260,12 +261,16 @@ class PygeodynController():
         print('+','—'*len(longest_line))
         print('|')
         print('|','---------------------- Some run information ----------------------')
-        print('| ',self.run_ID,"    IISSET Cleaned     " , 'tmp/cleaned_setup'+'_' + self.arcdate_for_files)
+        print('|')
+        print('| ',self.run_ID,"    IISSET Cleaned     " , 'tmp/.../cleaned_setup'+'_' + self.arcdate_for_files)
         print('| ',self.run_ID,"    Density Model:     " , self.DEN_DIR)
         print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)
         print('| ',self.run_ID,"    ARC run:           " , self.ARC)
         print('| ',self.run_ID,"    Output directory:  " , self.OUTPUTDIR)
-        print('| ',self.run_ID,"    EXAT File:         " , self._EXTATTITUDE_filename)
+        if not self.external_attitude:
+            print('| ',self.run_ID,"    EXAT File:         " ,'No external attitude file.')
+        else:
+            print('| ',self.run_ID,"    EXAT File:         " , self._EXTATTITUDE_filename)
         print('|')
         print('+','—'*len(longest_line))
 
@@ -298,79 +303,75 @@ class PygeodynController():
         self.verboseprint('-------------------------------------------------')
         self.verboseprint('       Linking files with the command line       ')
         self.verboseprint('-------------------------------------------------')
-        
         self.verboseprint(self.tabtab,'Current DIR',os.getcwd())
-
-        #### make copy to the External attitude file and save as EXAT01
-        if not os.path.exists(self.TMPDIR_arc +'/EXAT01'):
-            shutil.copyfile(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
-#                 os.symlink(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
-#                 self.verboseprint(self.tabtab,'EXAT01:',self._EXTATTITUDE_filename)
-            self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01')
+        
+        print(self.run_ID,"    Copying input files to temp directory")
+        
+        if not self.external_attitude:
+            pass
         else:
-            self.verboseprint(self.tabtab,'symlink is set up: EXAT01 file')
+            #### make copy to the External attitude file and save as EXAT01
+            if not os.path.exists(self.TMPDIR_arc +'/EXAT01'):
+                shutil.copyfile(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
+                self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01')
+            else:
+                self.verboseprint(self.tabtab,'symlink is set up: EXAT01 file')
 
         
         #### make symlink to the G2B file and save as ftn40
         if not os.path.exists(self.TMPDIR_arc +'/ftn40'):
-#             os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
-            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
-            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40')
+            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'.gz')
         else:
-            self.verboseprint(self.tabtab,'symlink:  g2b file')
+            self.verboseprint(self.tabtab,'copy is set up:  g2b file')
 
         #### make symlink to the gravity field and save as ftn12
         if not os.path.exists(self.TMPDIR_arc +'/ftn12'):
-            shutil.copyfile(self._grav_field_filename, self.TMPDIR_arc +'/ftn12')
-#             self.verboseprint(self.tabtab,'gravfield:',self._grav_field_filename)
-            self.verboseprint(self.tabtab,'copied:   grav field > ftn12')
+            shutil.copyfile(self._grav_field_filename, self.TMPDIR_arc +'/ftn12'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'.gz')
         else:
-            self.verboseprint(self.tabtab,'symlink is set up: grav_field file')
+            self.verboseprint(self.tabtab,'copy is set up: grav_field file')
 
         #### make symlink to the ephemerides and save as ftn01
         if not os.path.exists(self.TMPDIR_arc +'/ftn01'):
-#             os.symlink(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
-            shutil.copyfile(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
-            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01')
+            shutil.copyfile(self._ephem_filename, self.TMPDIR_arc +'/ftn01'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'.gz')
         else:
-            self.verboseprint(self.tabtab,'symlink is set up: ephem file')
+            self.verboseprint(self.tabtab,'copy is set up: ephem file')
 
         #### make symlink to the gdntable and save as ftn02
         if not os.path.exists(self.TMPDIR_arc +'/ftn02'):
-            shutil.copyfile(self._gdntable_filename, self.TMPDIR_arc +'/ftn02')
-            self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02')
+            shutil.copyfile(self._gdntable_filename, self.TMPDIR_arc +'/ftn02'+'')
+            self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02'+'')
         else:
-            self.verboseprint(self.tabtab,'symlink is set up: gdntable file')
+            self.verboseprint(self.tabtab,'copy is set up: gdntable file')
 
 
         #### make symlink to the ATGRAVFIL and save as fort.18
         if not os.path.exists(self.TMPDIR_arc +'/fort.18'):
-#             os.symlink(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
-            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
-#             shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/ftn18')
-#             self.verboseprint(self.tabtab,'ATGRAV:',self._ATGRAV_filename)
-            self.verboseprint(self.tabtab,'copied:   atgrav     > fort.18')
+            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   atgrav     > fort.18'+'.gz')
         else:
             self.verboseprint(self.tabtab,'symlink is set up: atgrav file')
 
-        if self.satellite =='starlette':
-            if not os.path.exists(self.TMPDIR_arc+'/ftn05.bz2'):
-                os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint(self.tabtab,'copying          : input file')
-            else:
-                self.verboseprint(self.tabtab,'copied           : input file')
+#         if self.satellite =='starlette':
+#             if not os.path.exists(self.TMPDIR_arc+'/ftn05.bz2'):
+#                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05.bz2')
+#                 self.verboseprint(self.tabtab,'copying          : input file')
+#             else:
+#                 self.verboseprint(self.tabtab,'copied           : input file')
 
-            if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
-                os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
-                self.verboseprint(self.tabtab,'file not zipped  : input file')
-            else:
-                self.verboseprint(self.tabtab,'file not zipped  : input file')
+#             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
+#                 os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
+#                 self.verboseprint(self.tabtab,'file not zipped  : input file')
+#             else:
+#                 self.verboseprint(self.tabtab,'file not zipped  : input file')
+#         else:
+        if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
+            os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05')
+            self.verboseprint(self.tabtab,'copying          : input file')
         else:
-            if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
-                os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05')
-                self.verboseprint(self.tabtab,'copying          : input file')
-            else:
-                self.verboseprint(self.tabtab,'copied           : input file')
+            self.verboseprint(self.tabtab,'copied           : input file')
 
         if not os.path.exists(self.TMPDIR_arc+'/giis.input'):
             os.system('cp  '+self.TMPDIR_arc+'/ftn05 '+self.TMPDIR_arc+'/giis.input')
@@ -383,6 +384,7 @@ class PygeodynController():
 
         #### GUNZIP the files:  gzip is a very fast compression option.
         os.system('gunzip -vr *.gz')
+        os.system('bunzip2 -v *.bz2')
 
             
     def run_geodyn_in_tmpdir(self):
@@ -642,12 +644,10 @@ class PygeodynController():
 
         #### Go up 3 levels and delete the temporary directories:
         os.chdir('../../')
-#         print(self.tabtab,'BACK TWO LEVELS: ',os.getcwd())
+        
         print(self.tabtab,'Deleting: ',self.SERIES)
-
         os.system('rm -rf'+' ' +self.SERIES)
         
-#         os.system('rm -rf '+self.TMPDIR_arc)
 
 
         

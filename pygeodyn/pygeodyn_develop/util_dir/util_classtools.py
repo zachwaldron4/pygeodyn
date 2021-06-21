@@ -57,9 +57,14 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
             self.iisset_den = '71'
-#             self.GDYN_version  = 'pygeodyn_MODS'
+            
+        elif den_model == 'kamodo_ctipe':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'kamodo_ctipe'
+            self.iisset_den = '86'
+
         else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, kamodo_ctipe]')   
 
     def make_directory_check_exist(self, directory, verbose=False):
         if verbose:
@@ -91,6 +96,8 @@ class Util_Tools:
             model_val = '1'
         elif density_model== 'msis2':
             model_val = '2'
+        elif density_model== 'kamodo_ctipe':
+            model_val = '3'
         elif density_model== 'jaachia71':
             model_val = '0'        
         elif density_model== 'dtm87':
@@ -98,7 +105,7 @@ class Util_Tools:
         else:
             sys.exit("Density Model Option (DEN_DIR) is in incorrect format")
             
-        file1 = open("/data/geodyn_proj/pygeodyn/geodyn_options.txt","w+")
+        file1 = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_options.txt","w+")
         file1.writelines(drhodz_val+'\n') # first value is for DrhoDz
         file1.writelines(model_val +'\n') # 2nd values is for model switching
         file1.writelines('0'+'\n')

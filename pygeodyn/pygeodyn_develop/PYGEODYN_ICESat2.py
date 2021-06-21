@@ -91,11 +91,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-        self.g2b_file = 'g2b_pce_fullset_nomaneuver.gz'   # fort.40
-#         self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
-        self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
-        self.ephem_file     = 'ephem1430.data_2025.gz'
-        self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv.gz'
+#         self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running with Ctipe for faster run times
+
+        self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
+        self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+        self.ephem_file     = 'ephem1430.data_2025'
+        self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
         
 
 #         self.path_to_binaryrvgs     = '/data/data_geodyn/inputs/icesat2/pre_processing/traj_files_rvg'
@@ -353,6 +354,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         
         epoch_start_dt_STR = str(epoch_start_dt)
         date_in_file_flag = False
+        
+        print("Epoch Start: ", epoch_start_dt_STR)
 
         with open(self.StateVector_epochs_datafile, 'r') as f:
             for line_no, line_text in enumerate(f):
@@ -362,7 +365,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #                     print('    ','xyzline',line_no,line_text)
 
                     break
-                
+           
         if date_in_file_flag == False:
             change_elems_flag = False
             print(epoch_start_dt_STR,'not found in file.  Leaving ELEMS as is.')
@@ -440,7 +443,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #                                  12345678901234567 
         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
         card_strings['RESID']  =  'RESIDU12'
-        card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
+        card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
         #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
         card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
 #                                  1234567890 
@@ -816,28 +819,28 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
         
         #### make symlink to the G2B file and save as ftn40
-        if not os.path.exists(self.TMPDIR_arc +'/ftn40'+'.gz'):
+        if not os.path.exists(self.TMPDIR_arc +'/ftn40'+''):
 #             os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
-            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'.gz')
+            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'')
         else:
             self.verboseprint(self.tabtab,'copy:  g2b file')
 
         #### make symlink to the gravity field and save as ftn12
-        if not os.path.exists(self.TMPDIR_arc +'/ftn12'+'.gz'):
-            shutil.copyfile(self._grav_field_filename, self.TMPDIR_arc +'/ftn12'+'.gz')
+        if not os.path.exists(self.TMPDIR_arc +'/ftn12'+''):
+            shutil.copyfile(self._grav_field_filename, self.TMPDIR_arc +'/ftn12'+'')
 #             self.verboseprint(self.tabtab,'gravfield:',self._grav_field_filename)
-            self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'')
         else:
             self.verboseprint(self.tabtab,'copy is set up: grav_field file')
 
         #### make symlink to the ephemerides and save as ftn01
-        if not os.path.exists(self.TMPDIR_arc +'/ftn01'+'.gz'):
+        if not os.path.exists(self.TMPDIR_arc +'/ftn01'+''):
 #             os.symlink(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
-            shutil.copyfile(self._ephem_filename, self.TMPDIR_arc +'/ftn01'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'.gz')
+            shutil.copyfile(self._ephem_filename, self.TMPDIR_arc +'/ftn01'+'')
+            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'')
         else:
-            self.verboseprint(self.tabtab,'copy is set up: ephem file'+'.gz')
+            self.verboseprint(self.tabtab,'copy is set up: ephem file'+'')
 
         #### make symlink to the gdntable and save as ftn02
         if not os.path.exists(self.TMPDIR_arc +'/ftn02'):
@@ -848,12 +851,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
 
         #### make symlink to the ATGRAVFIL and save as fort.18
-        if not os.path.exists(self.TMPDIR_arc +'/fort.18'+'.gz'):
+        if not os.path.exists(self.TMPDIR_arc +'/fort.18'+''):
 #             os.symlink(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
-            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18'+'.gz')
+            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18'+'')
 #             shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/ftn18')
 #             self.verboseprint(self.tabtab,'ATGRAV:',self._ATGRAV_filename)
-            self.verboseprint(self.tabtab,'copied:  atgrav     > fort.18'+'.gz')
+            self.verboseprint(self.tabtab,'copied:  atgrav     > fort.18'+'')
         else:
             self.verboseprint(self.tabtab,'symlink is set up: atgrav file')
 

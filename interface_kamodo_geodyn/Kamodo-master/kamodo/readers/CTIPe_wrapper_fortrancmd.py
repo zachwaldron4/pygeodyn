@@ -6,8 +6,11 @@ Adapted for speed to execute for a single point
 """
 #coding imports
 import numpy as np
+import pandas as pd
 import glob, sys
 from datetime import datetime, timedelta, timezone
+import time
+import os
 #from kamodo.readers.ctipe_fast import CTIPe as CTIPe_fast
 #from kamodo.readers.ctipe_time import CTIPe, ctipe_varnames
 from kamodo.readers.ctipe_faster_wrapped import CTIPe, ctipe_varnames 
@@ -111,7 +114,12 @@ def CTIPe_Single_FlyAway(ctipe, variable_list, sat_time, sat_height, sat_lat, sa
     if "height" in z_dependence:  #if function requires height (in km)
         sat_track['height']=[model_sat_time,sat_height/1000.,sat_lat,sat_lon]
     if "ilev" in z_dependence:  #if ilev is required for at least one variable
-        sat_ilev = CalcIlev(ctipe.H, *[sat_time,sat_height,sat_lat,sat_lon])  
+        ##### FROM ZACH--- 
+        #### CalcIlev was given wrong inputs: 
+        ####           use model_sat_time   instead of   sat_time
+        ####           use sat_height*1000. instead of   sat_height
+
+        sat_ilev = CalcIlev(ctipe.H, *[model_sat_time,sat_height*1000.,sat_lat,sat_lon])  
         sat_track['ilev']=[model_sat_time,sat_ilev,sat_lat,sat_lon]
 
     #retrieve interpolator and interpolate data for each variable. 
@@ -206,28 +214,46 @@ if __name__=='__main__':
     file_dir = str(sys.argv[1]) #'C:/Users/rringuet/Kamodo_WinDev1/CTIPe/'
     variable_list = [sys.argv[2]] #['rho']
     z_dependence = [sys.argv[3]] #['ilev']
-    sat_time = float(sys.argv[4]) #1426637500.0
-    sat_height = float(sys.argv[5]) #400. (in km)
-    sat_lat = float(sys.argv[6]) #-25.
-    sat_lon = float(sys.argv[7]) #90.
-    #print(file_dir, variable_list, z_dependence, sat_time, sat_height, sat_lat, sat_lon)
+    
+    ### ------Zach modified this to take a YYMMDDHHMMSS 
+    ###       since calculating UNIX time in GEODYN was a nightmare
+    YYMMDD = str(sys.argv[4])
+    HHMMSS = str(sys.argv[5])
+    sat_time_dt = pd.to_datetime(YYMMDD+HHMMSS , format='%y%m%d%H%M%S')
+    sat_time = time.mktime(sat_time_dt.timetuple())  
+#     print('sat_time (dt)  ',sat_time_dt)
+#     print('sat_time (unix)',sat_time )
+    ### -------End Zach's edit
+    
+    sat_height = float(sys.argv[6]) #400. (in km)
+    sat_lat = float(sys.argv[7]) #-25.
+    sat_lon = float(sys.argv[8]) #90.
+#     print(file_dir, variable_list, z_dependence, sat_time, sat_height, sat_lat, sat_lon)
 
+    
     #find file nearest sat_time (within 450 seconds), correct sat_time if needed
     filename, sat_time = find_singlefile(file_dir+'*plot-density-wrapped.nc', 
                                          sat_time, CTIPe, dt=450., verbose=False)
     
     #get ctipe object for requested variable (+H too)
     ctipe = CTIPe(filename, variables_requested=variable_list, printfiles=False)
-            
+       
+#     print(ctipe)
     #get results requested for single position given
     results_dict = CTIPe_Single_FlyAway(ctipe, variable_list, 
                                     sat_time, sat_height, sat_lat, sat_lon, 
                                     z_dependence=z_dependence, 
                                     dz=[1])
+#     print(results_dict)
     #print results to a csv file
+        
+#     os.remove(file_dir+"results.txt")
+#     print(file_dir+'results.txt')
     file = open(file_dir+'results.txt', 'w')
-    file.write(f"{results_dict[variable_list[0]]:.15f}, {results_dict[variable_list[0]+'_dz']:.15f}")
+#     file.write(f"{results_dict[variable_list[0]]:.15f}, {results_dict[variable_list[0]+'_dz']:.15f}")
+    file.write(f"{results_dict[variable_list[0]]:.15f}\n{results_dict[variable_list[0]+'_dz']:.15f}")
+
     file.close()
     
-    
-            
+#     print('rho: ',results_dict)
+     

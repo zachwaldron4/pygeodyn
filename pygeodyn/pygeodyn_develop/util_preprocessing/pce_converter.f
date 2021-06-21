@@ -25,7 +25,7 @@ C
       
       CHARACTER(len = 60) path
       CHARACTER(len = 27) :: k1="/data/geodyn_proj/pygeodyn/"
-      CHARACTER(len = 42) :: k2
+      CHARACTER(len = 36) :: k2
       CHARACTER(len = 69) localpath
       CHARACTER(len = 23) options_filename
       CHARACTER(len = 92) options_file
@@ -43,10 +43,10 @@ C
 
 C Define path and name of the options file created in python
       
-      k2 = "utils_pygeodyn_develop/util_preprocessing/"
+      k2 = "pygeodyn_develop/util_preprocessing/"
       localpath = k1//TRIM(k2)
       options_filename = "options_fortrancode.txt"
-      options_file = localpath//options_filename
+      options_file = TRIM(localpath)//options_filename
       
 C      WRITE(6,*) options_file
 

@@ -270,7 +270,7 @@
 ! READ IN THE MSIS OPTIONS but we only want to have to do this once...
       if(kentry.eq.1)then
           open (121,                                                    &
-           &       file="/data/geodyn_proj/pygeodyn/geodyn_options.txt",&
+ &file="/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_options.txt",&
            &       status='old')
           do i=1,2
 !             if(kentry.eq.1)then

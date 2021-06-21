@@ -81,7 +81,9 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2):
             
             #### Hardcoded constants:    
             #------ Point to the GEODYN executables
-            self.GDYN_version     = 'pygeodyn_MODS'
+            self.GDYN_version     = 'Kamodo_pygeodyn_MODS'  #'pygeodyn_MODS'
+#             self.GDYN_version     = 'pygeodyn_MODS'  #'pygeodyn_MODS'
+
             self.G2SDIR      = '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
             self.G2EDIR      = '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
 

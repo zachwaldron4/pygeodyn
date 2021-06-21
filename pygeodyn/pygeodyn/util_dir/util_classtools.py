@@ -98,7 +98,7 @@ class Util_Tools:
         else:
             sys.exit("Density Model Option (DEN_DIR) is in incorrect format")
             
-        file1 = open("/data/geodyn_proj/pygeodyn/geodyn_options.txt","w+")
+        file1 = open("/data/geodyn_proj/pygeodyn/pygeodyn/geodyn_options.txt","w+")
         file1.writelines(drhodz_val+'\n') # first value is for DrhoDz
         file1.writelines(model_val +'\n') # 2nd values is for model switching
         file1.writelines('0'+'\n')

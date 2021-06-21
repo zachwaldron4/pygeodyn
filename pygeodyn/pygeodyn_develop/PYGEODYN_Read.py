@@ -648,11 +648,12 @@ class PygeodynReader:
                 line = linecache.getline(self._iieout_filename,val)            
                 if 'DRAG' in line:
                     check_sat = int(line[18:26])
-                    #print(check_sat)
+#                     print(check_sat)
                     if check_sat == int(self.SATID):
-                        #print(line[45:57])
+#                         print(line[45:56])
                         timedep_Cd_dates.append(line[45:56].strip())
-        date_timedep_cds = pd.to_datetime(timedep_Cd_dates[1:], format='%y%m%d%H%M%S')  #YYMMDDHHMMSS
+                
+        date_timedep_cds = pd.to_datetime(timedep_Cd_dates[1:], format='%y%m%d%H%M')  #YYMMDDHHMMSS
 #         print(date_timedep_cds)
         #         
         #------------------- SECTION 2 ----------------------------------
@@ -926,12 +927,16 @@ class PygeodynReader:
                                     'Height (meters)',
                                     'rho (kg/m**3)',
                                     'drhodz (kg/m**3/m)',
-                                    'X',
-                                    'Y',
-                                    'Z',
-                                    'XDOT',
-                                    'YDOT',
-                                    'ZDOT',
+#                                      
+                                    'flux_daily',
+                                    'flux_avg',
+                                    'Kp',
+#                                     'X',
+#                                     'Y',
+#                                     'Z',
+#                                     'XDOT',
+#                                     'YDOT',
+#                                     'ZDOT',
                                   ],
                             sep = '\s+',
                             )

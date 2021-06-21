@@ -91,7 +91,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-        self.g2b_file = 'g2b_pce_fullset_nomaneuver.gz'   # fort.40
+        self.g2b_file = 'g2b_pce_Dec2018'
+#         self.g2b_file = 'g2b_pce_fullset_nomaneuver.gz'   # fort.40
 #         self.g2b_file = 'icesat2g2b_pce_312_328.gz'   # fort.40
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090.gz'
         self.ephem_file     = 'ephem1430.data_2025.gz'

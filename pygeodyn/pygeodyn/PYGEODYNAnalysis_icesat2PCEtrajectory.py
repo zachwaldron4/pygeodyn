@@ -737,15 +737,16 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
     
     first_arc = arc1
     last_arc  = arc2
-    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date_UTC'].iloc[3],
+    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date_UTC'].iloc[0],
     last_arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][last_arc]['data_record']['Date_UTC'].iloc[-2]
     first_arc_first_time_str =  str(first_arc_first_time[0])#.replace( "'",' ') 
     last_arc_last_time =  str(last_arc_last_time)#.replace( "'",' ') 
     
-    
+    print('first_arc_first_time',first_arc_first_time)
     ####---------------------------------------------------------
     with open(StateVector_PCE_datafile, 'r') as f:
         for line_no, line_text in enumerate(f):
+            
             if first_arc_first_time_str in line_text:
                 first_line = line_no
             elif last_arc_last_time in line_text:
@@ -787,9 +788,6 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
          right=PCE_data, right_on='Date_pd')
     C_2 = pd.merge(left=orbfil_arc2, left_on='Date_pd',
              right=PCE_data, right_on='Date_pd')
-
-
-    
 
     
 
