@@ -587,14 +587,15 @@ class PygeodynReader:
 #             print(iterval)
             SatMain_AdjustedParams[iterval] = {}
             for isat, satval in enumerate(sat_list):
-                if self.empirical_accels == True:
-                    for iga, ga_val in enumerate(text_GA_list):
-                        SatMain_AdjustedParams[iterval][satval] = {}
-                        SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
+#                 if self.empirical_accels == True:
+#                     pass
+#                     for iga, ga_val in enumerate(text_GA_list):
+#                         SatMain_AdjustedParams[iterval][satval] = {}
+#                         SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
 #                         SatMain_AdjustedParams[iterval][satval][ga_val] = {}
-                else:
-                    SatMain_AdjustedParams[iterval][satval] = {}
-                    SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
+#                 else:
+                SatMain_AdjustedParams[iterval][satval] = {}
+                SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
 
         #### 
         #### Make a list of the dates for the time dependent drag option
@@ -928,15 +929,15 @@ class PygeodynReader:
                                     'rho (kg/m**3)',
                                     'drhodz (kg/m**3/m)',
 #                                      
-                                    'flux_daily',
-                                    'flux_avg',
-                                    'Kp',
-#                                     'X',
-#                                     'Y',
-#                                     'Z',
-#                                     'XDOT',
-#                                     'YDOT',
-#                                     'ZDOT',
+#                                     'flux_daily',
+#                                     'flux_avg',
+#                                     'Kp',
+                                    'X',
+                                    'Y',
+                                    'Z',
+                                    'XDOT',
+                                    'YDOT',
+                                    'ZDOT',
                                   ],
                             sep = '\s+',
                             )

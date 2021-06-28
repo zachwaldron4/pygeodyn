@@ -186,6 +186,18 @@ class PygeodynController():
         if not self.external_attitude:
             pass
         else:
+#             print('dict of EXATfilename: ',np.size(self.external_attitude))
+#             if np.size(self.external_attitude) >= 1:
+#                 print('dict of EXATfilename: ',np.size(self.external_attitude))
+#                 self._EXTATTITUDE_filename = {}
+#                 self._EXTATTITUDE_filename[1] = self.EXATDIR +'/' +self.external_attitude[1].values[0]
+#                 self._EXTATTITUDE_filename[2] = self.EXATDIR +'/' +self.external_attitude[2].values[0]
+#                 self._EXTATTITUDE_filename[3] = self.EXATDIR +'/' +self.external_attitude[3].values[0]
+#                 self._EXTATTITUDE_filename[4] = self.EXATDIR +'/' +self.external_attitude[4].values[0]
+#                 self._EXTATTITUDE_filename[5] = self.EXATDIR +'/' +self.external_attitude[5].values[0]
+                
+#                 print('self._EXTATTITUDE_filename[5]',self._EXTATTITUDE_filename[5])
+#             else:
             self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
     
         #### Remove old TMPDIR version and remake it 

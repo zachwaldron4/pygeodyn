@@ -1,0 +1,9 @@
+conda activate KamodoCXX_WinDev1
+cmake -B build -A x64
+cmake --build build
+set PYTHONHOME=(path to python.exe in env)
+   which is C:/Users/rringuet/.conda/envs/KamodoCXX_WinDev1/
+set MPLBACKEND=agg
+build\Debug\main.exe
+set PYTHONHOME=C:\ProgramData\Anaconda3
+conda deactivate

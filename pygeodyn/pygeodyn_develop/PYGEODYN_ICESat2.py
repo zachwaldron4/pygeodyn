@@ -2,7 +2,7 @@
 #### Import modules:
 #### ===============
 import pandas as pd
-
+import numpy as np
 #### Computer/Command Line functions
 import os
 import os.path
@@ -86,8 +86,11 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #         self.YR            =  2018
         self.DATA_TYPE     = 'PCE'
         self.grav_id = '' 
-        self.empirical_accels =  False  
-        self.ACCELS = 'acceloff'
+#         self.empirical_accels =  False  
+#         self.ACCELS = 'acceloff'
+#         self.empirical_accels =  True  
+#         self.ACCELS = 'accelon'
+
         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
@@ -809,9 +812,16 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
         #### make copy to the External attitude file and save as EXAT01
         if not os.path.exists(self.TMPDIR_arc +'/EXAT01'+'.gz'):
+#             if np.size(self.external_attitude) >= 1:
+# #                 print('dict of EXATfilename: ',np.size(self.external_attitude))
+#                 shutil.copyfile(self._EXTATTITUDE_filename[1], self.TMPDIR_arc +'/EXAT01'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[2], self.TMPDIR_arc +'/EXAT02'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[3], self.TMPDIR_arc +'/EXAT03'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[4], self.TMPDIR_arc +'/EXAT04'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[5], self.TMPDIR_arc +'/EXAT05'+'.gz')
+#                 print('Copied 5 EXAT files')
+#             else:
             shutil.copyfile(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01'+'.gz')
-#                 os.symlink(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01')
-#                 self.verboseprint(self.tabtab,'EXAT01:',self._EXTATTITUDE_filename)
             self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01'+'.gz')
             self.verboseprint(self.tabtab,'copied:   '+self._EXTATTITUDE_filename+' > EXAT01'+'.gz')
         else:

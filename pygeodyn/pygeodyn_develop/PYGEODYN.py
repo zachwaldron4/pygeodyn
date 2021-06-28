@@ -57,7 +57,16 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2):
         self.verbose           = params['verbose']
         self.arc_input         = params['arc']
         self.set_density_model_setup_params( self.den_model )
-        
+        if "accels" in params.keys():
+            if params["accels"] == True:
+                self.empirical_accels =  True  
+                self.ACCELS = 'accelon'
+            else:
+                self.empirical_accels =  False  
+                self.ACCELS = 'acceloff'
+        else:
+            self.empirical_accels =  False  
+            self.ACCELS = 'acceloff'
         
         #### The below interprets that no input has been given for special name
         if self.SpecialRun_name == None:
