@@ -1,6 +1,0 @@
-conda activate KamodoCXX_WinDev1
-cmake -B build
-cmake --build build
-set MPLBACKEND=agg  (?)
-build\main.exe
-conda deactivate

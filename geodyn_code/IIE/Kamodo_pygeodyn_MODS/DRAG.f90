@@ -254,8 +254,9 @@
 !     
 !
       integer, dimension(2) :: optionsin
-      integer :: choose_msis
+      integer :: choose_model
       integer :: i  
+      CHARACTER(len = 20) kamodo_model
 
 !
 !
@@ -281,7 +282,7 @@
           close (121)     
              !the first  index contains the drhodz option (for use in MSIS.f90 routines)
              !the second index contains the MSIS   option (for use in DRAG.f90 routines)
-          choose_msis=optionsin(2)          
+          choose_model=optionsin(2)          
       endif        
 !
       RATIO2=1.D0
@@ -456,10 +457,10 @@
 !
 ! MSIS case
 ! If IATDEN = 5 we go thru this code, depend on the inputted values 
-!    of choose_msis to select which model you want
+!    of choose_model to select which model you want
 !
 !          ADDED A CASE SWITCHING OPTION to for the MSIS models!
-          select case (choose_msis)
+          select case (choose_model)
             case(0)
                  IMARK = IND3HR
                  COSHLN = -COSHL
@@ -499,20 +500,29 @@
                  IYR=(IYMD/10000.D0)+0.5D0
                  CALL MSIS2(DAY,IYR,ALTI,PHI,XLAMB,COSHLN,SINHLN,       &
              &         FLUXIN,FLXAVG,FLUXM(1),IMARK,IKPAP,             &
-             &         I324,IDRV,RHO,DRHODZ,IERR,optionsin)
+             &         I324,IDRV,RHO,DRHODZ,IERR,optionsin,MJDSEC,FSEC)
                  C(1)=DRHODZ          
                  if(kentry.eq.1)then
                       WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ MSIS2'
                  endif
          
          
-         
-            case(3)   ! add a CASE 3 that represents using Kamodo! NOT MSIS
-                 
-                 !!!!! Inputs for the CTIPe Reader
+            case(3:)   ! Use Kamodo if case is greaterthan or equal to one
+                 if(choose_model.eq.3)then
+                     kamodo_model='CTIPe'
+                 endif
+                 if(choose_model.eq.4)then
+                     kamodo_model='TIEGCM'
+                 endif
+                 if(choose_model.eq.5)then
+                     kamodo_model='GITM'
+                 endif
+
+
+                 !!!!! Inputs for the Kamodo Reader
                  !          File_dir is the directory where the data is located
                  !          rho is the variable name
-                 !          ilev means the variable depends on the pressure level for the CTIPe model.
+                 !          ilev means the variable depends on the pressure level for the CTIPe/TIEGCM model.
                  !          sat_time is the satellite timestamp in UTC since Jan 1 1970
                  !          sat_height: is satellite altitude above the ground (in km)
                  !          sat_lat satellite latitude
@@ -525,17 +535,19 @@
                  !   sat_lon    -- XLOND
 !                                                                       &
                 if(kentry.eq.1)then
-                  WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ kamodo_ctipe'
+                  WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ KamodoModels'
+                  WRITE(6,*) 'CHECK-- DRAG.f90:   model=', kamodo_model
+
                 endif
 !                                                                       &
                  IJDSEC=MJDSEC+FSEC
                  CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
                  IYR=(IYMD/10000.D0)+0.5D0
-                CALL Kamodo_CTIPe(MJDSEC,FSEC,ALTI,XLATD,XLOND,         &
-             &         PHI,XLAMB,RHO,DRHODZ, DAY,IYR)
+                CALL KamodoModels(MJDSEC,FSEC,ALTI,XLATD,XLOND,         &
+             &         PHI,XLAMB,RHO,DRHODZ, DAY,IYR, kamodo_model)
                 C(1)=DRHODZ          
                 if(kentry.eq.1)then
-                  WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ kamodo_ctipe'
+                  WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ KamodoModels'
                 endif
          
          
@@ -558,28 +570,22 @@
               WRITE(6,*) 'CHECK DRAG.f90: DENSITY MODEL IS jaachia71'
           endif        
       ENDIF
-!      RHO=D71(RASAT)
-!      DRHODZ=0.D0
-!      if(kentry.eq.1)then
-!          WRITE(6,*) 'CHECK DRAG.f90: DENSITY MODEL IS jaachia71'
-!      endif
 !
-!
-!     ##########    WRITE TO A DENSITY FILE        ##############
-!
+!     ###########################################################
+!     ############      WRITE TO A DENSITY FILE      ############
+!     ###########################################################
   160 CONTINUE 
   
       if(kentry.eq.1)then
-          WRITE(6,*) 'CHECK DENSITY UNITS: rho=', RHO
-          WRITE(6,*) 'CHECK DENSITY UNITS: drhodz=', DRHODZ
+          WRITE(6,*) 'CHECK DENSITY UNITS: rho    =', RHO
+          WRITE(6,*) 'CHECK DENSITY UNITS: drhodz =', DRHODZ
       endif 
       XDOTR=XDOT+THDOT*HTSCAL*Y
       YDOTR=YDOT-THDOT*HTSCAL*X
       IF(LSTINR.AND.FSSTRT.GT.200.D0) THEN
         WRITE(99,7000) FSSTRT,IYMD,IHMS,XLATD,XLOND,ALTI,RHO,DRHODZ,    &
 !     &                 X,Y,Z,XDOT,YDOT,ZDOT    
-     &                 FLUXIN,FLXAVG,FLUXM(1)  
-
+     &                 FLUXIN,FLXAVG,FLUXM(1)  !
 !           FSSTRT -- Elapsed seconds since initial epoch  
 !           IYMD -- YYMMDD of current epoch  
 !           IHMS -- HHMMSS of current epoch  
@@ -957,16 +963,62 @@
         ENDIF
 ! AA(KSDIND) IS THE INTERPOLATED CROSS-SECTION OR RATIO WHICH IS
 ! CALCULATED IN EXTATT.f
-        CALL BWDRAG(AA(JTDNRM),AA(JTDNR2),AA(JTDNR3),                   &
+!      WRITE(6,*) '------'
+!      WRITE(6,*) 'TC1 before BWDRAG: ', TC1
+!      WRITE(6,*) 'TC1/B0          : ', TC1/B0
+!      WRITE(6,*) 'Cd = B/B0       : ', B(IORDRG)/B0
+      CALL BWDRAG(AA(JTDNRM),AA(JTDNR2),AA(JTDNR3),                   &
      &              VEL,XDOTR,YDOTR,ZDOT,SCAREA,TC1,                    &
      &              AA(JBWARE),DXDD,PXDDT,JARADJ,II(JARUA),NFACE,       &
      &              NEQN,TOTARE,ISHFLG,AA(KSDIND))
+!      WRITE(6,*) 'TC1 after BWDRAG : ', TC1
+!      WRITE(6,*) '------'
       ELSE
         DXDD(1)=-TC1*XDOTR
         DXDD(2)=-TC1*YDOTR
         DXDD(3)=-TC1*ZDOT
       ENDIF
       IF(LORBIT) RETURN
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Print denisty and cd to a file
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!      if(kentry.eq.1)then
+!          WRITE(6,*) 'CHECK DENSITY UNITS: rho    =', RHO
+!          WRITE(6,*) 'CHECK DENSITY UNITS: drhodz =', DRHODZ
+!      endif 
+!      XDOTR=XDOT+THDOT*HTSCAL*Y
+!      YDOTR=YDOT-THDOT*HTSCAL*X
+!      IF(LSTINR.AND.FSSTRT.GT.200.D0) THEN
+!        WRITE(99,7000) FSSTRT,IYMD,IHMS,XLATD,XLOND,ALTI,RHO,DRHODZ,    &
+!     &                 X,Y,Z,XDOT,YDOT,ZDOT    
+!     &                 FLUXIN,FLXAVG,FLUXM(1),TC1,C1    
+!
+!           FSSTRT -- Elapsed seconds since initial epoch  
+!           IYMD -- YYMMDD of current epoch  
+!           IHMS -- HHMMSS of current epoch  
+!           XLATD -- Lat of Space station (degrees)  
+!           XLOND -- Lon of Space station (degrees)  
+!           ALTI -- Hieght of Space station above elipsoid (M)  
+!           RHO -- Density of atmosphere (KG/M^3)  
+!           DRHODZ -- Change in density of atmosphere with height (KG/M^3/M)  
+!           X -- X component of position vector  
+!           Y -- Y component of position vector  
+!           Z -- Z component of position vector  
+!           XDOT -- X component of velocity vector  
+!           YDOT -- Y component of velocity vector  
+!           ZDOT -- Z component of velocity vector
+!
+! 7000   FORMAT(F12.1,2I8,2F12.4,F12.3,2D20.11,3F6.2,2F12.4) !3F15.3,3F15.6)
+!      ENDIF
+
+
+
+
+
+
 !
 ! CALCULATE V-MATRIX IN TRUE OF DATE TIME
 !
@@ -1040,6 +1092,7 @@
       ELSE
       C2=C2*RTAREA
       ENDIF
+
 !
       KPART=JSADRG(1)
       DO 750 J=1,IORDRG
@@ -1093,5 +1146,12 @@
       PXDDT(KPART,2)=C2*XDRREF(2)*TDN
       PXDDT(KPART,3)=C2*XDRREF(3)*TDN
 !1000 CONTINUE
+
+!      WRITE(6,*) 'end   C1:  ', C1
+!      WRITE(6,*) 'end   TC1: ', TC1
+!      WRITE(6,*) 'end   C2:  ', C2
+
       RETURN
+      
+
       END

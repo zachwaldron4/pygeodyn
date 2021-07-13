@@ -57,10 +57,17 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
             self.iisset_den = '71'
-            
-        elif den_model == 'kamodo_ctipe':
+        elif den_model == 'ctipe':
             self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'kamodo_ctipe'
+            self.SETUP_DEN_DIR = 'ctipe'
+            self.iisset_den = '86'
+        elif den_model == 'tiegcm':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'tiegcm'
+            self.iisset_den = '86'
+        elif den_model == 'gitm':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'gitm'
             self.iisset_den = '86'
 
         else:
@@ -96,8 +103,12 @@ class Util_Tools:
             model_val = '1'
         elif density_model== 'msis2':
             model_val = '2'
-        elif density_model== 'kamodo_ctipe':
+        elif density_model== 'ctipe':
             model_val = '3'
+        elif density_model== 'tiegcm':
+            model_val = '4'
+        elif density_model== 'gitm':
+            model_val = '5'
         elif density_model== 'jaachia71':
             model_val = '0'        
         elif density_model== 'dtm87':

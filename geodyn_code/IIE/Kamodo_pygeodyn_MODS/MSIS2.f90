@@ -1,6 +1,7 @@
 !$MSIS2
       SUBROUTINE MSIS2(DAY,IYR,ALTM,PHI,XLAMB,COSHL,SINHL,FLUX,AVGFLX,   &
-     &                XKP,INDEX,IKPAP,I324,IDRV,RHO,DRHODZ,IERR, optionsin)
+     &                XKP,INDEX,IKPAP,I324,IDRV,RHO,DRHODZ,IERR,         &
+     &                 optionsin, MJDSEC,FSEC)
 !********1*********2*********3*********4*********5*********6*********7**
 ! MSIS             00/00/00            0000.0    PGMR - J. RIDGEWAY
 !
@@ -201,7 +202,13 @@
      &          mass,DEN,TEMP)
 !
 !!!!!!!!!###################################################################################
-!
+!    IJDSEC=MJDSEC+FSEC
+!    CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
+
+!    WRITE(6,"(I6,1X,2(I6,1X),3(F12.5,1X))") ICNT,IYMD,IHMS,      &
+!       &                                            ALTKM,GLAT,GLON
+
+
 !
 !  gtd8d OUTPUTS DENSITY IN G/CC.  CONVERT TO KG/M3.
       RHO = DEN(6)*1000.D0

@@ -572,30 +572,31 @@ class PygeodynReader:
 
         #### Build the dictionary to be index based on iteration number   
         #### and initialize each iteration number to also be a dictionary
-#         text_GA_list = ["0GA 9P 11t1",
-#                         "0GA 9P 12t1",
-#                         "0GA 9P 21t1",
-#                         "0GA 9P 22t1",
-#                         "0GA 9P 11t2",
-#                         "0GA 9P 12t2",
-#                         "0GA 9P 21t2",
-#                         "0GA 9P 22t2",
+#         text_GA_list = ["0GA 9P 11",
+#                         "0GA 9P 12",
+#                         "0GA 9P 21",
+#                         "0GA 9P 22",
 #                             ]    
 #         print(self.total_iterations)
         SatMain_AdjustedParams = {}
-        for i_iter,iterval in enumerate(np.arange(1, self.total_iterations+1)):
+#         for i_iter,iterval in enumerate(np.arange(1, self.total_iterations+1)):
+        for i_iter,iterval in enumerate([self.total_iterations]):
 #             print(iterval)
             SatMain_AdjustedParams[iterval] = {}
             for isat, satval in enumerate(sat_list):
-#                 if self.empirical_accels == True:
+                if self.empirical_accels == True:
 #                     pass
 #                     for iga, ga_val in enumerate(text_GA_list):
-#                         SatMain_AdjustedParams[iterval][satval] = {}
-#                         SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
-#                         SatMain_AdjustedParams[iterval][satval][ga_val] = {}
-#                 else:
-                SatMain_AdjustedParams[iterval][satval] = {}
-                SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
+#                         print(ga_val)
+                    SatMain_AdjustedParams[iterval][satval] = {}
+                    SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
+                    SatMain_AdjustedParams[iterval][satval]["0GA 9P 11"] = {}
+                    SatMain_AdjustedParams[iterval][satval]["0GA 9P 12"] = {}
+                    SatMain_AdjustedParams[iterval][satval]["0GA 9P 21"] = {}
+                    SatMain_AdjustedParams[iterval][satval]["0GA 9P 22"] = {}
+                else:
+                    SatMain_AdjustedParams[iterval][satval] = {}
+                    SatMain_AdjustedParams[iterval][satval]['0CD'] = {}
 
         #### 
         #### Make a list of the dates for the time dependent drag option
@@ -610,9 +611,9 @@ class PygeodynReader:
                     line_no_2.append(line_no)
         ####            
         parameter_summary_section_range = np.arange(line_no_1[0], line_no_2[0]+1)
+        
         ####
         #### Count how many Time dep Cd's were processed
-
         timedep_Cd_count = []
         for i,val in enumerate(parameter_summary_section_range):
                 line = linecache.getline(self._iieout_filename,val)            
@@ -622,6 +623,17 @@ class PygeodynReader:
                         if 'T' in line:
                             #### save the list of T##s and strip of whitespaces
                             timedep_Cd_count.append(line[18:24].strip()) 
+#         ####
+#         #### Count how many GA's were processed
+#         timedep_GA_count = []
+#         for i,val in enumerate(parameter_summary_section_range):
+#                 line = linecache.getline(self._iieout_filename,val)            
+#                 if 'CD' in line:
+#                     check_sat = int(line[24:32])
+#                     if check_sat == int(self.SATID):    
+#                         if 'T' in line:
+#                             #### save the list of T##s and strip of whitespaces
+#                             timedep_Cd_count.append(line[18:24].strip()) 
 
         #### Loop through the IIS cards to find the
         #### date inputs for the time dependent Cd option 
@@ -688,36 +700,44 @@ class PygeodynReader:
                 except:
                     check_iter = int((linecache.getline(self._iieout_filename,lines_params[i]-27))[57:60])
                 #print('Iter: ', check_iter)
-
-                data_1stline = linecache.getline(self._iieout_filename,val_lines+1) #
-                data_2ndtline = linecache.getline(self._iieout_filename,val_lines+2) #
-                data_3rdline = linecache.getline(self._iieout_filename,val_lines+3) #
-
-                apriorival = float(data_1stline[19:38])
-                prevval = float(data_2ndtline[19:38])
-                currentval  = float(data_3rdline[19:38])
-                totalDelta = float(data_2ndtline[42:62])
-                currentDelta =  float(data_3rdline[42:62])
-                AprioriSigma = float(data_2ndtline[63:78])
-                CurrentSigma =  float(data_3rdline[63:78])
                 
-#                 print('check_iter',check_iter)
-#                 print('check_sat',check_sat)
-#                 print('text_param_adjusts',text_param_adjusts)
-                SatMain_AdjustedParams[check_iter][check_sat][text_param_adjusts] = {'APRIORI_VALUE': apriorival,
-                                                     'PREVIOUS_VALUE': prevval,
-                                                     'CURRENT_VALUE': currentval,
-                                                      'TOTAL_DELTA':totalDelta,
-                                                     'CURRENT_DELTA': currentDelta,
-                                                     'APRIORI_SIGMA': AprioriSigma,
-                                                     'CURRENT_SIGMA': CurrentSigma }
-                i+=1
-                #### this makes it so that you can properly index the iterations
-                i = np.mod(i,np.shape(lines_params)[0])  
+                if check_iter != self.total_iterations:
+#                     print(check_iter, 'is not the final iteration, move to next')
+                    pass
+                 
+                elif check_iter == self.total_iterations:
+#                     print(check_iter, 'is the final iteration')
 
+                    data_1stline = linecache.getline(self._iieout_filename,val_lines+1) #
+                    data_2ndtline = linecache.getline(self._iieout_filename,val_lines+2) #
+                    data_3rdline = linecache.getline(self._iieout_filename,val_lines+3) #
+
+                    apriorival  = float(data_1stline[19:38])
+                    prevval     = float(data_2ndtline[19:38])
+                    currentval  = float(data_3rdline[19:38])
+                    totalDelta  = float(data_2ndtline[42:62])
+                    currentDelta =  float(data_3rdline[42:62])
+                    AprioriSigma = float(data_2ndtline[63:78])
+                    CurrentSigma =  float(data_3rdline[63:78])
+
+#                     print('check_iter         ',check_iter)
+#                     print('check_sat          ',check_sat)
+#                     print('text_param_adjusts ',text_param_adjusts)
+                    SatMain_AdjustedParams[check_iter][check_sat][text_param_adjusts] = {'APRIORI_VALUE': apriorival,
+#                                                          'PREVIOUS_VALUE': prevval,
+                                                         'CURRENT_VALUE': currentval,
+#                                                           'TOTAL_DELTA':totalDelta,
+#                                                          'CURRENT_DELTA': currentDelta,
+#                                                          'APRIORI_SIGMA': AprioriSigma,
+#                                                          'CURRENT_SIGMA': CurrentSigma 
+                                                                                        }
+                    i+=1
+                    #### this makes it so that you can properly index the iterations
+                    i = np.mod(i,np.shape(lines_params)[0])  
+        
+        #####
         #### Create a list of the number TimeDep drag coeffiecient headers
         text_cd_list = ["0CD   T%02d" %i for i in np.arange(1,np.size(timedep_Cd_count)+1 )]
-
         lines = []
         for itt,text_param_adjusts in enumerate(text_cd_list): 
             #print(itt, text_param_adjusts)
@@ -739,169 +759,143 @@ class PygeodynReader:
                     if 'PARAMETER ADJUSTMENT SUMMARY' in line_find_header:
                         check_iter =int(line_find_header[57:60])
                         break
-                data_1stline = linecache.getline(self._iieout_filename,val_lines+1) #
-                data_2ndtline = linecache.getline(self._iieout_filename,val_lines+2) #
-                data_3rdline = linecache.getline(self._iieout_filename,val_lines+3) #
-
-                apriorival = float(data_1stline[19:41])
-                prevval = float(data_2ndtline[19:41])
-                currentval  = float(data_3rdline[19:41])
-                totalDelta = float(data_2ndtline[42:62])
-                currentDelta =  float(data_3rdline[42:62])
-                AprioriSigma = float(data_2ndtline[63:78])
-                CurrentSigma =  float(data_3rdline[63:78])
-
-                #print('Sat:  ', check_sat)
-                #print('Iter: ', check_iter)
-                #print('Val:  ', currentval)
-                #print('Time: ', date_timedep_cds[itt])
-                #print(date_timedep_cds[itt])
-                SatMain_AdjustedParams[check_iter][check_sat]['0CD'][date_timedep_cds[itt]] = {'APRIORI_VALUE': apriorival,
-                                                                        'PREVIOUS_VALUE': prevval,
-                                                                        'CURRENT_VALUE': currentval,
-                                                                        'TOTAL_DELTA':totalDelta,
-                                                                        'CURRENT_DELTA': currentDelta,
-                                                                        'APRIORI_SIGMA': AprioriSigma,
-                                                                        'CURRENT_SIGMA': CurrentSigma }
-        if self.empirical_accels == True:
-            print('There are some weird things here for Gen.Acc. Not done yet.')
-
-            if self.DATA_TYPE == 'GPS':
-                print('There are some weird things here for Gen.Acc. Not done yet.')
-        #         break
-            else:
-                print('There are some weird things here for Gen.Acc. Not done yet.')
-
+                        
+                if check_iter != self.total_iterations:
+#                     print(check_iter, 'is not the final iteration, move to next')
+                    pass
+                elif check_iter == self.total_iterations:
+#                     print(check_iter, 'is the final iteration')
                 
-     # THE BELOW CODE IS BROKEN AND NEEDS TO BE FIXED IF YOU EVER WANT TO TURN ON THE GENERAL ACCELS
-    #
-    #             accel_9_dates = []
-    #             for i,val in enumerate(card_inputs_range):
-    #                     line = linecache.getline(iieout_file,val)            
-    #                     if 'ACCEL9    99' in line:
-    #                         check_sat = int(line[18:26])
-    #                         if check_sat == self.params['SAT_ID']:
+                    data_1stline = linecache.getline(self._iieout_filename,val_lines+1) #
+                    data_2ndtline = linecache.getline(self._iieout_filename,val_lines+2) #
+                    data_3rdline = linecache.getline(self._iieout_filename,val_lines+3) #
 
-    #                             accel_9_dates.append(line[45:56].strip())
-    #             #------------------------------------------------------------------            
-    #             # this block of code is used to remove the whitespace from the date 
-    #             fix_date_string = []
-    #             for i, val in enumerate(accel_9_dates):
-    #                 if ' ' in val:
-    #                     rebuild_string = []
-    #                     for ii,valval in enumerate(val):
-    #                         if valval == ' ':
-    #                             rebuild_string.append(valval.replace(" ", "0"))
-    #                         else:
-    #                             rebuild_string.append(valval)
-    #                     rebuild_string = "".join(rebuild_string)
-    #                     fix_date_string.append(rebuild_string)
-    #                 else:
-    #                     fix_date_string.append(val)
-    #         #------------------------------------------------------------------            
-    #             accel_9_Dates = pd.to_datetime(fix_date_string, format='%y%m%d%H%M%S')  #YYMMDDHHMMSS
+                    apriorival = float(data_1stline[19:41])
+                    prevval = float(data_2ndtline[19:41])
+                    currentval  = float(data_3rdline[19:41])
+                    totalDelta = float(data_2ndtline[42:62])
+                    currentDelta =  float(data_3rdline[42:62])
+                    AprioriSigma = float(data_2ndtline[63:78])
+                    CurrentSigma =  float(data_3rdline[63:78])
 
-    #                 # AND THIS SPECIFIC LIST OF Gen. ACCELS
-    #                 # 1st Value (1 or 2) Indicates direction of 9 parameter general acceleration
-    #                     # 1 - Along Track ((R x V) x R)
-    #                     # 2 - Cross Track (R x V)
-    #                     # 3 - Radial (R)
+                    #print('Sat:  ', check_sat)
+                    #print('Iter: ', check_iter)
+                    #print('Val:  ', currentval)
+                    #print('Time: ', date_timedep_cds[itt])
+                    #print(date_timedep_cds[itt])
+                    SatMain_AdjustedParams[check_iter][check_sat]['0CD'][date_timedep_cds[itt]] = {'APRIORI_VALUE': apriorival,
+#                                                          'PREVIOUS_VALUE': prevval,
+                                                         'CURRENT_VALUE': currentval,
+#                                                           'TOTAL_DELTA':totalDelta,
+#                                                          'CURRENT_DELTA': currentDelta,
+#                                                          'APRIORI_SIGMA': AprioriSigma,
+#                                                          'CURRENT_SIGMA': CurrentSigma 
+                                                                                        }
+        if self.empirical_accels == True:
 
-    #                 #  2nd Value (1 or 2) Indicates type of 9 parameter general acceleration parameter
-    #                     # 1 - Cosine coefficient (A)
-    #                     # 2 - Sine coefficient (B)
-    #                     # 3 - Constant (C)
-    #             text_GA_list = ["0GA 9P 11",
-    #                             "0GA 9P 12",
-    #                             "0GA 9P 21",
-    #                             "0GA 9P 22",
-    #                             ]    
+            # 1st Value (1 or 2) Indicates direction of 9 parameter general acceleration
+                # 1 - Along Track ((R x V) x R)
+                # 2 - Cross Track (R x V)
+                # 3 - Radial (R)
+
+            #  2nd Value (1 or 2) Indicates type of 9 parameter general acceleration parameter
+                # 1 - Cosine coefficient (A)
+                # 2 - Sine coefficient (B)
+                # 3 - Constant (C)            #### Extract the ACCEL9 Dates from the Cards section
+            accel_9_dates = []
+            for i,val in enumerate(card_inputs_range):
+                    line = linecache.getline(self._iieout_filename,val)            
+                    if 'ACCEL9    99' in line:
+                        check_sat = int(line[18:26])
+                        if check_sat == int(self.SATID):
+                            accel_9_dates.append(line[45:56].strip())
+            for i,val in enumerate(accel_9_dates):
+                accel_9_dates[i] = val.replace(" ", "0")
+            ##### Convert to datetimes
+            date_GAs = pd.to_datetime(accel_9_dates, format='%y%m%d%H%M%S')
+            DATE_GA= []
+            for i,val in enumerate(date_GAs):
+                DATE_GA.append(val)
+                DATE_GA.append(val)
+                DATE_GA.append(val)
+                DATE_GA.append(val)
+
+            
+            text_GA_list = ["0GA 9P 11","0GA 9P 12","0GA 9P 21","0GA 9P 22"]*np.size(date_GAs)
+            
+#             print(np.size(text_GA_list))
+#             print(np.size(DATE_GA))
+            date_count = 0
+
+            lines = []
+            for itt,text_param_adjusts in enumerate(["0GA 9P 11","0GA 9P 12","0GA 9P 21","0GA 9P 22"]): 
+                date_count = 0
+                lines = []
+
+                with open(self._iieout_filename, 'r') as f:
+                    for line_no, line_text in enumerate(f):
+                        if text_param_adjusts in line_text:
+                            lines.append(line_no) 
+
+                #### Loop thru the lines saved above and grab the data occording to its name 
+                #### and location in the file
+                date_count = 0
+#                 print('num_lines', np.size(lines))
+
+                for il,val_lines in enumerate(lines):
+                    check_sat = int(linecache.getline(self._iieout_filename,val_lines+1)[10:18])
+
+                    #### Read the lines backwars until you hit a header
+                    find_last_header_range = np.arange(val_lines, val_lines-1000, -1)
+                    for iiline, iivaline in enumerate(find_last_header_range):
+                        line_find_header = linecache.getline(self._iieout_filename,iivaline)
+                        if 'PARAMETER ADJUSTMENT SUMMARY' in line_find_header:
+                            check_iter =int(line_find_header[57:60])
+                            break
+
+                    if check_iter != self.total_iterations:
+                        pass
+                    elif check_iter == self.total_iterations:
+
+                        data_1stline = linecache.getline(self._iieout_filename,val_lines+1) #
+                        data_2ndtline = linecache.getline(self._iieout_filename,val_lines+2) #
+                        data_3rdline = linecache.getline(self._iieout_filename,val_lines+3) #
+
+                        apriorival = float(data_1stline[19:41])
+                        prevval = float(data_2ndtline[19:41])
+                        currentval  = float(data_3rdline[19:41])
+                        totalDelta = float(data_2ndtline[42:62])
+                        currentDelta =  float(data_3rdline[42:62])
+                        AprioriSigma = float(data_2ndtline[63:78])
+                        CurrentSigma =  float(data_3rdline[63:78])
+
+#                         print(' ')
+#                         print('Sat:       ', check_sat)
+#                         print('Iter:      ', check_iter)
+#                         print('itt:       ', itt)
+# #                         print('Time:      ', date_GAs[date_count])
+#                         print('date_count ', date_count)
+#                         print('Param:     ', text_param_adjusts)
+#                         print(SatMain_AdjustedParams[check_iter][check_sat].keys())
+                        
+    
+    
+                        SatMain_AdjustedParams[check_iter][check_sat][text_param_adjusts][date_GAs[date_count]] = {'APRIORI_VALUE': apriorival,
+#                                                          'PREVIOUS_VALUE': prevval,
+                                                         'CURRENT_VALUE': currentval,
+#                                                           'TOTAL_DELTA':totalDelta,
+#                                                          'CURRENT_DELTA': currentDelta,
+#                                                          'APRIORI_SIGMA': AprioriSigma,
+#                                                          'CURRENT_SIGMA': CurrentSigma 
+                                                                                        }
+                        date_count += 1
 
 
-    #             lines = []
-    #             for itt,text_GA_adjusts in enumerate(text_GA_list): 
-
-    #                 with open(iieout_file, 'r') as f:
-    #                     for line_no, line_text in enumerate(f):
-    #                         if text_GA_adjusts in line_text:
-    #                             lines.append(line_no) 
-
-    #                 # Loop thru the lines saved above and grab the data occording to its name 
-    #                 # and location in the file
-    #                 for il,val_lines in enumerate(lines[::2]):
-    #                     check_sat = int(linecache.getline(iieout_file,val_lines+1)[10:18])
-
-    #                     # Read the lines backwars until you hit a header
-    #                     find_last_header_range = np.arange(val_lines, val_lines-1000, -1)
-    #                     for iiline, iivaline in enumerate(find_last_header_range):
-    #                         line_find_header = linecache.getline(iieout_file,iivaline)
-    #                         if 'PARAMETER ADJUSTMENT SUMMARY' in line_find_header:
-    #                             check_iter =int(line_find_header[57:60])
-    #                             break
-
-    #                     data_1stline = linecache.getline(iieout_file,val_lines+1) #
-    #                     data_2ndtline = linecache.getline(iieout_file,val_lines+2) #
-    #                     data_3rdline = linecache.getline(iieout_file,val_lines+3) #
-
-    #                     apriorival = float(data_1stline[18:41])
-    #                     prevval = float(data_2ndtline[18:41])
-    #                     currentval  = float(data_3rdline[18:41])
-    #                     totalDelta = float(data_2ndtline[42:62])
-    #                     currentDelta =  float(data_3rdline[42:62])
-    #                     AprioriSigma = float(data_2ndtline[63:78])
-    #                     CurrentSigma =  float(data_3rdline[63:78])
-
-    #             #         print('Sat:  ', check_sat)
-    #             #         print('Iter: ', check_iter)
-    #             #         print('Val:  ', currentval)
-    #             #         print('Time: ', date_timedep_cds[itt])
-
-    #                     SatMain_AdjustedParams[check_iter][check_sat][text_GA_adjusts+'t1'][accel_9_Dates[0]] = {'APRIORI_VALUE': apriorival,
-    #                                                                             'PREVIOUS_VALUE': prevval,
-    #                                                                             'CURRENT_VALUE': currentval,
-    #                                                                             'TOTAL_DELTA':totalDelta,
-    #                                                                             'CURRENT_DELTA': currentDelta,
-    #                                                                             'APRIORI_SIGMA': AprioriSigma,
-    #                                                                             'CURRENT_SIGMA': CurrentSigma }
-    #                 for il,val_lines in enumerate(lines[1::2]):
-    #                     check_sat = int(linecache.getline(iieout_file,val_lines+1)[10:18])
-
-    #                     # Read the lines backwars until you hit a header
-    #                     find_last_header_range = np.arange(val_lines, val_lines-1000, -1)
-    #                     for iiline, iivaline in enumerate(find_last_header_range):
-    #                         line_find_header = linecache.getline(iieout_file,iivaline)
-    #                         if 'PARAMETER ADJUSTMENT SUMMARY' in line_find_header:
-    #                             check_iter =int(line_find_header[57:60])
-    #                             break
-
-    #                     data_1stline = linecache.getline(iieout_file,val_lines+1) #
-    #                     data_2ndtline = linecache.getline(iieout_file,val_lines+2) #
-    #                     data_3rdline = linecache.getline(iieout_file,val_lines+3) #
-
-    #                     apriorival = float(data_1stline[18:41])
-    #                     prevval = float(data_2ndtline[18:41])
-    #                     currentval  = float(data_3rdline[18:41])
-    #                     totalDelta = float(data_2ndtline[42:62])
-    #                     currentDelta =  float(data_3rdline[42:62])
-    #                     AprioriSigma = float(data_2ndtline[63:78])
-    #                     CurrentSigma =  float(data_3rdline[63:78])
-
-    #             #         print('Sat:  ', check_sat)
-    #             #         print('Iter: ', check_iter)
-    #             #         print('Val:  ', currentval)
-    #             #         print('Time: ', date_timedep_cds[itt])
-
-    #                     SatMain_AdjustedParams[check_iter][check_sat][text_GA_adjusts+'t2'][accel_9_Dates[1]] = {'APRIORI_VALUE': apriorival,
-    #                                                                             'PREVIOUS_VALUE': prevval,
-    #                                                                             'CURRENT_VALUE': currentval,
-    #                                                                             'TOTAL_DELTA':totalDelta,
-    #                                                                             'CURRENT_DELTA': currentDelta,
-    #                                                                             'APRIORI_SIGMA': AprioriSigma,
-    #                                                                             'CURRENT_SIGMA': CurrentSigma }
+    
 
         end = time.time()
         elapsed = end - start
-#         print('Adjusted_params: ',elapsed)
+        print('Adjusted_params: ',elapsed)
         return(SatMain_AdjustedParams)
         
     def read_density_file(self):

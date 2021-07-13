@@ -94,9 +94,9 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-#         self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running with Ctipe for faster run times
+        self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running with Ctipe for faster run times
 
-        self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
+#         self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
         self.ephem_file     = 'ephem1430.data_2025'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
@@ -583,7 +583,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             for line in lines_all:
                 if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
                     f.write(card_drag_strings['CONDRG'] + ' \n')
-                    f.write('DRAG             '+SAT_ID+' 2.3000000000000E+00'+ ' \n')
+                    f.write('DRAG             '+SAT_ID+' 2.2000000000000E+00'+ ' \n')
                     f.write(card_drag_strings[drag_date_1] + ' \n')                 
                     f.write(card_drag_strings[drag_date_2] + ' \n')                 
                     f.write(card_drag_strings[drag_date_3] + ' \n')                 

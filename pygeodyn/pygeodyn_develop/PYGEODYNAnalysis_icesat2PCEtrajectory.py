@@ -1711,24 +1711,43 @@ def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
     #     arc_first_time_str =  str(arc_first_time[0])  
     #     arc_last_time_str   =  str(  arc_last_time[0]) 
 
-        arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0],
+        arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
         arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
-        arc_first_time_str     =  str(arc_first_time[0])#.replace( "'",' ') 
+        print('arc_first_time',arc_first_time)
+        print('arc_last_time',arc_last_time)
+
+        
+        arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
         arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
 
-        # print('first_arc_first_time',first_arc_first_time)
+        print('arc_first_time_str',arc_first_time_str)
+        print('arc_last_time_str',arc_last_time_str)
+        
+        A=[]
+        for i,val in enumerate(np.arange(-20,20)):
+            A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
+            
+#         def nearest(items, pivot):
+#             return min(items, key=lambda x: abs(x - pivot))
+        
+#         save_dates = []
         ####---------------------------------------------------------
         with open(StateVector_PCE_datafile, 'r') as f:
             for line_no, line_text in enumerate(f):
-
-                if arc_first_time_str in line_text:
+#                 save_dates.append(line_text[1:20])
+#                 if arc_first_time_str in line_text:
+                if any(times in line_text for times in A):
+#                     print('Print this if a number works')
                     first_line = line_no
-    #                 print('first worked', arc_first_time_str)
-                elif arc_last_time_str in line_text:
+              
+                if arc_last_time_str in line_text:
                     last_line = line_no
-    #                 print('last worked', arc_last_time_str)
-
+#                     print(line_text[1:20])
                     break
+#         print(save_dates)
+
+        ####   IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
+        ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
         PCE_data = pd.read_csv(StateVector_PCE_datafile, 
                     skiprows = first_line, 
                     nrows=last_line-first_line,           
