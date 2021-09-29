@@ -254,10 +254,13 @@
 !     
 !
       integer, dimension(2) :: optionsin
+      CHARACTER(len=200) :: model_path
+      CHARACTER(len=200) :: orbitcloud_file
+!
       integer :: choose_model
       integer :: i  
       CHARACTER(len = 20) kamodo_model
-
+!      INTENT(IN) RHO
 !
 !
 !**********************************************************************
@@ -283,6 +286,20 @@
              !the first  index contains the drhodz option (for use in MSIS.f90 routines)
              !the second index contains the MSIS   option (for use in DRAG.f90 routines)
           choose_model=optionsin(2)          
+      
+      !!!!! READ IN THE PATH FOR THE KAMODO MODELS FROM PYGEODYN
+          open (122,                                                    &
+& file="/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_modelpaths.txt",&
+           &       status='old')
+            read(122,"(A200)") model_path
+            read(122,"(A200)") orbitcloud_file
+          close (122)     
+          
+          !model_path = model_path_in
+          
+          WRITE(6,*) 'model_path    ', model_path
+          WRITE(6,*) 'orbitcloud_file    ', orbitcloud_file
+
       endif        
 !
       RATIO2=1.D0
@@ -507,7 +524,7 @@
                  endif
          
          
-            case(3:)   ! Use Kamodo if case is greaterthan or equal to one
+            case(3:5)   ! Use Kamodo command line if case is greater than or equal to 3>=5
                  if(choose_model.eq.3)then
                      kamodo_model='CTIPe'
                  endif
@@ -517,8 +534,15 @@
                  if(choose_model.eq.5)then
                      kamodo_model='GITM'
                  endif
-
-
+                 
+                 if(kentry.eq.1)then
+                   WRITE(6,*) '+------- CHECK-- DRAG.f90 ------- '
+                   WRITE(6,*) '|                                 '
+                   WRITE(6,*) '|  Using the Command Line method. '
+                   WRITE(6,*) '|     model=', kamodo_model 
+                   WRITE(6,*) '+------- CHECK-- DRAG.f90 ------- '
+                 endif
+!                                                                       &
                  !!!!! Inputs for the Kamodo Reader
                  !          File_dir is the directory where the data is located
                  !          rho is the variable name
@@ -533,26 +557,42 @@
                  !   sat_height -- ALTI
                  !   sat_lat    -- XLATD
                  !   sat_lon    -- XLOND
-!                                                                       &
-                if(kentry.eq.1)then
-                  WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ KamodoModels'
-                  WRITE(6,*) 'CHECK-- DRAG.f90:   model=', kamodo_model
 
-                endif
-!                                                                       &
                  IJDSEC=MJDSEC+FSEC
                  CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
                  IYR=(IYMD/10000.D0)+0.5D0
-                CALL KamodoModels(MJDSEC,FSEC,ALTI,XLATD,XLOND,         &
-             &         PHI,XLAMB,RHO,DRHODZ, DAY,IYR, kamodo_model)
+!                                                                       &
+             CALL KamodoModels_cl(MJDSEC,FSEC,ALTI,XLATD,XLOND,         &
+          &     PHI,XLAMB,RHO,DRHODZ, DAY,IYR, kamodo_model, model_path,&
+          &            orbitcloud_file )
                 C(1)=DRHODZ          
-                if(kentry.eq.1)then
-                  WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ KamodoModels'
-                endif
-         
-         
-          end select
+            case(6:)   ! Use Kamodo_orbit cloud method if case is greater than 6
 
+                 if(choose_model.eq.6)then
+                     kamodo_model='TIEGCM'  
+                 endif
+                 if(kentry.eq.1)then
+                 WRITE(6,*) '+------- CHECK-- DRAG.f90 ------- '
+                 WRITE(6,*) '|  Using the Orbit Cloud method.'
+                 WRITE(6,*) '|  Expecting a file with initialized orbit'
+                 WRITE(6,*) '|  and the orbit uncertainty around it'
+                 WRITE(6,*) '|     model=', kamodo_model 
+                 WRITE(6,*) '+------- CHECK-- DRAG.f90 -------'
+                 endif
+!                                                                       &
+              !WRITE(6,*) 'model_path:          ', model_path
+
+             IJDSEC=MJDSEC+FSEC
+             CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
+             IYR=(IYMD/10000.D0)+0.5D0
+            CALL KamodoModels_oc(MJDSEC,FSEC,ALTI,XLATD,XLOND,          &
+             &  PHI,XLAMB,RHO,DRHODZ, DAY,IYR, kamodo_model, model_path,&
+             &            orbitcloud_file )
+            C(1)=DRHODZ
+!                                                                       &         
+
+          end select
+         
          ENDIF
 !
 !
@@ -582,7 +622,10 @@
       endif 
       XDOTR=XDOT+THDOT*HTSCAL*Y
       YDOTR=YDOT-THDOT*HTSCAL*X
-      IF(LSTINR.AND.FSSTRT.GT.200.D0) THEN
+!                                                                       &
+
+!      IF(LSTINR.AND.FSSTRT.GT.200.D0) THEN
+      IF(LSTINR) THEN
         WRITE(99,7000) FSSTRT,IYMD,IHMS,XLATD,XLOND,ALTI,RHO,DRHODZ,    &
 !     &                 X,Y,Z,XDOT,YDOT,ZDOT    
      &                 FLUXIN,FLXAVG,FLUXM(1)  !
@@ -600,8 +643,12 @@
 !           XDOT -- X component of velocity vector  
 !           YDOT -- Y component of velocity vector  
 !           ZDOT -- Z component of velocity vector
-!
- 7000   FORMAT(F12.1,2I8,2F12.4,F12.3,2D20.11,3F6.2 ) !3F15.3,3F15.6)
+!!                                                                       &
+
+ 7000   FORMAT(F12.1,1X,2(I0.6,1X),2(F12.4,1X),F12.3,1X,2(D20.11,1X),      &
+     &          3(F6.2,1X) ) 
+ 
+ !3F15.3,3F15.6)
       ENDIF
       GO TO 200
 !      

@@ -1,0 +1,2 @@
+/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1
+none

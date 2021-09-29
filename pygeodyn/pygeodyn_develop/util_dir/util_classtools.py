@@ -21,7 +21,6 @@ import copy
 class Util_Tools:
     
     def __init__(self):  
-#         print('UTIL ---- UTIL_Class_tools ')
         pass
 
 
@@ -61,9 +60,16 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'ctipe'
             self.iisset_den = '86'
-        elif den_model == 'tiegcm':
+        #### We will have two methods for running a model in Kamodo: 
+        ####                  1) Command Line kamodo call (model_cl)
+        ####                  2) OrbitCloud method        (model_oc)
+        elif den_model == 'tiegcm_cl':
             self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'tiegcm'
+            self.SETUP_DEN_DIR = 'tiegcm_cl'
+            self.iisset_den = '86'
+        elif den_model == 'tiegcm_oc':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'tiegcm_oc'
             self.iisset_den = '86'
         elif den_model == 'gitm':
             self.DEN_DIR       = den_model
@@ -71,8 +77,23 @@ class Util_Tools:
             self.iisset_den = '86'
 
         else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, kamodo_ctipe]')   
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
+            print('Dear zach, please add the remaining models you have added. --from zach')   
 
+            
+        from re import search
+
+        if search('tiegcm', self.DEN_DIR):
+            if self.satellite == 'icesat2':
+                
+                self.model_data_path ='/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1' 
+                
+                filemodels = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_modelpaths.txt","w+")
+                filemodels.writelines(self.model_data_path+'\n')
+                filemodels.writelines('none'+'\n')
+                filemodels.close()
+
+            
     def make_directory_check_exist(self, directory, verbose=False):
         if verbose:
             def verboseprint(*args, **kwargs):
@@ -103,12 +124,16 @@ class Util_Tools:
             model_val = '1'
         elif density_model== 'msis2':
             model_val = '2'
-        elif density_model== 'ctipe':
+        elif density_model== 'ctipe_cl':
             model_val = '3'
-        elif density_model== 'tiegcm':
+        elif density_model== 'tiegcm_cl':
             model_val = '4'
-        elif density_model== 'gitm':
+        elif density_model== 'gitm_cl':
             model_val = '5'
+        
+        elif density_model== 'tiegcm_oc':
+            model_val = '6'
+            
         elif density_model== 'jaachia71':
             model_val = '0'        
         elif density_model== 'dtm87':

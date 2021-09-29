@@ -42,7 +42,7 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
  
     '''
     def __init__(self):
-        print('3 starlette ---- check ---- init Satellite_Starlette class')
+#         print('3 starlette ---- check ---- init Satellite_Starlette class')
 #         super().__init__()
         #### HARD CODE the satellite properties
         self.SATELLITE_dir = 'st'
@@ -76,11 +76,15 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
         Construct a way to read in the satellite specific filenames.
         '''
         
-        print('4 starlette ---- check ---- init set_file_paths_for_multiple_arcs class')
+#         print('4 starlette ---- check ---- init set_file_paths_for_multiple_arcs class')
 
         self.run_ID = 'Run # '+ str(iarc+1)
         
         self.arc_name_id = arc_val
+        
+#         print('YR   ',self.arc_name_id[0:2])
+#         print('month',self.arc_name_id[2:4])
+#         print('day  ',self.arc_name_id[4:])
         
         self.YR  = self.arc_name_id[0:2]
         month = self.arc_name_id[2:4]
@@ -131,8 +135,36 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
 
         
             
-           
-        
+    def make_list_of_arcfilenames(self):
+        '''
+        Handles the Arc naming conventions for the starlette satellite
+        Construct a way to read in the satellite specific filenames.
+        '''
+      
+        arc_file_list = []
+
+        for i, val in enumerate(self.arc_input):
+
+            arc_name_id = val
+            YR  = arc_name_id[0:4]
+            doy = arc_name_id[5:]
+            arcdate_for_files = YR + doy
+            ####
+            ####
+            ### Now specify what we what the output arcs to be named.
+#             ARC_file = (self.SATELLITE_dir    + '_' + 
+#                         arcdate_for_files+ '_' + 
+#                         self.arc_length + '.' +  
+#                         self.DEN_DIR)
+            
+            ARC_file = (self.SATELLITE_dir    + '' + 
+                    self.arcdate_for_files+ '_' + 
+                    self.arc_length + '.' + 
+                    self.grav_id)
+
+            arc_file_list.append(ARC_file)
+            
+        return(arc_file_list)        
         
         
     def clean_iisset_file(self):
@@ -236,7 +268,6 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
                                                 #          YYMMDDHHMM00.0000000
         card_strings = {}                         #       -56789012345678901234YYMMDDHHMMSS.SS 
         #                          12345678901234567890123456789012345678901234567890123456789012345678901234567890 
-         #                         ORBFIL00131      7501001     03091400000.0  030928 24200.00          60           46707
         card_strings['ORBFIL'] =  'ORBFIL00131      '+SAT_ID+string_epoch_start+string_epoch_end[:-5]+'60'
         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on First and last iterations only
@@ -247,14 +278,17 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
         
         ##### THESE WILL LIKELY NEED MODIFICATION
         card_strings['REFSYS']  = 'REFSYS19410         '+epoch_start+' '
-        #                          12345678901234567890123456789012345678901 
         #                          12345678901234567890123456789012345678901234567890123456789012345678901234567890 
                               #    EPOCH               030914000000.0000000030914000000.0000000030928000000.0000000  
         card_strings['EPOCH']   = 'EPOCH               '+string_epoch_start+string_epoch_start+string_epoch_end
         #                          123456789012345678901234 
         card_strings['SATPAR']  = 'SATPAR00000000000'+SAT_ID+' 4.5240000000000D-02 4.72500000D+01 1.000000D-02 0.0D+00'
         #                          123456789012345678901234 
-        card_strings['FLUX  1'] = 'FLUX  0'    
+        card_strings['FLUX  1'] = 'FLUX  0'   
+#                                 STEP  11         7501001 15.000000000000D+00 0.00000000D+00 0.000000D+00 0.0D+00          
+        
+        # THE STEPSIZE was originally 15, i increase here to 60 for testing
+        card_strings['STEP']  =  'STEP  11         '+SAT_ID+' 60.000000000000D+00' #  
     
     
     
@@ -270,8 +304,7 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
         #### CHECK FOR MISSING CARDS: Search through the file to see if any of 
         ####                           the cards we WANT are NOT in the file
         card_flag = EditSetupFile__identify_missing_cards(iisset_file, card_strings)
-
-        
+#         print('card_flag',card_flag)
         
         #### --------------------------------------------------------------------
         #### ADD CARD MODIFICATIONS:     Edit the cards in the file using the 
@@ -279,28 +312,21 @@ class Satellite_Starlette(PygeodynController,PygeodynReader):
         EditSetupFile__rewrite_file_using_modified_cards(iisset_file, card_strings)
 
         
+        ####----------------------------------------------------------------------
+        #### ADD CARDS: Add any cards that we want that 
+        ####            are not in the file
+        EditSetupFile__rewrite_file_and_add_missing_cards(iisset_file, card_flag, card_strings)
+
         
-        #### --------------------------------------------------------------------
-        #### ADD TIMEDEP DRAG:      Add time dependent drag estimations. 
-                # ------- Starlette drag already 
-                # ------- in correct format.
-                # ------- Skipping.
-        # EditSetupFile__timedep_drag(iisset_file, SAT_ID, epoch_start_dt, epoch_end_dt)
-        
-        
+
+               
+#         print('cards_to_remove',cards_to_remove)
         
         ####----------------------------------------------------------------------
         #### REMOVE CARDS:  rewrite the file without the cards 
         ####                we specified in the cards_to_remove dict
         EditSetupFile__rewrite_file_and_remove_unwantedcards(iisset_file, cards_to_remove)
-        
-        
-
-        ####----------------------------------------------------------------------
-        #### ADD CARDS: Add any cards that we want that 
-        ####            are not in the file
-        EditSetupFile__rewrite_file_and_add_missing_cards(iisset_file, card_flag)
-        
+#         print('card_strings',card_strings.keys())
         
         
         ####----------------------------------------------------------------------

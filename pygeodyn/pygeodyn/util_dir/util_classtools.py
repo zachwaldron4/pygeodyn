@@ -57,9 +57,21 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
             self.iisset_den = '71'
-#             self.GDYN_version  = 'pygeodyn_MODS'
+        elif den_model == 'ctipe':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'ctipe'
+            self.iisset_den = '86'
+        elif den_model == 'tiegcm':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'tiegcm'
+            self.iisset_den = '86'
+        elif den_model == 'gitm':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'gitm'
+            self.iisset_den = '86'
+
         else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, kamodo_ctipe]')   
 
     def make_directory_check_exist(self, directory, verbose=False):
         if verbose:
@@ -91,6 +103,12 @@ class Util_Tools:
             model_val = '1'
         elif density_model== 'msis2':
             model_val = '2'
+        elif density_model== 'ctipe':
+            model_val = '3'
+        elif density_model== 'tiegcm':
+            model_val = '4'
+        elif density_model== 'gitm':
+            model_val = '5'
         elif density_model== 'jaachia71':
             model_val = '0'        
         elif density_model== 'dtm87':
@@ -98,7 +116,7 @@ class Util_Tools:
         else:
             sys.exit("Density Model Option (DEN_DIR) is in incorrect format")
             
-        file1 = open("/data/geodyn_proj/pygeodyn/pygeodyn/geodyn_options.txt","w+")
+        file1 = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_options.txt","w+")
         file1.writelines(drhodz_val+'\n') # first value is for DrhoDz
         file1.writelines(model_val +'\n') # 2nd values is for model switching
         file1.writelines('0'+'\n')
@@ -611,7 +629,7 @@ class Util_Tools:
         to_move_and_delete = []
         self.__dict__['run_parameters'+arc]    = {}
         self.__dict__['global_params']    = {}
-        ####   Loop thru the keys soted in self.  If the key is NOT in the Data_keys
+        ####   Loop thru the keys stored in self.  If the key is NOT in the Data_keys
         ####     it will get moved and nested in a new key called run_parameters
         for ii,i in enumerate(self.__dict__.keys()):
             if i in data_keys:
@@ -633,14 +651,18 @@ class Util_Tools:
 #             print('FINAL ARC-- Deleting extra keys from 0th dim')
                      #             print(self.__dict__.keys())
     
-            if os.path.exists(self.path_to_model+'DENSITY/'):
-                os.chdir(self.path_to_model+'DENSITY/')
-                os.system('bzip2 -v '+'*')
+    
+            ARC_FILES = self.make_list_of_arcfilenames()
+            for i in ARC_FILES:
+                if os.path.exists(self.path_to_model+'DENSITY/'):
+                    os.chdir(self.path_to_model+'DENSITY/')
+                    os.system('bzip2 -v '+ i )
 
-            if os.path.exists(self.path_to_model+'ORBITS/'):
-                os.chdir(self.path_to_model+'ORBITS/')
-                os.system('bzip2 -v '+'*')
+                if os.path.exists(self.path_to_model+'ORBITS/'):
+                    os.chdir(self.path_to_model+'ORBITS/')
+                    os.system('bzip2 -v '+i+'_orb1')
 
+                    
 
             for i_del in to_move_and_delete:         
                 del self.__dict__[i_del]

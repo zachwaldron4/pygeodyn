@@ -3,8 +3,12 @@
      &                XKP,INDEX,IKPAP,I324,IDRV,RHO,DRHODZ,IERR,         &
      &                 optionsin, MJDSEC,FSEC)
 !********1*********2*********3*********4*********5*********6*********7**
-! MSIS             00/00/00            0000.0    PGMR - J. RIDGEWAY
+! MSIS2             00/00/00            0000.0    Modified from MSIS86 by Zach Waldron
 !
+
+    
+
+
 ! FUNCTION:
 !
 !  THIS ROUTINE SERVES AS A SHELL TO THE GTS5 DRAG ROUTINE (WRITTEN
@@ -72,7 +76,9 @@
       INTEGER(4) :: mass
       REAL(4)    :: SWI
       INTEGER(4) :: iiun
-
+      CHARACTER(len = 6) i_YYMMDD
+      CHARACTER(len = 6) i_HHMMSS
+      CHARACTER(len = 12) i_YYMMDDHHMMSS
       integer, dimension(2) :: optionsin
 !      integer :: i    
 
@@ -190,6 +196,39 @@
 !          WRITE(6,*) 'CHECK -- MSIS.f90 BEFORE GT7D call'
 !      
 !
+
+!===========PRINT to a file to see INPUTS ===============================
+      
+
+      IJDSEC=MJDSEC+FSEC
+      CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
+      MJD=(IJDSEC/86400)+INT(TMGDN2+0.1)
+      
+      write(i_YYMMDD,'(I0.6)')   IYMD
+      write(i_HHMMSS,'(I0.6)')   IHMS
+      i_YYMMDDHHMMSS =  trim(i_YYMMDD//i_HHMMSS)
+
+!      WRITE(6,*) '******************'
+!      WRITE(6,*) 'MJDSEC:  ', MJDSEC
+!      WRITE(6,*) 'FSEC:    ', FSEC
+!      WRITE(6,*) 'IJDSEC:  ', IJDSEC
+!      WRITE(6,*) 'IYMD:    ', IYMD
+!      WRITE(6,*) 'IHMS:    ', IHMS
+!      WRITE(6,*) 'TMGDN2:  ', TMGDN2
+!      WRITE(6,*) 'IYMD:    ', IYMD
+!      WRITE(6,*) 'IHMS:    ', IHMS
+!      WRITE(6,*) 'i_YYMMDD:    ', i_YYMMDD
+!      WRITE(6,*) 'i_HHMMSS:    ', i_HHMMSS
+
+!      WRITE(6,*) 'YYMMDDHHMMSS:  ', i_YYMMDDHHMMSS
+!                                                                       &
+        WRITE(98,7001) i_YYMMDD,i_HHMMSS,ALTKM,      &
+            & GLAT,GLON,STLOC,AVGFLX,FLUX
+ 7001   FORMAT(A6,2X,A6, 2X, F12.3,1X, 2(F9.3,1X),      &
+            &      F8.5,1X, F6.2,1X, F6.2 )
+!=======================================================================
+
+
 !!!!!!!!!###################################################################################
 !                               CALL MSIS
 !
@@ -302,11 +341,6 @@
 !            write(101,'(9a15,2a15,2a15)') &
 !               'DEN','TEMP','RHO','DRHODZ'
 !       endif
-!       WRITE(98,7001) IYYDDD,IYR,DAY,UTSEC,ALTKM,GLAT,GLON,STLOC,      &
-!            & AVGFLX,FLUX,AP
-! 7001   FORMAT(I8,1X,I6,1X,F10.4,1X, F10.4,1X, F12.3,1X, 2(F9.3,1X),      &
-!            &             F8.5,1X, F6.2,1X, F6.2,1X, 7(F6.2,1X) )
-!
 !
 !       WRITE(101,7002)  DEN,TEMP, RHO, DRHODZ
 ! 7002   FORMAT(9(E15.8,1X),2(E15.8,1X),E15.8,1X,E15.8,1X )

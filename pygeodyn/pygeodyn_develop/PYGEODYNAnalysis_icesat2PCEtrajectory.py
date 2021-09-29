@@ -233,13 +233,13 @@ def Calc_Cd_percent_diff_apriori(obj_m1):
             all_cd_m1.append(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][val][which_stat])
             all_dates_m1.append(labels[i])
 
-    # take % difference from a priori
+    # take ratio of dc (adjsuted / a priori)
     cd_apriori= 2.2
-    percdiff_cd_m1 =  np.array(all_cd_m1)/ cd_apriori    #  ((np.array(all_cd_m1) - cd_apriori)/ cd_apriori)*100
+    ratio_cd =  np.array(all_cd_m1)/ cd_apriori    #  ((np.array(all_cd_m1) - cd_apriori)/ cd_apriori)*100
 
     obj_m1_stats = {}
     obj_m1_stats['cd_apriori'] = cd_apriori
-    obj_m1_stats['cd_percdiff_from_apriori'] = percdiff_cd_m1
+    obj_m1_stats['ratio_cd'] = ratio_cd   # cd_percdiff_from_apriori
     obj_m1_stats['all_cd'] = all_cd_m1
     obj_m1_stats['all_dates'] = all_dates_m1
 
@@ -352,7 +352,7 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
     fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
     fig.add_trace(go.Scattergl(x=obj_m1_stats['all_dates'],
-                             y=obj_m1_stats['cd_percdiff_from_apriori'],
+                             y=obj_m1_stats['ratio_cd'],
                             name= model_m1,
                             mode='markers',
                             marker=dict(
@@ -1111,7 +1111,9 @@ def rms_summary_table(Obj_list):
 def scale_density_with_cdadjustment(obj_m1):
     obj_m1_stats = Calc_Cd_percent_diff_apriori(obj_m1)
     cd_windows = obj_m1_stats['all_dates']
-    cd_scaling = obj_m1_stats['cd_percdiff_from_apriori']#/100
+    cd_scaling = obj_m1_stats['ratio_cd']
+    
+#     print('cd_scaling', cd_scaling)
     
     save_dens  = []
     save_dates = []
@@ -1123,8 +1125,10 @@ def scale_density_with_cdadjustment(obj_m1):
         for i,val in enumerate(cd_windows):
             
             window = np.logical_and(dates>cd_windows[i], dates < cd_windows[i] + timedelta(hours=9))  #hours=8))
-            density_scaled = np.add( dens[window], np.multiply(dens[window],cd_scaling[i]))
-            
+#             print('cd_scaling[i]',cd_scaling[i])
+#             density_scaled = np.add( dens[window], np.multiply(dens[window],cd_scaling[i]))
+            density_scaled = np.multiply(dens[window],cd_scaling[i])
+
             save_dates.append( dates[window])
             save_dens.append( density_scaled)
     return(save_dates, save_dens)
@@ -1713,15 +1717,15 @@ def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
 
         arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
         arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
-        print('arc_first_time',arc_first_time)
-        print('arc_last_time',arc_last_time)
-
+#         print('arc_first_time',arc_first_time)
+#         print('arc_last_time',arc_last_time)
+# 
         
         arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
         arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
 
-        print('arc_first_time_str',arc_first_time_str)
-        print('arc_last_time_str',arc_last_time_str)
+#         print('arc_first_time_str',arc_first_time_str)
+#         print('arc_last_time_str',arc_last_time_str)
         
         A=[]
         for i,val in enumerate(np.arange(-20,20)):
@@ -1844,34 +1848,17 @@ def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
 
         date = pd.to_datetime(i)
 
-#         while date < overlap_end:
-#             date += add_dt
-#             fig.add_trace(go.Scattergl(x= [date] ,
-#                                        y=  list(np.ones(1)),
-#                                        name= model_m1,
-#                                        mode='markers+text',
-#                                        marker=dict(
-#                                        color=col,
-#                                        size=7,
-#                                        ),
-#                                        text =  '2.2', #str(cd_ratio),
-#                                        textposition="bottom center",
-#                                        showlegend=False,
-#                                        ),
-#                                        row=1, col=1,)
-
 
         ### Start of second arc
         overlap_start = obj_m1.__dict__['Residuals_obs'][arc]['Date'].iloc[-1]
         ### End of first arc
         overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
         fig.add_vrect(  x0=overlap_start, x1=overlap_end,
-                        fillcolor='LightSkyBlue', opacity=0.2,
+                        fillcolor='gold', opacity=0.1, #lightgoldenrodyellow
                         layer="below", line_width=0)
 
-    # fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
-    fig.update_layout(title="NTW Coord. System + Predicted Window (light blue window)")
+    fig.update_layout(title="NTW Coord. System + Predicted Window (light yellow window)")
     fig.update_layout(
                     autosize=False,
                     width=900,

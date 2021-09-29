@@ -11,28 +11,16 @@ from util_classtools import Util_Tools
 
 
 
-# class Inherit_Satellite(Satellite_ICESat2 if sat =='icesat2' else Satellite_Starlette):
-#     def __init__(self, sat):
-#         pass
-
-
-
-
 
 class Inherit_Icesat2(Satellite_ICESat2):
     def __init__(self):
-#         print('inherit Satellite_ICESat2 ')
         Satellite_ICESat2.__init__(self)
-
         pass
         
 
 class Inherit_Starlette(Satellite_Starlette):
     def __init__(self):
-#         print('inherit Satellite_Starlette ')
-
         Satellite_Starlette.__init__(self)
-
         pass
 
      
@@ -45,17 +33,18 @@ class Inherit_Starlette(Satellite_Starlette):
 # class Pygeodyn(Util_Tools, Inherit_Icesat2, Inherit_Starlette): #Satellite_Starlette,Satellite_ICESat2):
 
 
-class Pygeodyn(Util_Tools, Inherit_Icesat2): 
+class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlette 
     def __init__(self, params):  
         
-#         print('1a ---- check -- init Pygeodyn class')
-
         self.satellite         = params['satellite']
         self.den_model         = params['den_model']
         self.SpecialRun_name   = params['SpecialRun_name']
         self.verbose           = params['verbose']
         self.arc_input         = params['arc']
+        self.geodyn_StepSize   = params['geodyn_StepSize']
         self.set_density_model_setup_params( self.den_model )
+        
+#         print('Did this run?')
         if "accels" in params.keys():
             if params["accels"] == True:
                 self.empirical_accels =  True  
@@ -75,7 +64,6 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2):
        
   
         #### Hardcoded constants:    
-#         super().__init__(params)
         self.action       = params['action']
         self.tab = '  '
         self.tabtab = '       '

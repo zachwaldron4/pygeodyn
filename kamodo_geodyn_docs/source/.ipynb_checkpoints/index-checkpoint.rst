@@ -66,6 +66,17 @@ Pygeodyn is a wrapper that allows one to read, run, and interpret data from NASA
    examples_notebooks/read_orbfil_binary.ipynb
 
 
+
+.. toctree:: 
+   :maxdepth: 3 
+   :caption: Documents and Write-ups
+   
+   g_documents_writeups/include_docs.rst
+
+   
+
+
+
 .. toctree:: 
    :maxdepth: 3 
    :caption: To do

@@ -70,12 +70,12 @@ def EditSetupFile__get_epoch_times(iisset_file, SAT_ID, decimated_SAT_ID = False
     epoch_start= epoch_start_YYMMDD + epoch_start_HHMM + epoch_start_SS_SSSSSSS
     epoch_end  = epoch_end_YYMMDD   + epoch_end_HHMM   + epoch_end_SS_SSSSSSS
 
-    print('epoch_start', epoch_start)
-    print('epoch_start_YYMMDD', epoch_start_YYMMDD)
-    print('epoch_start_HHMM', epoch_start_HHMM)
-    print('epoch_end', epoch_end)
-    print('epoch_end_YYMMDD', epoch_end_YYMMDD)
-    print('epoch_end_HHMM' , epoch_end_HHMM)
+#     print('epoch_start', epoch_start)
+#     print('epoch_start_YYMMDD', epoch_start_YYMMDD)
+#     print('epoch_start_HHMM', epoch_start_HHMM)
+#     print('epoch_end', epoch_end)
+#     print('epoch_end_YYMMDD', epoch_end_YYMMDD)
+#     print('epoch_end_HHMM' , epoch_end_HHMM)
     
     return( epoch_start,
             epoch_start_YYMMDD,
@@ -209,121 +209,121 @@ def EditSetupFile__timedep_drag(iisset_file, SAT_ID, epoch_start_dt, epoch_end_d
 
 ##### Change cards to specific values
 
-def EditSetupFile__modify_cards(iisset_file):
+# def EditSetupFile__modify_cards(iisset_file):
 
-    ####   INPUT THE OPTIONS ON THE SPECIFIC CARDS YOU WANT TO CHANGE
-    ##### Putting in the options is one of the hardest parts of using GEODYN
-    #####    They require VERY specific inputs depending on the run type.  
-    card_strings = {}
-
-
-        #####  ORBFIL KEY ------ Requests output of trajectory file(s) on specified unit(s) 
-        #####                           on the last iteration of the run.
-        #####
-        #####   columns      Orbit output option
-        #####    7           Coordinate system of output
-        #####                      0 - True of date (default)
-        #####                      1 - True of reference date 
-        #####                   ** 2 - Mean of year 2000    
-        #####    8           Switch indicating whether trajectory file is for a single 
-        #####                  satellite or a set of satellites.
-        #####                   ** 0 - Single satellite 0 0
-        #####                      1 - Set of satellites. This option has meaning 
-        #####                            only when used in conjunction with sets of 
-        #####                            satellites (See EPOCH and SLAVE option cards
-        #####                            for more details ). If satellite ID in columns
-        #####                            18-24 is a master satellite , then the trajectory
-        #####                          for all satellites in the set will be output.
-        #####  9-11           Mandatory unit number for trajectory file. All trajectory 
-        #####                  files within an arc must have unique unit numbers. 
-        #####                  The suggested unit number starts at 130.
-        #####  18-25        Satellite ID. This field must contain a valid ID.
-        #####  25-44        START date and time for trajectory output (YYMMDDHHMMSS.SS).
-        #####  45-59        STOP  date and time for trajectory output (YYMMDDHHMMSS.SS).
-        #####  60-72        Time interval between successive trajectory outputs.
+#     ####   INPUT THE OPTIONS ON THE SPECIFIC CARDS YOU WANT TO CHANGE
+#     ##### Putting in the options is one of the hardest parts of using GEODYN
+#     #####    They require VERY specific inputs depending on the run type.  
+#     card_strings = {}
 
 
-    #                                  12345678901234567 
-    card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
-    card_strings['RESID']  =  'RESIDU12'
-    card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
-    #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
-    card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
-    #                                  1234567890 
-    card_strings['ORBTVU'] =  'ORBTVU1201       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
-
-    ##### --------------------------------------------------------------------
-        ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
-        ####                             Be warned that if you include a bunch, the file 
-        ####                             will be huge, and the run time will increase 
-        ####                             (printing to ascii is slow)
-        ####    columns      IIS output option
-        ####      9          Simple list of GEODYN -IIS setup. Interpretive
-        ####     10          Interpretive list of GEODYN -IIS setup.
-        ####     11          Observation block selection report.
-        ####     12          Gravity model coefficients. Global  
-        ####     13          Global parameter values and sigmas.                             
-        ####     14          Arc parameter values and sigmas.
-        ####     15          Sea surface topography. Ocean
-        ####     16          Ocean Tide Model.  
-        ####    columns      IIE output option
-        ####     18          Simple list of GEODYN -IIS setup.
-        ####     19          Values of estimated E-biases.
-        ####     20          E-matrix labels in Summary Page.
-        ####     21          Adjusted station baselines  
-        ####     22          Correlations for adjusted parameters.                             
-        ####     23          Shadow crossing. 
-        ####-----------------------------------------------------------------------------------------------
-        ##### ORBTVU KEY ------ Controls the printing of ASCII 
-        #####                           orbit info to a separate file.
-        ####   columns       Orbit output option
-        #####    7           Frequency of trajectory output.
-        #####                    0 - vwd btwn times in cols 25-59 and at 
-        #####                          intvl specfd in columns 60-72.
-        #####                  **1 - vwd btwn times in cols 25-59 at 
-        #####                          data points only.
-        #####                    2 - vwd btwn times in cols 25-59 at data
-        #####                          points and at the intvl in columns 60-72.
-        #####    8           Coordinate system of output
-        #####                  **0 - True of date
-        #####                    1 - True of ref date 
-        #####                    2 - Mean of year 2000
-        #####    9           Trajectory type indicator.
-        #####                  **0 - Cartesian ephemeris 
-        #####                    1 - Keplerian ephemeris 
-        #####                    2 - Both Cartesian and Keplerian ephemerides.
-        #####    1           Iterations on which trajectory will be printed.
-        #####                    0 - First arc iter of first global iter 
-        #####                  **1 - Last arc iter of last global iter 
-        #####                    2 - Both first first and last last 
-        #####                    3 - All iterations
-
-    card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
-    card_strings['ATGRAV']  =  'ATGRAV9090              '+dt_epoch_start_minus2days +''+dt_epoch_end_plus1days[:-1]   
-    card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
-    card_strings['SIGMA           1']  =  'SIGMA           1               1.0                 1.0'    
-    card_strings['SIGMA           2']  =  'SIGMA           2               1.0                 1.0'    
-    card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'   
-    card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
-    card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
+#         #####  ORBFIL KEY ------ Requests output of trajectory file(s) on specified unit(s) 
+#         #####                           on the last iteration of the run.
+#         #####
+#         #####   columns      Orbit output option
+#         #####    7           Coordinate system of output
+#         #####                      0 - True of date (default)
+#         #####                      1 - True of reference date 
+#         #####                   ** 2 - Mean of year 2000    
+#         #####    8           Switch indicating whether trajectory file is for a single 
+#         #####                  satellite or a set of satellites.
+#         #####                   ** 0 - Single satellite 0 0
+#         #####                      1 - Set of satellites. This option has meaning 
+#         #####                            only when used in conjunction with sets of 
+#         #####                            satellites (See EPOCH and SLAVE option cards
+#         #####                            for more details ). If satellite ID in columns
+#         #####                            18-24 is a master satellite , then the trajectory
+#         #####                          for all satellites in the set will be output.
+#         #####  9-11           Mandatory unit number for trajectory file. All trajectory 
+#         #####                  files within an arc must have unique unit numbers. 
+#         #####                  The suggested unit number starts at 130.
+#         #####  18-25        Satellite ID. This field must contain a valid ID.
+#         #####  25-44        START date and time for trajectory output (YYMMDDHHMMSS.SS).
+#         #####  45-59        STOP  date and time for trajectory output (YYMMDDHHMMSS.SS).
+#         #####  60-72        Time interval between successive trajectory outputs.
 
 
-    ### Fix the coordinate system... PCE Data was in J2000
-    #         card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
-    #         card_strings['SATPAR   13']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
-    card_strings['REFSYS']  = 'REFSYS193310        '+epoch_start+'0'
-    card_strings['EPOCH'] = 'EPOCH               '+epoch_start+epoch_start+epoch_end
-    card_strings['SATPAR']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
+#     #                                  12345678901234567 
+#     card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
+#     card_strings['RESID']  =  'RESIDU12'
+#     card_strings['OBSVU']  =  'OBSVU 3'  # print residuals on First and last iterations only
+#     #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
+#     card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
+#     #                                  1234567890 
+#     card_strings['ORBTVU'] =  'ORBTVU1201       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
 
-    if change_elems_flag == True:
-        card_strings['ELEMS1']  = 'ELEMS11             '+X+''+Y+''+Z+''   
-        card_strings['ELEMS2']  = 'ELEMS2              '+X_dot+''+Y_dot+''+Z_dot+''
+#     ##### --------------------------------------------------------------------
+#         ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
+#         ####                             Be warned that if you include a bunch, the file 
+#         ####                             will be huge, and the run time will increase 
+#         ####                             (printing to ascii is slow)
+#         ####    columns      IIS output option
+#         ####      9          Simple list of GEODYN -IIS setup. Interpretive
+#         ####     10          Interpretive list of GEODYN -IIS setup.
+#         ####     11          Observation block selection report.
+#         ####     12          Gravity model coefficients. Global  
+#         ####     13          Global parameter values and sigmas.                             
+#         ####     14          Arc parameter values and sigmas.
+#         ####     15          Sea surface topography. Ocean
+#         ####     16          Ocean Tide Model.  
+#         ####    columns      IIE output option
+#         ####     18          Simple list of GEODYN -IIS setup.
+#         ####     19          Values of estimated E-biases.
+#         ####     20          E-matrix labels in Summary Page.
+#         ####     21          Adjusted station baselines  
+#         ####     22          Correlations for adjusted parameters.                             
+#         ####     23          Shadow crossing. 
+#         ####-----------------------------------------------------------------------------------------------
+#         ##### ORBTVU KEY ------ Controls the printing of ASCII 
+#         #####                           orbit info to a separate file.
+#         ####   columns       Orbit output option
+#         #####    7           Frequency of trajectory output.
+#         #####                    0 - vwd btwn times in cols 25-59 and at 
+#         #####                          intvl specfd in columns 60-72.
+#         #####                  **1 - vwd btwn times in cols 25-59 at 
+#         #####                          data points only.
+#         #####                    2 - vwd btwn times in cols 25-59 at data
+#         #####                          points and at the intvl in columns 60-72.
+#         #####    8           Coordinate system of output
+#         #####                  **0 - True of date
+#         #####                    1 - True of ref date 
+#         #####                    2 - Mean of year 2000
+#         #####    9           Trajectory type indicator.
+#         #####                  **0 - Cartesian ephemeris 
+#         #####                    1 - Keplerian ephemeris 
+#         #####                    2 - Both Cartesian and Keplerian ephemerides.
+#         #####    1           Iterations on which trajectory will be printed.
+#         #####                    0 - First arc iter of first global iter 
+#         #####                  **1 - Last arc iter of last global iter 
+#         #####                    2 - Both first first and last last 
+#         #####                    3 - All iterations
+
+#     card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
+#     card_strings['ATGRAV']  =  'ATGRAV9090              '+dt_epoch_start_minus2days +''+dt_epoch_end_plus1days[:-1]   
+#     card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
+#     card_strings['SIGMA           1']  =  'SIGMA           1               1.0                 1.0'    
+#     card_strings['SIGMA           2']  =  'SIGMA           2               1.0                 1.0'    
+#     card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'   
+#     card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
+#     card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
 
 
-    #### Suppress the printing of the flux model
-    card_strings['FLUX  1']  =  'FLUX  0'
+#     ### Fix the coordinate system... PCE Data was in J2000
+#     #         card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
+#     #         card_strings['SATPAR   13']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
+#     card_strings['REFSYS']  = 'REFSYS193310        '+epoch_start+'0'
+#     card_strings['EPOCH'] = 'EPOCH               '+epoch_start+epoch_start+epoch_end
+#     card_strings['SATPAR']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
+
+#     if change_elems_flag == True:
+#         card_strings['ELEMS1']  = 'ELEMS11             '+X+''+Y+''+Z+''   
+#         card_strings['ELEMS2']  = 'ELEMS2              '+X_dot+''+Y_dot+''+Z_dot+''
 
 
+#     #### Suppress the printing of the flux model
+#     card_strings['FLUX  1']  =  'FLUX  0'
+
+#     return(card_strings)
 
     
     
@@ -368,7 +368,7 @@ def EditSetupFile__rewrite_file_using_modified_cards(iisset_file, card_strings):
     with open(iisset_file, "w") as f:
         for line_num, line in enumerate(lines_all):
             if line_num in lines_replace:
-#                     print('replacing line',lines_replace[line_num])
+#                 print('replacing line',lines_replace[line_num])
                 f.write(lines_replace[line_num]+'\n')
             else:
                  f.write(line)
@@ -387,6 +387,7 @@ def EditSetupFile__rewrite_file_and_remove_unwantedcards(iisset_file, cards_to_r
     with open(iisset_file, "w") as f:
         for iline, line in enumerate(lines_all):
             if any(card in line for card in cards_to_remove):
+#                 print('removing card: ', card)
                 # IF the any of the cards in the list are in the line, dont add it
                 pass
             else:
@@ -396,29 +397,33 @@ def EditSetupFile__rewrite_file_and_remove_unwantedcards(iisset_file, cards_to_r
                 
                 
                 
-def EditSetupFile__rewrite_file_and_add_missing_cards(iisset_file, card_flag):
+def EditSetupFile__rewrite_file_and_add_missing_cards(iisset_file, card_flag, card_strings):
                 
     with open(iisset_file, "r") as f:
         lines_all = f.readlines()                  
 
     # use some switches to determine if things have already been written in the loop and avoid writing too many
-    switch_cardcount = 0
     switch_2     = True
+    switch_cardcount = 0
 
-    for card in card_flag:
-        if card_flag[card] == False:
-            with open(iisset_file, "w") as f:
-                for line in lines_all:
-                    if 'ALBEDO' in line:  #this overwrites the line after albedo. 
-                        # MAYBE TODO:  this may not write multiple cards that aren't in the file
+    with open(iisset_file, "w") as f:
+        for line in lines_all:
+            if 'ALBEDO' in line:  #this overwrites the line after albedo. 
+                # MAYBE TODO:  this may not write multiple cards that aren't in the file
+                for card in card_flag:
+                    if card_flag[card] == False:
                         if switch_cardcount == 0:
                             f.write(line)
-                            f.write(card_strings[card] + ' \n') 
+                            f.write(card_strings[card] + ' \n')
+#                             print('0 Adding the card', card)
+                            switch_cardcount += 1
                         else: 
                             f.write(card_strings[card] + ' \n')
+#                             print('1 Adding the card', card)
                             switch_cardcount += 1
-                    else:
-                        f.write(line)                
+
+            else:
+                f.write(line)                
                 
                 
                 
@@ -465,7 +470,7 @@ def EditSetupFile__rewrite_file_delete_GPS_sats(iisset_file):
     with open(iisset_file, "w") as f:
         for iline, line in enumerate(lines_all):
             if any(gps in line for gps in delete_gps_sats):
-                # IF the any of GPS IDs in the list are in the line, dont add it the line
+                # If the any of GPS IDs in the list are in the line, dont add it the line
                 pass
             else:
                 f.write(line)      

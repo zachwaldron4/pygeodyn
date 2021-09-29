@@ -317,6 +317,8 @@ def Convert_cartesian_to_NTW_returnall(state_vector):
 
 
 def Pygeodyn_OBJECT_freeupmemory(OBJ):
+    SAT_ID = int(OBJ.__dict__['global_params']['SATID'])
+
     for i,val in enumerate(OBJ.__dict__['Density'].keys()):
         
         ####-----------------------------------------------------------------
@@ -324,12 +326,12 @@ def Pygeodyn_OBJECT_freeupmemory(OBJ):
         
         del OBJ.__dict__['Density'][val]['Lat']
         del OBJ.__dict__['Density'][val]['Lon']
-        del OBJ.__dict__['Density'][val]['X']
-        del OBJ.__dict__['Density'][val]['Y']
-        del OBJ.__dict__['Density'][val]['Z']
-        del OBJ.__dict__['Density'][val]['XDOT']
-        del OBJ.__dict__['Density'][val]['YDOT']
-        del OBJ.__dict__['Density'][val]['ZDOT']
+#         del OBJ.__dict__['Density'][val]['X']
+#         del OBJ.__dict__['Density'][val]['Y']
+#         del OBJ.__dict__['Density'][val]['Z']
+#         del OBJ.__dict__['Density'][val]['XDOT']
+#         del OBJ.__dict__['Density'][val]['YDOT']
+#         del OBJ.__dict__['Density'][val]['ZDOT']
         del OBJ.__dict__['Density'][val]['Height (meters)']
         del OBJ.__dict__['Density'][val]['drhodz (kg/m**3/m)']
         
@@ -337,13 +339,22 @@ def Pygeodyn_OBJECT_freeupmemory(OBJ):
         ####-----------------------------------------------------------------
         #### DELETE UNNECESSARY VARS IN Residuals_obs
         
-#         del OBJ.__dict__['Residuals_obs'][val]['StatSatConfig']
         del OBJ.__dict__['Residuals_obs'][val]['Sat_main']
         del OBJ.__dict__['Residuals_obs'][val]['track_1']
         del OBJ.__dict__['Residuals_obs'][val]['track_2']
         del OBJ.__dict__['Residuals_obs'][val]['Note']
         del OBJ.__dict__['Residuals_obs'][val]['Elev1']
         del OBJ.__dict__['Residuals_obs'][val]['Elev2']
+        ####
+        del OBJ.__dict__['Residuals_obs'][val]['StatSatConfig']
+        del OBJ.__dict__['Residuals_obs'][val]['Observation']
+        del OBJ.__dict__['Residuals_obs'][val]['Residual']
+        del OBJ.__dict__['Residuals_obs'][val]['RatiotoSigma']
+
+         
+        
+        
+        
         
         
         ####-----------------------------------------------------------------
@@ -351,8 +362,19 @@ def Pygeodyn_OBJECT_freeupmemory(OBJ):
         
         iterations = OBJ.__dict__['run_parameters'+val]['total_iterations']
         for iters in np.arange(1, iterations):
-        #     print(iters)
-            del OBJ.__dict__['AdjustedParams'][val][iters]
+#             print(iters)
+            if iters == iterations:
+                del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0XPOS']
+                del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0YPOS']
+                del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0ZPOS']
+#                 del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0XPOS']
+
+                pass
+            else:
+                try:
+                    del OBJ.__dict__['AdjustedParams'][val][iters]
+                except:
+                    pass
         
         
         ####-----------------------------------------------------------------
@@ -363,4 +385,15 @@ def Pygeodyn_OBJECT_freeupmemory(OBJ):
         del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite East Longitude']
         del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Height']
         del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['MJDSEC ET']
+        
+        
+        
+    #### For big data non-sense
+#     del OBJ.__dict__['AdjustedParams']
+#    del OBJ.__dict__['Trajectory_orbfil']
+    del OBJ.__dict__['Density']
+#     del OBJ.__dict__['Residuals_obs']
+    del OBJ.__dict__['Residuals_summary']
+
+        
     return(OBJ)

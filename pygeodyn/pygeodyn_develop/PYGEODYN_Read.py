@@ -239,12 +239,6 @@ class PygeodynReader:
                 first_sat_first_time = ((NSATS +1)* NTIMBF +6) + (NSATS -1)* NWDSAT #2* NTIMBF +6
                 last_sat_last_time   = ((NSATS +1)* NTIMBF +5) + NSATS*NWDSAT*NTB #(((NSATS+1)* NTIMBF+5)+(NSATS*NWDSAT))
 
-        #         print('first_sat_first_time', first_sat_first_time)
-        #         print('last_sat_last_time  ', last_sat_last_time)
-
-
-
-
                 for i in np.arange(first_sat_first_time, last_sat_last_time  , 24):
                     index = int(i)
 
@@ -895,7 +889,7 @@ class PygeodynReader:
 
         end = time.time()
         elapsed = end - start
-        print('Adjusted_params: ',elapsed)
+#         print('Adjusted_params: ',elapsed)
         return(SatMain_AdjustedParams)
         
     def read_density_file(self):
@@ -923,15 +917,15 @@ class PygeodynReader:
                                     'rho (kg/m**3)',
                                     'drhodz (kg/m**3/m)',
 #                                      
-#                                     'flux_daily',
-#                                     'flux_avg',
-#                                     'Kp',
-                                    'X',
-                                    'Y',
-                                    'Z',
-                                    'XDOT',
-                                    'YDOT',
-                                    'ZDOT',
+                                    'flux_daily',
+                                    'flux_avg',
+                                    'Kp',
+#                                     'X',
+#                                     'Y',
+#                                     'Z',
+#                                     'XDOT',
+#                                     'YDOT',
+#                                     'ZDOT',
                                   ],
                             sep = '\s+',
                             )
@@ -957,7 +951,11 @@ class PygeodynReader:
 
             list_val = "".join(list_val)
             list_val2 = "".join(list_val2)
-
+            
+            #### If you get an error here, it is likely:
+            ####
+            ###
+            
             val_float = np.float(list_val)
             val_float2 = np.float(list_val2)
 
@@ -1986,12 +1984,15 @@ class PygeodynReader:
         ARC_FILES = self.make_list_of_arcfilenames()
         
         for i in ARC_FILES:
+#             print(i)
             if os.path.exists(self.path_to_model+'DENSITY/'):
                 os.chdir(self.path_to_model+'DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
 
             if os.path.exists(self.path_to_model+'ORBITS/'):
                 os.chdir(self.path_to_model+'ORBITS/')
+#                 print(self.path_to_model+'ORBITS/')
+#                 print(i+'_orb1.bz2')
                 os.system('bunzip2 -v '+i+'_orb1.bz2')
 
         

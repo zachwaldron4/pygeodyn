@@ -9,7 +9,7 @@ import os
 
 
 import sys
-sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 from common_functions          import MJDS_to_YYMMDDHHMMSS
 
 
@@ -541,64 +541,52 @@ class PygeodynPreprocessing:
         self.get_timechopped_rvgdata()
     
     
-        
-        
-        #####     Save a file to be used to amend ELEMS in IISSET
-        ##########-------------------------------------------------------------------
-        print()
-        print(self.tabtab,'=======================================================')
-        print(self.tabtab,'STEP 2: Saving the EPOCH, POS, VEL to a text file....')
-        print(self.tabtab,'=======================================================')
-        print()
+##########   UNCOMMENT THE BELOW TO CONSTRUCT A PCE TEXT FILE
+#         ##########----------------------------------------------------------------------------------------------------------------
+#         #####     Save a file to be used to amend ELEMS in IISSET
+#         print()
+#         print(self.tabtab,'=======================================================')
+#         print(self.tabtab,'STEP 2: Saving the EPOCH, POS, VEL to a text file....')
+#         print(self.tabtab,'=======================================================')
+#         print()
 
-#         print('Saving the EPOCH info and POS+VEL vectors as text file.')
-        df_traj_txt_big = copy.deepcopy(self.RVG_FINAL)
+# #         print('Saving the EPOCH info and POS+VEL vectors as text file.')
+#         df_traj_txt_big = copy.deepcopy(self.RVG_FINAL)
 
-        #### We need to prepare the dataframe to be saved to a CSV according 
-        #        to the requirements of the fortran code
+#         #### We need to prepare the dataframe to be saved to a CSV according 
+#         #        to the requirements of the fortran code
 
-        #### first integer of TRAJ.txt is just the first word 
-        #      of RVG data record converted to an integer 
-#         df_traj_txt_big.insert(0, 'first_int', df_traj_txt_big['MJDSEC_secs_timeGPS'].astype(int))
+#         ##### Save as a txt file with pandas built-in function.
+#         #### BZIP2 the file and move it to the setup directory
+#         df_traj_txt_big.to_csv(self.path_preprocessing + '/PCE_ascii_new.txt', sep=' ', index = False, header=False)
+#         os.system('rm'+' '+'/data/data_geodyn/inputs/icesat2/setups/PCE_ascii_new.txt')
+#         os.system('rm'+' '+'/data/data_geodyn/inputs/icesat2/setups/PCE_ascii_new.txt.bz2')
 
-#         del df_traj_txt['Date']
-#         del df_traj_txt_big['MJDSEC_secs_timeGPS']
-
-        #### The first floating point of TRAJ.txt is just 
-        #        the sum of words 2 and 3 of the RVG data record
-#         sum_words_2_and_3 = df_traj_txt_big['RSEC_fractional_secs'] + df_traj_txt_big['GPS_offset_secs_utc']
-#         df_traj_txt_big.insert(1, 'first_float', sum_words_2_and_3)
-#         del df_traj_txt_big['RSEC_fractional_secs'] 
-#         del df_traj_txt_big['GPS_offset_secs_utc']
-
-        ##### Save as a txt file with pandas built-in function.
-        #### BZIP2 the file and move it to the setup directory
-        df_traj_txt_big.to_csv(self.path_preprocessing + '/PCE_ascii.txt', sep=' ', index = False, header=False)
-        os.system('rm'+' '+'/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt')
-        os.system('rm'+' '+'/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt.bz2')
-
-        os.system('bzip2'+' '+'/data/data_geodyn/inputs/icesat2/pre_processing/PCE_ascii.txt')
-        os.system('mv'+' '+self.path_preprocessing+'/PCE_ascii.txt.bz2'+ ' '+'/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt.bz2')
+#         os.system('bzip2'+' '+'/data/data_geodyn/inputs/icesat2/pre_processing/PCE_ascii_new.txt')
+#         os.system('mv'+' '+self.path_preprocessing+'/PCE_ascii_new.txt.bz2'+ ' '+'/data/data_geodyn/inputs/icesat2/setups/PCE_ascii_new.txt.bz2')
 
         
-#         df_traj_txt_big = 0
-        del df_traj_txt_big
+# #         df_traj_txt_big = 0
+#         del df_traj_txt_big
     
-        print('File loc: /data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt.bz2')
-        ##########-------------------------------------------------------------------
+#         print('File loc: /data/data_geodyn/inputs/icesat2/setups/PCE_ascii_new.txt.bz2')
+#         ##########----------------------------------------------------------------------------------------------------------------
+
+
+
+
         print()
         print(self.tabtab,'=======================================================')
         print(self.tabtab,'STEP 3: Make ASCII.txt file to be read by FORTRAN code.')
         print(self.tabtab,'=======================================================')
         print()
-
-        
+       
         df_traj_txt = copy.deepcopy(self.RVG_FINAL)
 
         #### We need to prepare the dataframe to be saved to a CSV according 
-        #        to the requirements of the fortran code
+        ####        to the requirements of the fortran code
         #### first integer of TRAJ.txt is just the first word 
-        #      of RVG data record converted to an integer 
+        ####      of RVG data record converted to an integer 
         df_traj_txt.insert(0, 'first_int', df_traj_txt['MJDSEC_secs_timeGPS'].astype(int))
 
         del df_traj_txt['Date']
@@ -629,7 +617,7 @@ class PygeodynPreprocessing:
         print()
         
         path_to_data = self.path_preprocessing
-        path_to_PCE_fortran ='/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_preprocessing/'
+        path_to_PCE_fortran ='/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_preprocessing/'
         in_filename  = 'TRAJ.txt'
         out_filename = 'g2b_pce'
         ### CHANGE DIRECTORY to where the fortran code is hosted

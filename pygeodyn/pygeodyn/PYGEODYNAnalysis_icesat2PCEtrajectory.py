@@ -30,15 +30,17 @@ import plotly.express as px
 col1 = px.colors.qualitative.Plotly[0]
 col2 = px.colors.qualitative.Plotly[1]
 col3 = px.colors.qualitative.Plotly[2]
+col4 = px.colors.qualitative.Plotly[3]
+col5 = px.colors.qualitative.Plotly[4]
 
 
 import sys
-sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 from common_functions          import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW
 
 
 
-def add_arc_background_w_text(fig, y_vals,  arc_date_1, arc_date_2, iarc, arc_text = False):
+def add_arc_background_w_text(fig, y_vals,  arc_date_1, arc_date_2, iarc, opacity_val, arc_text = False):
     '''
     Define the arc parameters for this run to be plotted as background 
     
@@ -57,7 +59,7 @@ def add_arc_background_w_text(fig, y_vals,  arc_date_1, arc_date_2, iarc, arc_te
     #### Arc Background + Label ####
     fig.add_vrect(
         x0=arc_date_1, x1=arc_date_2,
-        fillcolor=color_bg, opacity=0.3,
+        fillcolor=color_bg, opacity=opacity_val,
         layer="below", line_width=0,
     )
 
@@ -113,22 +115,32 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
 
     if plot_num == 0:
         col = col1
-        x_annot = 1.05
-        y_annot = .97
-        m_size = 2.5
+        x_annot = 1.09
+        y_annot = .90
+        m_size = 4
     elif plot_num == 1:
-        x_annot = 1.05
-        y_annot = .8
+        x_annot = 1.09
+        y_annot = .7
         col = col2
-        m_size = 2.5
+        m_size = 3.5
     elif plot_num == 2:
-        x_annot = 1.05
-        y_annot = .55 
-        col = col3    
+        x_annot = 1.09
+        y_annot = .5
+        col = col3
         m_size = 2.5
+    elif plot_num == 3:
+        x_annot = 1.09
+        y_annot = .3
+        col = col4
+        m_size = 1.5
+    elif plot_num == 4:
+        x_annot = 1.09
+        y_annot = .1
+        col = col5
+        m_size = 1
         
 #     print(arc_list)
-
+    data_skip = 40
     for i,  arc in enumerate(obj_m1.__dict__['global_params']['arc_input']):
         i_arc = i+1
         
@@ -139,8 +151,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
         index_pce_y = obj_m1.Residuals_obs[arc]['StatSatConfig'] == 'PCE Y    '
         index_pce_z = obj_m1.Residuals_obs[arc]['StatSatConfig'] == 'PCE Z    '
 
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_x][::15],
-                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_x][::15]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_x][::data_skip],
+                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_x][::data_skip]*1e2,
                                  name= 'PCE X',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -149,8 +161,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=1, col=1,
                                  )
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_y][::15],
-                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_y][::15]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_y][::data_skip],
+                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_y][::data_skip]*1e2,
                                  name= 'PCE Y',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -159,8 +171,8 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
                                  ),
                                  row=2, col=1,
                                  )
-        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_z][::10],
-                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_z][::10]*1e2,
+        fig.add_trace(go.Scattergl(x=obj_m1.Residuals_obs[arc]['Date'][index_pce_z][::data_skip],
+                                 y=obj_m1.Residuals_obs[arc]['Residual'][index_pce_z][::data_skip]*1e2,
                                  name= 'PCE Z',
                                  mode='markers',
                                  marker=dict(color=col,
@@ -172,7 +184,7 @@ def plot_residuals_observed(fig, obj_m1, plot_num):
         arc_date_1 = obj_m1.Residuals_obs[arc]['Date'].iloc[0]
         arc_date_2 = obj_m1.Residuals_obs[arc]['Date'].iloc[-1]
 
-        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ),arc_date_1, arc_date_2,i_arc, False)
+        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ),arc_date_1, arc_date_2,i_arc, 0.1, False)
 
         fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
@@ -221,13 +233,13 @@ def Calc_Cd_percent_diff_apriori(obj_m1):
             all_cd_m1.append(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][val][which_stat])
             all_dates_m1.append(labels[i])
 
-    # take % difference from a priori
+    # take ratio of dc (adjsuted / a priori)
     cd_apriori= 2.2
-    percdiff_cd_m1 = ((np.array(all_cd_m1) - cd_apriori)/ cd_apriori)*100
+    ratio_cd =  np.array(all_cd_m1)/ cd_apriori    #  ((np.array(all_cd_m1) - cd_apriori)/ cd_apriori)*100
 
     obj_m1_stats = {}
     obj_m1_stats['cd_apriori'] = cd_apriori
-    obj_m1_stats['cd_percdiff_from_apriori'] = percdiff_cd_m1
+    obj_m1_stats['ratio_cd'] = ratio_cd   # cd_percdiff_from_apriori
     obj_m1_stats['all_cd'] = all_cd_m1
     obj_m1_stats['all_dates'] = all_dates_m1
 
@@ -239,24 +251,47 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
 
     obj_m1_stats = Calc_Cd_percent_diff_apriori(obj_m1)
 
-    
     if plot_num == 0:
         col = col1
-        x_annot = 1.05
-        y_annot = .90
-        m_size = 2
-        
+        x_annot = 1.09
+        y_annot = .95
+        m_size = 4
     elif plot_num == 1:
-        x_annot = 1.05
-        y_annot = .8
+        x_annot = 1.09
+        y_annot = .85
         col = col2
-        m_size = 2
-        
+        m_size = 3.5
     elif plot_num == 2:
-        x_annot = 1.05
-        y_annot = .65 
-        col = col3    
-        m_size = 2
+        x_annot = 1.09
+        y_annot = .75
+        col = col3
+        m_size = 2.5
+    elif plot_num == 3:
+        x_annot = 1.09
+        y_annot = .56
+        col = col4
+        m_size = 1.5
+    elif plot_num == 4:
+        x_annot = 1.09
+        y_annot = .45
+        col = col5
+        m_size = 1
+        
+#     if plot_num == 0:
+#         col = col1
+#         x_annot = 1.05
+#         y_annot = .90
+#         m_size = 2
+#     elif plot_num == 1:
+#         x_annot = 1.05
+#         y_annot = .8
+#         col = col2
+#         m_size = 2
+#     elif plot_num == 2:
+#         x_annot = 1.05
+#         y_annot = .65 
+#         col = col3    
+#         m_size = 2
         
     SAT_ID = int(obj_m1.__dict__['global_params']['SATID'])
     which_stat = 'CURRENT_VALUE'
@@ -311,13 +346,13 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
         
         arc_date_1 = datetime.strptime(arc_date_1, '%Y.%j')
         arc_date_2 = arc_date_1 + (pd.to_timedelta(24,'h'))
-        fig = add_arc_background_w_text(fig, 2.2, arc_date_1, arc_date_2, i_arc, False)
+        fig = add_arc_background_w_text(fig, 2.2, arc_date_1, arc_date_2, i_arc, 0.2, False)
 
     #### SECOND PLOT (PERC diff b/w apriori and Cd)
     fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
     fig.add_trace(go.Scattergl(x=obj_m1_stats['all_dates'],
-                             y=obj_m1_stats['cd_percdiff_from_apriori'],
+                             y=obj_m1_stats['cd_ratio'],
                             name= model_m1,
                             mode='markers',
                             marker=dict(
@@ -331,7 +366,7 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
 
     # fix layout info:
     fig.update_yaxes( title="Cd ",exponentformat= 'power',row=1, col=1)
-    fig.update_yaxes( title="% difference",exponentformat= 'power',row=2, col=1)
+    fig.update_yaxes( title="Ratio (Adjusted Cd / 2.2)",exponentformat= 'power',row=2, col=1)
     fig.update_xaxes( title="Date", row=2, col=1)
 
     fig.update_layout(title="Time Dependent Drag Coefficient ")
@@ -652,7 +687,7 @@ def ARCOVERLAP_2arcs_ObsResids_RSW_radial(fig, obj_m1, plot_num, arc1, arc2):
 
 #     for i, arc in enumerate([arc1 , arc2]):
 #         i_arc = i+1
-    data_skip = 7
+    data_skip = 14
     ####--------------------- Radial Component  ---------------------
 
     fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
@@ -737,16 +772,15 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
     
     first_arc = arc1
     last_arc  = arc2
-    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date_UTC'].iloc[0],
+    first_arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][first_arc]['data_record']['Date_UTC'].iloc[3],
     last_arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][last_arc]['data_record']['Date_UTC'].iloc[-2]
     first_arc_first_time_str =  str(first_arc_first_time[0])#.replace( "'",' ') 
     last_arc_last_time =  str(last_arc_last_time)#.replace( "'",' ') 
     
-    print('first_arc_first_time',first_arc_first_time)
+    
     ####---------------------------------------------------------
     with open(StateVector_PCE_datafile, 'r') as f:
         for line_no, line_text in enumerate(f):
-            
             if first_arc_first_time_str in line_text:
                 first_line = line_no
             elif last_arc_last_time in line_text:
@@ -788,6 +822,9 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
          right=PCE_data, right_on='Date_pd')
     C_2 = pd.merge(left=orbfil_arc2, left_on='Date_pd',
              right=PCE_data, right_on='Date_pd')
+
+
+    
 
     
 
@@ -832,7 +869,7 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
 
 #     for i, arc in enumerate([arc1 , arc2]):
 #         i_arc = i+1
-    data_skip = 7
+    data_skip = 14
     ####--------------------- INTRACK Component  ---------------------
     fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
                              y=InTrack_comp_orbfil[::data_skip],
@@ -875,7 +912,11 @@ def ARCOVERLAP_2arcs_ObsResids_NTW_intrack(fig, obj_m1, plot_num, arc1, arc2):
                              )
 
     ### Start of second arc
-    overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date_UTC'].iloc[0]
+#     overlap_start = obj_m1.__dict__['Trajectory_orbfil'][arc2]['data_record']['Date_UTC'].iloc[0]
+#     ### End of first arc
+#     overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date_UTC'].iloc[-1]
+    
+    overlap_start = obj_m1.__dict__['Residuals_obs'][arc1]['Date'].iloc[-1]
     ### End of first arc
     overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc1]['data_record']['Date_UTC'].iloc[-1]
     fig.add_vrect(  x0=overlap_start, x1=overlap_end,
@@ -909,16 +950,24 @@ def plot_residual_meas_summary(fig, obj_m1, plot_num):
 
     if plot_num == 0:
         col = col1
-        x_annot = 1.05
-        y_annot = .9
+        x_annot = 1.09
+        y_annot = .95
     elif plot_num == 1:
-        x_annot = 1.05
-        y_annot = .8
+        x_annot = 1.09
+        y_annot = .95-(.13*1)
         col = col2
     elif plot_num == 2:
-        x_annot = 1.05
-        y_annot = .7 
+        x_annot = 1.09
+        y_annot = .95-(.13*2)
         col = col3    
+    elif plot_num == 3:
+        x_annot = 1.09
+        y_annot = .95-(.13*3.5)
+        col = col4
+    elif plot_num == 4:
+        x_annot = 1.09
+        y_annot = .95-(.13*5)
+        col = col5
     mark_size = 10
 
 
@@ -957,7 +1006,7 @@ def plot_residual_meas_summary(fig, obj_m1, plot_num):
         arc_date_1 = obj_m1.Residuals_obs[arc]['Date'].iloc[0]
         arc_date_2 = obj_m1.Residuals_obs[arc]['Date'].iloc[-1]
         
-        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ),arc_date_1, arc_date_2,i_arc, False)
+        fig = add_arc_background_w_text(fig, 1.1*np.max(obj_m1.Residuals_obs[arc]['Residual'] ),arc_date_1, arc_date_2,i_arc, 0.1,False)
 
     fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
 
@@ -1062,7 +1111,9 @@ def rms_summary_table(Obj_list):
 def scale_density_with_cdadjustment(obj_m1):
     obj_m1_stats = Calc_Cd_percent_diff_apriori(obj_m1)
     cd_windows = obj_m1_stats['all_dates']
-    cd_scaling = obj_m1_stats['cd_percdiff_from_apriori']/100
+    cd_scaling = obj_m1_stats['ratio_cd']
+    
+#     print('cd_scaling', cd_scaling)
     
     save_dens  = []
     save_dates = []
@@ -1074,8 +1125,10 @@ def scale_density_with_cdadjustment(obj_m1):
         for i,val in enumerate(cd_windows):
             
             window = np.logical_and(dates>cd_windows[i], dates < cd_windows[i] + timedelta(hours=9))  #hours=8))
-            density_scaled = np.add( dens[window], np.multiply(dens[window],cd_scaling[i]))
-            
+#             print('cd_scaling[i]',cd_scaling[i])
+#             density_scaled = np.add( dens[window], np.multiply(dens[window],cd_scaling[i]))
+            density_scaled = np.multiply(dens[window],cd_scaling[i])
+
             save_dates.append( dates[window])
             save_dens.append( density_scaled)
     return(save_dates, save_dens)
@@ -1186,18 +1239,43 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
 
 
     model_m1 = obj_m1.__dict__['global_params']['den_model']
+#     if plot_num == 0:
+#         col = col1
+#         x_annot = 1.05
+#         y_annot = .9
+#     elif plot_num == 1:
+#         x_annot = 1.05
+#         y_annot = .8
+#         col = col2
+#     elif plot_num == 2:
+#         x_annot = 1.05
+#         y_annot = .7 
+#         col = col3
     if plot_num == 0:
         col = col1
-        x_annot = 1.05
-        y_annot = .9
+        x_annot = 1.09
+        y_annot = .95
+        m_size = 4
     elif plot_num == 1:
-        x_annot = 1.05
-        y_annot = .8
+        x_annot = 1.09
+        y_annot = .85
         col = col2
+        m_size = 3.5
     elif plot_num == 2:
-        x_annot = 1.05
-        y_annot = .7 
+        x_annot = 1.09
+        y_annot = .75
         col = col3
+        m_size = 2.5
+    elif plot_num == 3:
+        x_annot = 1.09
+        y_annot = .56
+        col = col4
+        m_size = 1.5
+    elif plot_num == 4:
+        x_annot = 1.09
+        y_annot = .45
+        col = col5
+        m_size = 1
 
     data_nums_2 = decimation
     dates_scal, dens_scal = scale_density_with_cdadjustment(obj_m1)
@@ -1240,7 +1318,7 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
         arc_date_2 = obj_m1.Density[arc]['Date'].iloc[-1]
         
         fig = add_arc_background_w_text(fig, np.max(obj_m1.Density[arc]['Date']),
-                                            arc_date_1, arc_date_2, i_arc, False)
+                                            arc_date_1, arc_date_2, i_arc, 0.1, False)
 
 
     fig.update_layout(
@@ -1575,6 +1653,227 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
 
 # # fig.update_yaxes(title_text="Residuals (cm)", row=1, col=1, secondary_y=True, color='SkyBlue')
 
+
+
+
+def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
+
+#     import sys
+#     sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
+#     from common_functions          import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW
+
+
+#     fig = make_subplots(rows=2, cols=1,
+#                 shared_xaxes=True,
+#                 subplot_titles=(['Adjusted Cd ratio to a priori (2.2)', 'In-Track Component Residuals (PCE-ORBFIL)']),
+#                 vertical_spacing = 0.1,
+#                 specs=[ [{"secondary_y": False }],
+#                         [{"secondary_y": False }]],)
+
+    model_m1 = obj_m1.__dict__['global_params']['den_model']
+
+    if plot_num == 0:
+        col = col1
+        x_annot = 1.09
+        y_annot = .90
+        m_size = 4
+    elif plot_num == 1:
+        x_annot = 1.09
+        y_annot = .7
+        col = col2
+        m_size = 3.5
+    elif plot_num == 2:
+        x_annot = 1.09
+        y_annot = .5
+        col = col3
+        m_size = 2.5
+    elif plot_num == 3:
+        x_annot = 1.09
+        y_annot = .3
+        col = col4
+        m_size = 2
+    elif plot_num == 4:
+        x_annot = 1.09
+        y_annot = .1
+        col = col5
+        m_size = 2
+
+    ###### GET THE PCE DATA:
+    StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+    SAT_ID = int(obj_m1.__dict__['global_params']['SATID'])
+    which_stat = 'CURRENT_VALUE'
+    data_skip = 15
+
+    ####--------------------- Residual  ---------------------
+    for ii,arc in enumerate(obj_m1.__dict__['global_params']['arc_input'][::2]):
+        print(arc)
+
+
+
+    #     arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][arcval]['data_record']['Date_UTC'].iloc[0],
+    #     arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arcval]['data_record']['Date_UTC'].iloc[-1],
+    #     arc_first_time_str =  str(arc_first_time[0])  
+    #     arc_last_time_str   =  str(  arc_last_time[0]) 
+
+        arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
+        arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
+#         print('arc_first_time',arc_first_time)
+#         print('arc_last_time',arc_last_time)
+# 
+        
+        arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
+        arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
+
+#         print('arc_first_time_str',arc_first_time_str)
+#         print('arc_last_time_str',arc_last_time_str)
+        
+        A=[]
+        for i,val in enumerate(np.arange(-20,20)):
+            A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
+            
+#         def nearest(items, pivot):
+#             return min(items, key=lambda x: abs(x - pivot))
+        
+#         save_dates = []
+        ####---------------------------------------------------------
+        with open(StateVector_PCE_datafile, 'r') as f:
+            for line_no, line_text in enumerate(f):
+#                 save_dates.append(line_text[1:20])
+#                 if arc_first_time_str in line_text:
+                if any(times in line_text for times in A):
+#                     print('Print this if a number works')
+                    first_line = line_no
+              
+                if arc_last_time_str in line_text:
+                    last_line = line_no
+#                     print(line_text[1:20])
+                    break
+#         print(save_dates)
+
+        ####   IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
+        ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
+        PCE_data = pd.read_csv(StateVector_PCE_datafile, 
+                    skiprows = first_line, 
+                    nrows=last_line-first_line,           
+                    sep = '\s+',
+                    dtype=str,
+                    names = [
+                            'Date',
+                            'MJDSECs', 
+                            'RSECS', #(fractional secs)
+                            'GPS offset', # (UTC - GPS offset (secs))
+                            'X',
+                            'Y',
+                            'Z',
+                            'X_dot',
+                            'Y_dot',
+                            'Z_dot',
+                            'YYMMDDhhmmss',
+                                ],)
+
+        PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
+        orbfil_arc1 = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']
+        orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
+
+        C_1 = pd.merge(left=orbfil_arc1, left_on='Date_pd',
+             right=PCE_data, right_on='Date_pd')
+
+        X = C_1['Satellite Inertial X coordinate']
+        Y = C_1['Satellite Inertial Y coordinate']
+        Z = C_1['Satellite Inertial Z coordinate']
+        Xdot = C_1['Satellite Inertial X velocity']
+        Ydot = C_1['Satellite Inertial Y velocity']
+        Zdot = C_1['Satellite Inertial Z velocity']
+        state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+        InTrack_comp_orbfil = [Convert_cartesian_to_NTW(x) for x in state_vector]
+
+        X = C_1['X'].astype(float)
+        Y = C_1['Y'].astype(float)
+        Z = C_1['Z'].astype(float)
+        Xdot = C_1['X_dot'].astype(float)
+        Ydot = C_1['Y_dot'].astype(float)
+        Zdot = C_1['Z_dot'].astype(float)
+        state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+        InTrack_comp_PCE = [Convert_cartesian_to_NTW(x) for x in state_vector]
+
+        resid = (np.array(InTrack_comp_PCE) - np.array(InTrack_comp_orbfil))*1e2
+
+    #     print('C_1              ', np.size(C_1['Date_pd']))
+    #     print('resid            ', np.size(resid))
+    #     print('InTrack_comp_PCE ', np.size(InTrack_comp_PCE))
+
+        fig.add_trace(go.Scattergl(x=C_1['Date_pd'][::data_skip],
+                                   y=resid[::data_skip],
+                                 name= '(PCE-orbfil)',
+                                 mode='markers',
+                                 marker=dict(color=col,
+                                 size=m_size,),
+                                 showlegend=False,
+                                 ),
+                                 secondary_y=False,
+                                 row=2, col=1,
+                                 )
+
+        str_run_param = 'run_parameters'+ arc
+        final_iter = obj_m1.__dict__[str_run_param]['str_iteration']
+
+        i_arc = ii+1
+        last_iter = list(obj_m1.AdjustedParams[arc].keys())[-1]
+        time_dep_cd_dates = list(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'].keys())
+
+
+        val_list_1 = []
+        for i in time_dep_cd_dates:
+    #         print(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][i][which_stat])
+            val_list_1.append(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][i][which_stat])
+    #         print('CD_DATE  ',pd.to_datetime(i))
+            cd_ratio =  obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][i][which_stat]/ 2.2
+            fig.add_trace(go.Scattergl(x=  [pd.to_datetime(i)],
+                                       y=  [cd_ratio],
+                               name= model_m1,
+#                                mode='markers+text',
+                               mode='markers',
+                               marker=dict(
+                               color=col,
+                               size=7,
+                               ),
+#                                text =  ''+str(round(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][i][which_stat], 2)), #str(cd_ratio),
+#                                textposition="top center",
+                               showlegend=False,
+                               ),
+                               row=1, col=1,)
+
+        add_dt = pd.to_timedelta(180,'m')
+        overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
+
+        date = pd.to_datetime(i)
+
+
+        ### Start of second arc
+        overlap_start = obj_m1.__dict__['Residuals_obs'][arc]['Date'].iloc[-1]
+        ### End of first arc
+        overlap_end   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
+        fig.add_vrect(  x0=overlap_start, x1=overlap_end,
+                        fillcolor='gold', opacity=0.1, #lightgoldenrodyellow
+                        layer="below", line_width=0)
+
+
+    fig.update_layout(title="NTW Coord. System + Predicted Window (light yellow window)")
+    fig.update_layout(
+                    autosize=False,
+                    width=900,
+                    height=700,
+                    font=dict(size=12),
+                    legend= {'itemsizing': 'constant'})
+
+    fig.update_yaxes( title="Cd Ratio (Adjusted Cd/2.2) ",exponentformat= 'power',row=1, col=1)
+    fig.update_yaxes( title="Residual (cm)",       exponentformat= 'power',row=2, col=1)
+    fig.update_xaxes( title="Date", row=2, col=1)
+    fig.update_yaxes(title_text="Residuals (cm)", row=1, col=1, secondary_y=True, color='SkyBlue')
+    fig.update_traces(textfont_size=10, textfont_color=col)
+    fig.update_xaxes(range=[obj_m1.__dict__['Trajectory_orbfil'][obj_m1.__dict__['global_params']['arc_input'][0]]['data_record']['Date_UTC'].iloc[0], C_1['Date_pd'].iloc[-1]+ pd.to_timedelta(60,'m')])
+
+    return(fig)
 
 
 

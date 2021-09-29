@@ -30,6 +30,7 @@ from PYGEODYN_Read    import PygeodynReader
 #-------------ICESAT2 CLASS-------------
 #=======================================
 
+import logging
 
 # class Satellite_ICESat2(PygeodynController, PygeodynReader ):
 class Satellite_ICESat2(PygeodynController,  PygeodynReader):
@@ -76,8 +77,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     
     def __init__(self):
 
-#         print('3 icesat ---- check ---- init Satellite_ICESat2 class')
-        
+            
         ###### ---------------------------------------------------------------------
         #### HARD CODE the ICESat2 properties
         ###### ---------------------------------------------------------------------
@@ -94,8 +94,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-        self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running with Ctipe for faster run times
-
+        self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running test in Dec. for faster run times
 #         self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
         self.ephem_file     = 'ephem1430.data_2025'
@@ -117,8 +116,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         Construct a way to read in the satellite specific filenames.
         '''
         
-#         print('4 icesat ---- check ---- init set_file_paths_for_multiple_arcs class')
-
         self.run_ID = 'Run # '+ str(iarc+1)
         
         self.arc_name_id = arc_val
@@ -167,10 +164,10 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     
     def make_list_of_arcfilenames(self):
         '''
-        Handles the Arc naming conventions
+        Handles the Arc naming conventions for the icesat2 satellite
         Construct a way to read in the satellite specific filenames.
         '''
-      
+        
         arc_file_list = []
 
         for i, val in enumerate(self.arc_input):
@@ -212,29 +209,26 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             * this
 
         '''
-        
-        self.verboseprint('ICESat2 -- clean_iisset_file()')
+        logger = logging.getLogger(self.execlog_filename)
+        logger.info(f"Cleaning iiset file")
 
         #### --------------------------------------------------------------------
         #### Initialize our variables from user input
         (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.setup_file_arc, self.SATID, self.iisset_den)
-        
-#         print('path_to_setupfiles', path_to_setupfiles)
-#         print('setup_file_arc', setup_file_arc)
-#         print('SAT_ID', SAT_ID)
-#         print('den_model_setupval', den_model_setupval)
-        
-        
-        
+              
+        #### OPEN THE LOG FILE TO APPEND THE SETUP PARAMETERS TO
+        log_file = open(self.log_file, 'a')
+
         ORIG_iisset_file = self._INPUT_filename 
         iisset_file      = 'cleaned_setup'+'_'  + self.arcdate_for_files
-
+        log_file.write(f"    Original iisset file            {self._INPUT_filename} \n")
+        log_file.write('\n')
+        
+        
         #### --------------------------------------------------------------------
         ##### COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
         ####    We copy to a temporary file "cleaned_setup_file"
-        
-#         print(os.getcwd())
-            
+                    
         shutil.copyfile(ORIG_iisset_file, self.TMPDIR_arc +'/'+iisset_file+'.bz2')
 #         print(self.TMPDIR_arc)
         
@@ -257,38 +251,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             'ANTPH2',
                             'CGMASS',
                             'OLOAD',
-                            'DRAG             5041144 ',       # remove the drag effects on the GPS satellites  
-                            'DRAG             5044284',
-                            'DRAG             5051204',
-                            'DRAG             5154184',
-                            'DRAG             5345214',
-                            'DRAG             5347224',
-                            'DRAG             5356164',
-                            'DRAG             5459194',
-                            'DRAG             5460234',
-                            'DRAG             5461024',
-                            'DRAG             5553175',
-                            'DRAG             5652315',
-                            'DRAG             5658125',
-                            'DRAG             5755155',
-                            'DRAG             5757295',
-                            'DRAG             5848075',
-                            'DRAG             5950055',
-                            'DRAG             6062256',
-                            'DRAG             6163016',
-                            'DRAG             6265246',
-                            'DRAG             6366276',
-                            'DRAG             6464306',
-                            'DRAG             6467066',
-                            'DRAG             6468096',
-                            'DRAG             6469036',
-                            'DRAG             6571266',
-                            'DRAG             6572086',
-                            'DRAG             6573106',
-                            'DRAG             6649045',
-                            'DRAG             6670326',
-                            'DRAG             9743134',
-                            'DRAG             9946114',
                             'DRAG   0 0',
                             'MBIAS',
                            # 
@@ -300,6 +262,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             'ORBTVU',
                             'RESID',
                           ] 
+        
+
         #### --------------------------------------------------------------------
         ##### Grab the EPOCH start and end times
         EPOCH_lines = []
@@ -445,12 +409,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             
 #                                  12345678901234567 
         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
-        card_strings['RESID']  =  'RESIDU12'
+#         card_strings['RESID']  =  'RESIDU12'
         card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
         #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
         card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
 #                                  1234567890 
-        card_strings['ORBTVU'] =  'ORBTVU1201       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
+#         card_strings['ORBTVU'] =  'ORBTVU1201       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
 
         ##### --------------------------------------------------------------------
             ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
@@ -522,6 +486,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         
         #### Suppress the printing of the flux model
         card_strings['FLUX  1']  =  'FLUX  0'
+        
+        card_strings['STEP']  =  'STEP             '+SAT_ID+'           '+str(int(self.geodyn_StepSize))+'.' # modify this from 10s -> 60s
 
     
         #### --------------------------------------------------------------------
@@ -659,9 +625,9 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             if switch_cardcount == 0:
                                 f.write(line)
                                 f.write(card_strings[card] + ' \n') 
+                                switch_cardcount += 1
                             else: 
                                 f.write(card_strings[card] + ' \n')
-                                switch_cardcount += 1
                         else:
                             f.write(line)
                             
@@ -753,38 +719,42 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 else:
                     f.write(line)      
 
+                    
+                    
+         #### WRITE TO THE LOG FILE! -------------------------------------------------------           
+                    
+        log_file.write(f"    Modified Cards                    \n")
+        for card in card_strings:
+            
+            if card in ['SATPAR','EPOCH','ELEMS1','ELEMS2']:
+                log_file.write(f"        {card.ljust(6)} (replacement) : {card_strings[card]} \n")
 
-    #### overwrite some methods from CONTROL:
-#     def print_runparameters_to_notebook(self):
-#         '''
-#         This method just prints to the run parameters to the notebook for user tracking.
-#         The original method is overwritten to account for the fact that we have a external attitude file
+            else:
+                log_file.write(f"        {card.ljust(20)} : {card_strings[card]} \n")
+        log_file.write(f"    \n")
+
+        log_file.write(f"    DRAG Cards                    \n")
+        for card in card_drag_strings:
+            log_file.write(f"        {card.ljust(20)} : {card_drag_strings[card]} \n")
+        log_file.write(f"    \n")
+
         
-#         '''
-#         self.verboseprint('ICESat2 -- print_runparameters_to_notebook()')
+        log_file.write(f"    Removed Cards                    \n")
+        for card in cards_to_remove:
+            log_file.write(f"        {card} \n")
+        log_file.write(f"    \n")
+        
+        
+        log_file.write(f"    DELETED GPS SATS                  \n")
+        log_file.write(f"        {delete_gps_sats}             \n")
 
-#         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
+        
+      # card_strings
+      # card_drag_strings
+        log_file.close()
 
-
-#         print(self.run_ID,"    Density Model:     " ,self.DEN_DIR)
-#         print(self.run_ID,"    GEODYN Version:    " ,self.GDYN_version)
-#         print(self.run_ID,"    Estimate GenAccel: " ,self.ACCELS)
-#         print(self.run_ID,"    ARC run:           " ,self.ARC)
-#         print(self.run_ID,"    Output directory:  " ,self.OUTPUTDIR)
-#         print(self.run_ID,"    Call Options:      " ,self.options_in)
-
-#         print(self.run_ID,"    EXAT File:    " ,self._EXTATTITUDE_filename)
-
-#         if os.path.exists(self._INPUT_filename):
-#             self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
-#         else:
-#             print(self.run_ID,"    FORT.5  (input) file:  ", self._INPUT_filename," not found.")    
-
-#         if os.path.exists(self._G2B_filename):
-#             self.verboseprint(self.tabtab,"FORT.40 (g2b)   file:  ", self._G2B_filename)
-#         else:
-#             print(self.run_ID,"    FORT.40 (g2b)   file:  ", self._G2B_filename," not found.")    
-
+        
+        
             
             
             
