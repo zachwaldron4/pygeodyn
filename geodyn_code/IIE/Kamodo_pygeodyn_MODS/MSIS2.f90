@@ -157,11 +157,12 @@
 !CC   DAYY = DAY + 1
 !CC   PRINT 889,DAYY
   889 FORMAT(2X,'==>DAY = ',F15.8)
-!
+
+      !print *,'msis2:  kp before kptran ', XKP(INDEX)
+      !print *,'msis2:  ap before kptran ', AP
       CALL KPTRAN(XKP,INDEX,I324,IKPAP,AP,IERR)
-!
-!     write(6,*) 'msis: xkp after kptran ', xkp
-!     write(6,*) 'msis: ap after kptran ', ap
+      !print *,'msis2:  kp after  kptran ', XKP(INDEX)
+      !print *,'msis2:  ap after  kptran ', AP
 !
       IF(IERR .GT. 0) THEN
         WRITE(6,703)
@@ -222,10 +223,17 @@
 
 !      WRITE(6,*) 'YYMMDDHHMMSS:  ', i_YYMMDDHHMMSS
 !                                                                       &
+
+!###### Write the inputs to MSIS out to a file
         WRITE(98,7001) i_YYMMDD,i_HHMMSS,ALTKM,      &
-            & GLAT,GLON,STLOC,AVGFLX,FLUX
- 7001   FORMAT(A6,2X,A6, 2X, F12.3,1X, 2(F9.3,1X),      &
-            &      F8.5,1X, F6.2,1X, F6.2 )
+            & GLAT,GLON
+ 7001   FORMAT(A6,2X,A6, 2X, F12.3,1X, 2(F9.3,1X) )
+        
+        WRITE(101,7002) i_YYMMDD,i_HHMMSS,      &
+            & AVGFLX,FLUX,AP, XKP(INDEX)
+ 7002   FORMAT(A6,1X,A6, 1X,       &
+            &  F6.2,1X, F6.2,1X,7(F6.2,1x), F6.2   )
+
 !=======================================================================
 
 

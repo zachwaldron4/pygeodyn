@@ -70,7 +70,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     -------
         Object
             Returns an object with methods that have been re-written 
-            to accomodate the Icesat2 satellite, its data, and its 
+            to accomodate the Icesat2 satellite, its data, and its default
             configuration on AWS.
             
     """
@@ -86,16 +86,11 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #         self.YR            =  2018
         self.DATA_TYPE     = 'PCE'
         self.grav_id = '' 
-#         self.empirical_accels =  False  
-#         self.ACCELS = 'acceloff'
-#         self.empirical_accels =  True  
-#         self.ACCELS = 'accelon'
-
         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-        self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running test in Dec. for faster run times
-#         self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
+#         self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running test in Dec. for faster run times
+        self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
         self.ephem_file     = 'ephem1430.data_2025'
         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
@@ -109,6 +104,10 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         ###### ---------------------------------------------------------------------
         self.arc_length = '54hr'
 
+        
+        
+        
+        
         
     def set_file_paths_for_multiple_arcs(self, arc_val, iarc, unzip_and_loadpaths=False):
         '''
@@ -132,7 +131,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.ARC = (self.SATELLITE_dir    + '_' + 
                     self.arcdate_for_files+ '_' + 
                     self.arc_length + '.' +  
-                    self.DEN_DIR)
+                    self.DEN_DIR + '.' +
+                    self.run_settings['file_string'])
 
         
         
@@ -141,13 +141,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                                    self.den_model+'/'+  
                                    self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
         file_name =   self.ARC         
-#         print('        ')
+#         print('     Loading ... ', file_name,' ' ,sep = '')
+
         if unzip_and_loadpaths == True:
             pass
-        elif self.action == 'read':
-            print('     Loading ... ', file_name,' ' ,sep = '')
         else:
-            pass
+            print('     Loading ... ', file_name,' ' ,sep = '')
         
         
         ####  save the specific file names as "private members" with the _filename convention
@@ -169,7 +168,9 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         '''
         
         arc_file_list = []
-
+        
+#         print('make_list_of_arcfilenames-- self.arc_input: ',self.arc_input)
+            
         for i, val in enumerate(self.arc_input):
 
             arc_name_id = val
@@ -179,13 +180,21 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             ####
             ####
             ### Now specify what we what the output arcs to be named.
+#             ARC_file = (self.SATELLITE_dir    + '_' + 
+#                         arcdate_for_files+ '_' + 
+#                         self.arc_length + '.' +  
+#                         self.DEN_DIR)
             ARC_file = (self.SATELLITE_dir    + '_' + 
                         arcdate_for_files+ '_' + 
                         self.arc_length + '.' +  
-                        self.DEN_DIR)
+                        self.DEN_DIR + '.' +
+                        self.run_settings['file_string'])
+
 
             arc_file_list.append(ARC_file)
-            
+        
+#         print('make_list_of_arcfilenames-- arc_file_list: ',arc_file_list)
+
         return(arc_file_list)
     
     
@@ -230,39 +239,47 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         ####    We copy to a temporary file "cleaned_setup_file"
                     
         shutil.copyfile(ORIG_iisset_file, self.TMPDIR_arc +'/'+iisset_file+'.bz2')
-#         print(self.TMPDIR_arc)
         
         os.chdir(self.TMPDIR_arc)
         os.system('bunzip2 -v '+ '*.bz2')
         os.chdir('/data/geodyn_proj/pygeodyn')
         
         iisset_file = self.TMPDIR_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
-#         print(iisset_file)
         
+        
+      
+    
+      
         #### --------------------------------------------------------------------
-        #### identify the cards we do not want in the setup file
-        cards_to_remove = [ 'ACCEL9',
-                            'XEPHEM',
-                            'REFRAC',
-                            'GPSMOD',
-                            'OFFSET',
-                            'OFFADJ',
-                            'ANTPHC',
-                            'ANTPH2',
-                            'CGMASS',
-                            'OLOAD',
-                            'DRAG   0 0',
-                            'MBIAS',
-                           # 
-                            'SATPAR',
-                            'EPOCH',
-                            'ELEMS1',
-                            'ELEMS2',
-                           #
-                            'ORBTVU',
-                            'RESID',
-                          ] 
+        #### identify the cards we do not want in the setup file according to user request
+        cards_to_remove = self.run_settings['cards_to_remove']
         
+        ###  The below cards must be removed despite any modifications 
+        ###  the user requests for the working of the PCE data run type
+        cards_to_remove.append('SATPAR') 
+        cards_to_remove.append('EPOCH') 
+        cards_to_remove.append('ELEMS1') 
+        cards_to_remove.append('ELEMS2') 
+        cards_to_remove.append('OLOAD') 
+        cards_to_remove.append('DRAG   0 0') 
+        cards_to_remove.append('XEPHEM') 
+        cards_to_remove.append('REFRAC') 
+        cards_to_remove.append('GPSMOD') 
+        cards_to_remove.append('OFFSET') 
+        cards_to_remove.append('OFFADJ') 
+        cards_to_remove.append('ANTPHC') 
+        cards_to_remove.append('ANTPH2') 
+        cards_to_remove.append('CGMASS') 
+        cards_to_remove.append('MBIAS')
+        
+        cards_to_remove.append('SIGMA          51')   ### 51 is the TWO-WAY-RANGE datatype (not PCE)
+        cards_to_remove.append('SIGMA          85')   ### 85 is the DOUBLY DIFFERENCED ONE -WAY RANGES (not PCE)
+        cards_to_remove.append('SELECT         51') 
+        cards_to_remove.append('SELECT         85') 
+
+        
+        
+
 
         #### --------------------------------------------------------------------
         ##### Grab the EPOCH start and end times
@@ -288,7 +305,32 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 epoch_end_YYMMDD = linecache.getline(iisset_file,val + 1)[60:66].strip()       # 181016
                 epoch_end_HHMM = linecache.getline(iisset_file,val + 1)[66:70].strip()         # 210000.0000000
                 epoch_end_SS_SSSSSSS = linecache.getline(iisset_file,val + 1)[70:80].strip()   # 00.0000000     
-
+#         print('original epoch strt',epoch_start)
+#         print('original epoch end',epoch_end)
+#         print(self.arcnumber)
+        
+        
+        if  self.run_settings['epoch_start'] == None :  # if no options given 
+            pass  ## use the defaults from the setup file (parsed above)
+        else:
+            
+            epoch_start            = self.run_settings['epoch_start'][self.arcnumber]
+            epoch_start_YYMMDD     = epoch_start[:6].strip() 
+            epoch_start_HHMM       = epoch_start[7:11].strip()
+            epoch_start_SS_SSSSSSS = epoch_start[11:21].strip()
+            epoch_start            = epoch_start_YYMMDD+epoch_start_HHMM+epoch_start_SS_SSSSSSS
+                 
+                
+        if  self.run_settings['epoch_end'] == None :
+            pass
+        else:
+            
+            
+            epoch_end            = self.run_settings['epoch_end'][self.arcnumber]
+            epoch_end_YYMMDD     = epoch_end[:6].strip() 
+            epoch_end_HHMM       = epoch_end[7:11].strip()
+            epoch_end_SS_SSSSSSS = epoch_end[11:21].strip()
+            epoch_end            = epoch_end_YYMMDD+epoch_end_HHMM+epoch_end_SS_SSSSSSS
 
         #### --------------------------------------------------------------------
         #### Use pandas datetime and time delta to make adjustments to the dates on the ATGRAV and DRAG cards
@@ -296,21 +338,13 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
         epoch_end_dt = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')
 
-        add_hours_dt = pd.Series(pd.to_timedelta(9,'h'))
-
-        drag_date_1 = (epoch_start_dt+add_hours_dt).dt.strftime(  '%y%m%d%H%M%S').values[0]
-        drag_date_2 = (epoch_start_dt+add_hours_dt*2).dt.strftime('%y%m%d%H%M%S').values[0]
-        drag_date_3 = (epoch_start_dt+add_hours_dt*3).dt.strftime('%y%m%d%H%M%S').values[0]
-        drag_date_4 = (epoch_start_dt+add_hours_dt*4).dt.strftime('%y%m%d%H%M%S').values[0]
-        drag_date_5 = (epoch_start_dt+add_hours_dt*5).dt.strftime('%y%m%d%H%M%S').values[0]
-        drag_date_6 = (epoch_start_dt+add_hours_dt*6).dt.strftime('%y%m%d%H%M%S').values[0]
-        drag_date_rm = (epoch_start_dt+add_hours_dt*6).dt.strftime('%y%m%d%H%M%S').values[0]
-
         dt_2days = pd.Series(pd.to_timedelta(48,'h'))
         dt_1days = pd.Series(pd.to_timedelta(24,'h'))
         
         dt_epoch_start_minus2days = (epoch_start_dt - dt_2days).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
         dt_epoch_end_plus1days    = (epoch_end_dt + dt_1days).dt.strftime('%y%m%d%H%M%S.000').values[0]
+
+                
         
         ##### -------------------------------------------------------------------------------------------
         ##### -------------------------------------------------------------------------------------------
@@ -322,7 +356,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         epoch_start_dt_STR = str(epoch_start_dt)
         date_in_file_flag = False
         
-        print("Epoch Start: ", epoch_start_dt_STR)
+        print("Epoch Start: "  , epoch_start_dt_STR)
+        print("Epoch End:   "  , epoch_end_dt)
 
         with open(self.StateVector_epochs_datafile, 'r') as f:
             for line_no, line_text in enumerate(f):
@@ -370,7 +405,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             Y_dot =  xyzline['Y_dot'].values[0].ljust(20) #'   5302.381564886811'
             Z_dot =  xyzline['Z_dot'].values[0].ljust(20) #'    5463.55571622269'
 
-    #         os.system('bzip2'+' '+self.StateVector_epochs_datafile)
             ##### -------------------------------------------------------------------------------------------
             #### --------------------------------------------------------------------------------------------
 
@@ -405,16 +439,17 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             #####  25-44        START date and time for trajectory output (YYMMDDHHMMSS.SS).
             #####  45-59        STOP  date and time for trajectory output (YYMMDDHHMMSS.SS).
             #####  60-72        Time interval between successive trajectory outputs.
+        dt_end_minus20mins = (epoch_end_dt - pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
+        dt_start_plus20mins  = (epoch_start_dt + pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
+        
+        card_strings['SELECT         01']  =  'SELECT         01                       '+dt_start_plus20mins+dt_end_minus20mins   
+        card_strings['SELECT         02']  =  'SELECT         02                       '+dt_start_plus20mins+dt_end_minus20mins   
+        card_strings['SELECT         03']  =  'SELECT         03                       '+dt_start_plus20mins+dt_end_minus20mins   
 
-            
-#                                  12345678901234567 
-        card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00          60'
-#         card_strings['RESID']  =  'RESIDU12'
+        card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(dt_start_plus20mins)[:-6]+'  '+str(dt_end_minus20mins)[:15]+'         10'
+#         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(dt_start_plus20mins)[:-6]+'  '+str(dt_end_minus20mins)[:15]+'         60'
+        
         card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
-        #       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
-        card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
-#                                  1234567890 
-#         card_strings['ORBTVU'] =  'ORBTVU1201       '+SAT_ID+'     '+str(epoch_start)[:-6]+'  '+str(epoch_end)[:6]+' 24200.00 .100000D+01'
 
         ##### --------------------------------------------------------------------
             ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
@@ -424,7 +459,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             ####    columns      IIS output option
             ####      9          Simple list of GEODYN -IIS setup. Interpretive
             ####     10          Interpretive list of GEODYN -IIS setup.
-            ####     11          Observation block selection report.
+            ####     11          Observation block \ion report.
             ####     12          Gravity model coefficients. Global  
             ####     13          Global parameter values and sigmas.                             
             ####     14          Arc parameter values and sigmas.
@@ -461,47 +496,34 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             #####                  **1 - Last arc iter of last global iter 
             #####                    2 - Both first first and last last 
             #####                    3 - All iterations
-       
+#       card_strings['PRNTVU'] =  'PRNTVU55212222    22122'  # original
+        card_strings['PRNTVU'] =  'PRNTVU5521111211 121122'  # suppress some IIS/IIE outputs.
+
         card_strings['ATMDEN'] =  'ATMDEN  '+ den_model_setupval
         card_strings['ATGRAV']  =  'ATGRAV9090              '+dt_epoch_start_minus2days +''+dt_epoch_end_plus1days[:-1]   
         card_strings['I64G2E']  =  'I64G2E         25'  # using 30 like in st-SLR run maxed out the memory usage
         card_strings['SIGMA           1']  =  'SIGMA           1               1.0                 1.0'    
         card_strings['SIGMA           2']  =  'SIGMA           2               1.0                 1.0'    
         card_strings['SIGMA           3']  =  'SIGMA           3               1.0                 1.0'   
-        card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
-        card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
+#         card_strings['SIGMA          51']  =  'SIGMA          51               10.0D+25             0.10'  
+#         card_strings['SIGMA          85']  =  'SIGMA          85               0.010000            0.010000'  
         
-
         ### Fix the coordinate system... PCE Data was in J2000
-#         card_strings['REFSYS1933 0        ']  = 'REFSYS193310        '+epoch_start+'0'
-#         card_strings['SATPAR   13']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
-        card_strings['REFSYS']  = 'REFSYS193310        '+epoch_start+'0'
-        card_strings['EPOCH'] = 'EPOCH               '+epoch_start+epoch_start+epoch_end
-        card_strings['SATPAR']  =  'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
+        card_strings['REFSYS']  = 'REFSYS193310        '+epoch_start+ '0'
+#         print('TEST FIND EPOCH-- epoch_start:', epoch_start)
+        card_strings['EPOCH']   = 'EPOCH               '+epoch_start+epoch_start+epoch_end
+        card_strings['SATPAR']  = 'SATPAR   139     '+SAT_ID+'          9.53000000       1514.000'
         
         if change_elems_flag == True:
             card_strings['ELEMS1']  = 'ELEMS11             '+X+''+Y+''+Z+''   
             card_strings['ELEMS2']  = 'ELEMS2              '+X_dot+''+Y_dot+''+Z_dot+''
                 
-        
         #### Suppress the printing of the flux model
         card_strings['FLUX  1']  =  'FLUX  0'
+        card_strings['STEP']  =  'STEP             '+SAT_ID+'           '+str(int(self.geodyn_StepSize))+'.' 
+
         
-        card_strings['STEP']  =  'STEP             '+SAT_ID+'           '+str(int(self.geodyn_StepSize))+'.' # modify this from 10s -> 60s
-
-    
-        #### --------------------------------------------------------------------
-        ####   INPUT THE DRAG OPTIONS  for time dependent drag
-        card_drag_strings={}
-        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
-#         card_drag_strings['DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00']  =  'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00'
-        card_drag_strings[drag_date_1]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_1[:10]+' 0.00    0.100D+02'
-        card_drag_strings[drag_date_2]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_2[:10]+' 0.00    0.100D+02'
-        card_drag_strings[drag_date_3]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_3[:10]+' 0.00    0.100D+02'
-        card_drag_strings[drag_date_4]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_4[:10]+' 0.00    0.100D+02'
-        card_drag_strings[drag_date_5]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_5[:10]+' 0.00    0.100D+02'
-        card_drag_strings[drag_date_6]  = 'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_date_6[:10]+' 0.00    0.100D+02'
-
+        
         #### --------------------------------------------------------------------
         ####    Search through the file to see if any of the cards we WANT are NOT in the file
         #### --------------------------------------------------------------------
@@ -538,27 +560,69 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 else:
                      f.write(line)
 
+        #####  IF we are using CD adjustement drag options, then set the drag cards according to the run settings
+        #####  If we are NOT using CD adjustment, remove DRAG times from the file
+        ####   INPUT THE DRAG OPTIONS  for time dependent drag
+        card_drag_strings={}
+        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
+
+        if self.run_settings['cd_adjustment_boolean'] == True:
+           
+            hours_between_cd_adj = self.run_settings['hours_between_cd_adj']
+            num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj']) - 1
+            add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
+            
+            drag_dates = []
+            for i_cd in np.arange(0, num_of_cd_adj):
+                factor = i_cd+1
+                drag_dates.append( (epoch_start_dt+add_hours_dt*factor).dt.strftime('%y%m%d%H%M%S').values[0])
+#             drag_dates = (epoch_start_dt+add_hours_dt*2).dt.strftime('%y%m%d%H%M%S').values[0]
+#             drag_dates = (epoch_start_dt+add_hours_dt*3).dt.strftime('%y%m%d%H%M%S').values[0]
+#             drag_dates = (epoch_start_dt+add_hours_dt*4).dt.strftime('%y%m%d%H%M%S').values[0]
+#             drag_dates = (epoch_start_dt+add_hours_dt*5).dt.strftime('%y%m%d%H%M%S').values[0]
+#             drag_dates = (epoch_start_dt+add_hours_dt*6).dt.strftime('%y%m%d%H%M%S').values[0]
+            for i_cd in np.arange(0, num_of_cd_adj):
+                i_cd = int(i_cd)
+                print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
+
+                card_drag_strings[i_cd] =  'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_dates[i_cd][:10]+' 0.00    0.100D+02'
+
+        else:
+            cards_to_remove.append('CONDRG')
+
+            
+            #### --------------------------------------------------------------------
+        ####   INPUT THE DRAG OPTIONS  for time dependent drag
+#         card_drag_strings={}
+#         card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
 
         #### for adding time dependent drag estimations.  We need to do a few things:
         ###       Find the drag card that is already in the file:
         ###       Add CONDRAG before all drag cards
         ###       Add DRAG cards with TIME periods after the first drag card
-        with open(iisset_file, "r") as f:
-            lines_all = f.readlines()                
-        with open(iisset_file, "w") as f:
-            for line in lines_all:
-                if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
-                    f.write(card_drag_strings['CONDRG'] + ' \n')
-                    f.write('DRAG             '+SAT_ID+' 2.2000000000000E+00'+ ' \n')
-                    f.write(card_drag_strings[drag_date_1] + ' \n')                 
-                    f.write(card_drag_strings[drag_date_2] + ' \n')                 
-                    f.write(card_drag_strings[drag_date_3] + ' \n')                 
-                    f.write(card_drag_strings[drag_date_4] + ' \n')                 
-                    f.write(card_drag_strings[drag_date_5] + ' \n')                 
-                    f.write(card_drag_strings[drag_date_6] + ' \n')                 
-                else:
-                    f.write(line)
-                    
+        if self.run_settings['cd_adjustment_boolean'] == True:
+            with open(iisset_file, "r") as f:
+                lines_all = f.readlines()                
+            with open(iisset_file, "w") as f:
+                for line in lines_all:
+                    if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
+                        f.write(card_drag_strings['CONDRG'] + ' \n')
+                        f.write('DRAG             '+SAT_ID+' 2.2000000000000E+00'+ ' \n')
+                        for i_cd in np.arange(0, num_of_cd_adj):
+                            i_cd = int(i_cd)
+                            f.write(card_drag_strings[i_cd] + ' \n')                 
+                    else:
+                        f.write(line)
+        elif self.run_settings['cd_adjustment_boolean'] == False:
+            print('Running without DRAG time dependence')
+            with open(iisset_file, "r") as f:
+                lines_all = f.readlines()                
+            with open(iisset_file, "w") as f:
+                for line in lines_all:
+                    if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
+                        f.write('DRAG             '+SAT_ID+' 2.2000000000000E+00'+ ' \n')
+                    else:
+                        f.write(line)
               
         #####-----------------------------------------------------------------------------
         ##### Delete the SATPAR GPS, EPOCH, ELEMS110, and ELEMS2 lines after the SATPAR GPS
@@ -733,10 +797,10 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 log_file.write(f"        {card.ljust(20)} : {card_strings[card]} \n")
         log_file.write(f"    \n")
 
-        log_file.write(f"    DRAG Cards                    \n")
-        for card in card_drag_strings:
-            log_file.write(f"        {card.ljust(20)} : {card_drag_strings[card]} \n")
-        log_file.write(f"    \n")
+#         log_file.write(f"    DRAG Cards                    \n")
+#         for card in card_drag_strings:
+#             log_file.write(f"        {card.ljust(20)} : {card_drag_strings[card]} \n")
+#         log_file.write(f"    \n")
 
         
         log_file.write(f"    Removed Cards                    \n")
@@ -763,9 +827,14 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
              
              it is being overridden to INCLUDE the external attitude
         '''
-        self.verboseprint('ICESat2 -- prepare_tmpdir_for_geodyn_run()')
+        
+        logger = logging.getLogger(self.execlog_filename)
+        logger.info(f"ICESat2 - Construct a tmp directory in which to run IIS and IIE")
+
+        
+#         self.verboseprint('ICESat2 -- prepare_tmpdir_for_geodyn_run()')
 #         print(self.TMPDIR_arc)
-        self.verboseprint(self.tabtab,'Current DIR: ',os.getcwd())
+#         self.verboseprint(self.tabtab,'Current DIR: ',os.getcwd())
      
         #### Navigate TO the TMPDIR
         os.chdir(self.TMPDIR_arc)

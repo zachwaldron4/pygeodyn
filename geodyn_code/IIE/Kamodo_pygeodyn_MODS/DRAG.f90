@@ -240,7 +240,6 @@
 !        2  - CO2 NUMBER DENSITY (CM-3)
 !        3  - O
 !        4  - CO
-!        5  - HE
 !        6  - N
 !        7  - N2
 !      T(1) - EXOSPHERIC TEMPERATURE
@@ -270,6 +269,7 @@
 !
 !      
       KENTRY = KENTRY + 1
+      FLUSH(6)
 !  
 ! READ IN THE MSIS OPTIONS but we only want to have to do this once...
       if(kentry.eq.1)then
@@ -293,7 +293,7 @@
            &       status='old')
             read(122,"(A200)") model_path
             read(122,"(A200)") orbitcloud_file
-          close (122)     
+            close (122)     
           
           !model_path = model_path_in
           
@@ -625,10 +625,22 @@
 !                                                                       &
 
 !      IF(LSTINR.AND.FSSTRT.GT.200.D0) THEN
+        !!!!! Convert PHI and XLAMB TO GLAT, GLON (deg):
+        ! = 57.29577951D0
+        GLAT = PHI*57.29577951D0
+        GLON = XLAMB*57.29577951D0
+
+
       IF(LSTINR) THEN
-        WRITE(99,7000) FSSTRT,IYMD,IHMS,XLATD,XLOND,ALTI,RHO,DRHODZ,    &
+
+WRITE(99,7000) FSSTRT,IYMD,IHMS,XLATD,XLOND,ALTI,RHO,DRHODZ,    &
 !     &                 X,Y,Z,XDOT,YDOT,ZDOT    
-     &                 FLUXIN,FLXAVG,FLUXM(1)  !
+
+&                 FLUXIN,FLXAVG,FLUXM(1)  !
+
+!WRITE(99,7000) FSSTRT,IYMD,IHMS,GLAT,GLON,ALTI,RHO,DRHODZ,    &
+!!     &                 X,Y,Z,XDOT,YDOT,ZDOT    
+!     &                 FLUXIN,FLXAVG,FLUXM(1)  !
 !           FSSTRT -- Elapsed seconds since initial epoch  
 !           IYMD -- YYMMDD of current epoch  
 !           IHMS -- HHMMSS of current epoch  

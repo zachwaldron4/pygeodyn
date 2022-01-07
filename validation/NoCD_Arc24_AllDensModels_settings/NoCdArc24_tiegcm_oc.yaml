@@ -1,0 +1,140 @@
+---
+###  Run Settings Test File 
+
+# Need to figure out how to use this file to overwrite the Setting hardcoded in ICESat2class if they are here.
+
+### the epoch end time automatically controls the prediction end time
+          ### FORMAT: 'YYMMDD HHMMSS.SSSSSSS'
+epoch_start         : [
+                        '181109 000000.0000000',
+                        '181110 000000.0000000',
+                        '181111 000000.0000000',
+                        '181112 000000.0000000', 
+                        '181113 000000.0000000',
+                        '181114 000000.0000000', 
+                        '181115 000000.0000000', 
+                        '181116 000000.0000000', 
+                        '181117 000000.0000000', 
+                        '181118 000000.0000000', 
+                        '181119 000000.0000000',    
+                        '181120 000000.0000000', 
+                        '181121 000000.0000000', 
+                        '181122 000000.0000000', 
+                        '181123 000000.0000000', 
+                        ]
+
+epoch_end           : [ 
+                        '181110 000000.0000000',
+                        '181111 000000.0000000',
+                        '181112 000000.0000000',
+                        '181113 000000.0000000', 
+                        '181114 000000.0000000',
+                        '181115 000000.0000000', 
+                        '181116 000000.0000000', 
+                        '181117 000000.0000000', 
+                        '181118 000000.0000000', 
+                        '181119 000000.0000000', 
+                        '181120 000000.0000000', 
+                        '181121 000000.0000000', 
+                        '181122 000000.0000000', 
+                        '181123 000000.0000000', 
+                        '181124 000000.0000000', 
+                       ]
+
+
+
+### SPECIFY ARC NAMING CONVENTION
+arc_length     : '24hr'
+file_string    : 'NoCD_Arc24'
+
+
+cd_adjustment_boolean  : False
+total_hours_in_run     : None
+hours_between_cd_adj   : None
+
+
+
+### RUN PARAMETERS
+run_params:
+    {arc             : [
+                        '2018.313',
+                        '2018.314',
+                        '2018.315',
+                        '2018.316',
+                        '2018.317',
+                        '2018.318',
+                        '2018.319',
+                        '2018.320',
+                        '2018.321',
+                        '2018.322',
+                        '2018.323', 
+                        '2018.324',
+                        '2018.325',
+                        '2018.326',
+                        '2018.327',
+                        ],
+                        
+    satellite        : 'icesat2' ,
+    den_model        : 'tiegcm_oc'  ,
+    SpecialRun_name  : '_valid_ctrlrun',  
+    verbose          :  False,
+    accels           :  False,
+    geodyn_StepSize  : 10.,
+    }
+   
+model_data_path : '/data/data_geodyn/atmos_models_data/tiegcm/2018/Nov2018_ccmcRoR'
+request_data:  [ #'AdjustedParams',
+                'Trajectory_orbfil',
+                'Density',
+#                 'Residuals_obs',
+                'Residuals_summary',
+#                 'RunSummary',
+                                  ]
+### SETUP FILE OPTIONS
+# 
+cards_to_remove : ['ACCEL9',
+                   'ORBTVU',
+                   'RESID',
+                   'CON9PA',
+                  ]
+
+
+
+#### ----------------------------------------------------------------------------
+#### Options that are hardcoded defaults by ICESAT2 class
+#### ----------------------------------------------------------------------------
+#### The name of the satellite
+SATELLITE_dir  : 'icesat2'
+
+#### Satellites COSPAR ID number
+SATID          : '1807001'
+
+#### Datatype being used as tracking data
+DATA_TYPE      : 'PCE'
+
+#### Naming convention requested for different gravity types
+grav_id        : '' 
+
+#### Do you want to use the updated DRHODZ calculation? (recommended)
+options_in     : {'DRHODZ_update':True}  
+
+#### ----------------------------------------------------------------------------
+####### File Choices:
+
+#### G2B file name
+g2b_file       : 'g2b_pce_fullset_nomaneuver'  
+
+#### Atmospheric Gravity file name
+atgrav_file    : 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+
+#### Planetary Ephemeris file name
+ephem_file     : 'ephem1430.data_2025'
+
+#### Gravity field file name
+gravfield_file : 'eigen-6c.gfc_20080101_do_200_fix.grv'
+
+#### PCE Ascii textfile name
+StateVector_epochs_datafile  : '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+
+
+

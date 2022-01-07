@@ -86,7 +86,8 @@ class Util_Tools:
         if search('tiegcm', self.DEN_DIR):
             if self.satellite == 'icesat2':
                 
-                self.model_data_path ='/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1' 
+#                 self.model_data_path ='/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1' 
+                self.model_data_path = self.run_settings['model_data_path']
                 
                 filemodels = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
@@ -488,9 +489,19 @@ class Util_Tools:
                     print('+','—'*len(longest_line))
 
 
+                elif 'FAILED  2.0 PERCENT CONVERGENCE' in line:
 
-
-
+                    longest_line = '|'+' File:'+self._iieout_filename
+                    print('+','—'*len(longest_line))
+                    print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
+                    print('|',)
+                    print('|', ' File:',self._iieout_filename )
+                    print('|', ' Line number:',line_no )
+                    print('',)
+                    print('',line.rstrip("\n"))
+                    print('',)
+                    print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+                    print('+','—'*len(longest_line))
 
 
 
@@ -622,7 +633,9 @@ class Util_Tools:
                      RUNOBJECT.__dict__.keys()
         '''
         
-        global_keys = ['satellite',
+        global_keys = [
+                    'run_settings',
+                    'satellite',
                     'den_model',
                     'empirical_accels',
                     'SpecialRun_name',
@@ -736,4 +749,189 @@ class Util_Tools:
                     print('+','—'*len(longest_line))
 
                                        
-                    
+
+                        
+                        
+                        
+
+
+
+# %load_ext autoreload
+# %autoreload 2
+
+# import pandas as pd
+# import sys
+# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
+# from common_functions import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW_getT, Convert_cartesian_to_NTW_returnall
+
+
+# def ResidInvestigation_make_common_residsDF(obj_m1):
+
+
+
+#     ###### GET THE PCE DATA:
+#     StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+#     SAT_ID = int(obj_m1.__dict__['global_params']['SATID'])
+#     which_stat = 'CURRENT_VALUE'
+
+#     for ii,arc in enumerate(obj_m1.__dict__['global_params']['arc_input']):#[::2]):
+#         print(arc)
+
+#         ####--------------------- Residual  ---------------------
+
+#         arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
+#         arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-2]
+
+#         arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
+#         arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
+
+
+#         A=[]
+#         for i,val in enumerate(np.arange(-20,20)):
+#             A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
+#         B=[]
+#         for i,val in enumerate(np.arange(-20,20)):
+#             B.append(str(pd.to_datetime(arc_last_time)+pd.to_timedelta(val,'s')))
+
+#         ####---------------------------------------------------------
+#         last_line = False
+#         with open(StateVector_PCE_datafile, 'r') as f:
+#             for line_no, line_text in enumerate(f):
+#                 if any(times in line_text for times in A):
+#                     first_line = line_no
+#                 if any(times in line_text for times in B):
+#                     last_line = line_no
+#                     break
+
+#             if not last_line:
+#                 last_line = first_line +32220
+#                 print('No matching lastline time: ',arc_last_time_str, last_line )
+
+#         ####   IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
+#         ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
+#         print('Loading PCE data...')
+#         PCE_data = pd.read_csv(StateVector_PCE_datafile, 
+#                     skiprows = first_line, 
+#                     nrows=last_line-first_line,           
+#                     sep = '\s+',
+#                     dtype=str,
+#                     names = [
+#                             'Date',
+#                             'MJDSECs', 
+#                             'RSECS', #(fractional secs)
+#                             'GPS offset', # (UTC - GPS offset (secs))
+#                             'X',
+#                             'Y',
+#                             'Z',
+#                             'X_dot',
+#                             'Y_dot',
+#                             'Z_dot',
+#                             'YYMMDDhhmmss',
+#                                 ],)
+
+#         PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
+#         orbfil_arc1 = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']
+#         orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
+
+
+#         ### C_1 is a dataframe containing all data between the two files where the dates match
+#         C_1 = pd.merge(left=orbfil_arc1, left_on='Date_pd',
+#              right=PCE_data, right_on='Date_pd')
+
+#     return(C_1)
+
+
+# def ResidInvestigation_get_residuals_coordsystems(C_1):
+
+    
+    
+#     ### Convert the ORBIT FILE data to NTW
+#     print('Converting OrbitFile data to other coordinates...')
+
+#     data_orbfil = {}
+#     data_PCE    = {}
+#     resids      = {}
+
+#     X = C_1['Satellite Inertial X coordinate']
+#     Y = C_1['Satellite Inertial Y coordinate']
+#     Z = C_1['Satellite Inertial Z coordinate']
+#     Xdot = C_1['Satellite Inertial X velocity']
+#     Ydot = C_1['Satellite Inertial Y velocity']
+#     Zdot = C_1['Satellite Inertial Z velocity']
+#     state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+#     data_orbfil['Date'] = C_1['Date_pd']
+
+#     ##### NTW Coordinate System
+#     NTW_orbfil  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
+#     data_orbfil['N'] = np.array(NTW_orbfil)[:,0]
+#     data_orbfil['T'] = np.array(NTW_orbfil)[:,1]
+#     data_orbfil['W'] = np.array(NTW_orbfil)[:,2]
+#     ##### XYZ Coordinate System
+#     data_orbfil['X'] = X
+#     data_orbfil['Y'] = Y
+#     data_orbfil['Z'] = Z
+#     ##### R theta phi Coordinate System
+#     data_orbfil['R']     = np.sqrt( np.square(X) + 
+#                                     np.square(Y) +
+#                                     np.square(Z) )
+#     data_orbfil['theta'] = np.arctan(Y / X)
+#     data_orbfil['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
+#                                     np.square(Y) +
+#                                     np.square(Z) )))
+
+
+#     ### Convert the PCE data to NTW
+#     print('Converting PCE data to other coordinates...')
+#     X = C_1['X'].astype(float)
+#     Y = C_1['Y'].astype(float)
+#     Z = C_1['Z'].astype(float)
+#     Xdot = C_1['X_dot'].astype(float)
+#     Ydot = C_1['Y_dot'].astype(float)
+#     Zdot = C_1['Z_dot'].astype(float)
+#     state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+#     data_PCE['Date'] = C_1['Date_pd']
+
+#     ##### NTW Coordinate System
+#     NTW_PCE  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
+#     data_PCE['N'] = np.array(NTW_PCE)[:,0]
+#     data_PCE['T'] = np.array(NTW_PCE)[:,1]
+#     data_PCE['W'] = np.array(NTW_PCE)[:,2]
+#     ##### XYZ Coordinate System
+#     data_PCE['X'] = X
+#     data_PCE['Y'] = Y
+#     data_PCE['Z'] = Z
+#     ##### R theta phi Coordinate System
+#     data_PCE['R']     = np.sqrt( np.square(X) + 
+#                                     np.square(Y) +
+#                                     np.square(Z) )
+#     data_PCE['theta'] = np.arctan(Y / X)
+#     data_PCE['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
+#                                     np.square(Y) +
+#                                     np.square(Z) )))
+
+
+#     ### RESIDUALS:
+#     resids['Date'] = C_1['Date_pd']
+
+#     ##### NTW Coordinate System
+#     resids['N'] = (np.array(data_PCE['N']) - np.array(data_orbfil['N']))
+#     resids['T'] = (np.array(data_PCE['T']) - np.array(data_orbfil['T']))
+#     resids['W'] = (np.array(data_PCE['W']) - np.array(data_orbfil['W']))
+#     ##### XYZ Coordinate System
+#     resids['X'] = (np.array(data_PCE['X']) - np.array(data_orbfil['X']))
+#     resids['Y'] = (np.array(data_PCE['Y']) - np.array(data_orbfil['Y']))
+#     resids['Z'] = (np.array(data_PCE['Z']) - np.array(data_orbfil['Z']))
+#     ##### R theta phi Coordinate System
+#     resids['R']     = (np.array(data_PCE['R'])     - np.array(data_orbfil['R']))
+#     resids['theta'] = (np.array(data_PCE['theta']) - np.array(data_orbfil['theta']))
+#     resids['phi']   = (np.array(data_PCE['phi'])   - np.array(data_orbfil['phi']))
+
+#     orbit_resids = {} 
+#     orbit_resids['data_orbfil'] = data_orbfil
+#     orbit_resids['data_PCE']    = data_PCE
+#     orbit_resids['resids']      = resids
+
+
+
+#     return(orbit_resids)
+

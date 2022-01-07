@@ -21,7 +21,8 @@ sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 
 ### Import the Classes from the Tools
 # from util_classtools import Util_Tools
-from common_functions          import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
+from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
+from common_functions   import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW_returnall
 
 
 class PygeodynReader:
@@ -1340,11 +1341,10 @@ class PygeodynReader:
         
     def read_resid_measurement_summaries(self):
         '''
-        This function reads in the residuals from the massive IIEOUT file.
+        This function reads in the residuals summary from the massive IIEOUT file.
 
         For residuals, there are specific station-satellite configurations.  
         It is prudent to read in each configuration and save which satellites make it up.  
-        This is much harder to do than simply reading in all resuiduals (as I did before)
 
         '''
         start = time.time()
@@ -1411,7 +1411,6 @@ class PygeodynReader:
                     is_integer = False
                     count_lines -= 3
 
-
             resid_meas_summry_iter = pd.read_csv(self._iieout_filename, 
                                        skiprows = text_smry_meas_line_no + 2  , 
                                        nrows =  count_lines-2,
@@ -1453,11 +1452,36 @@ class PygeodynReader:
         elapsed = end - start
 #         print('resid meas summary: ',elapsed)
 
+#         final_iter  = float(self.total_iterations)
+#         index_iter  = resid_meas_summry['Iter'] == final_iter
+
+
+#         #### Index the component RMS values
+#         index_PCEX = resid_meas_summry[index_iter]['TYPE'] =='PCEX'
+#         index_PCEY = resid_meas_summry[index_iter]['TYPE'] =='PCEY'
+#         index_PCEZ = resid_meas_summry[index_iter]['TYPE'] =='PCEZ'
+#         #
+#         rms_PCEX = float(resid_meas_summry[index_iter][index_PCEX]['RMS'])
+#         rms_PCEY = float(resid_meas_summry[index_iter][index_PCEY]['RMS'])
+#         rms_PCEZ = float(resid_meas_summry[index_iter][index_PCEZ]['RMS'])
+#         w_rms_PCEX = float(resid_meas_summry[index_iter][index_PCEX]['WTD-RMS'])
+#         w_rms_PCEY = float(resid_meas_summry[index_iter][index_PCEY]['WTD-RMS'])
+#         w_rms_PCEZ = float(resid_meas_summry[index_iter][index_PCEZ]['WTD-RMS'])
+    
+#         #### Total number of observational Residuals
+#         N = np.sum(np.array(resid_meas_summry[index_iter]['NUMBER']))
+#         RMS_total = np.sqrt( ( np.square(rms_PCEX) + np.square(rms_PCEY) + np.square(rms_PCEZ) )/3  )
+#         w_RMS_total = np.sqrt( ( np.square(w_rms_PCEX) + np.square(w_rms_PCEY) + np.square(w_rms_PCEZ) )/3  )
+
+
+#         resid_meas_summry['RMS_total'] = RMS_total
+#         resid_meas_summry['WTD-RMS_total'] = w_RMS_total
+        
         return(resid_meas_summry)
         
         
         
-    def read_statistics_iieout(self):
+    def read_RunSummary_iieout(self):
         start = time.time()
 
         model = self.den_model  
@@ -1752,8 +1776,8 @@ class PygeodynReader:
         return(self.read_resid_measurement_summaries())
     #----------------------------------------------
 
-    def getData_stats_endOfFile_iieout(self):
-        return(self.read_statistics_iieout())
+    def getData_RunSummary_iieout(self):
+        return(self.read_RunSummary_iieout())
 
     def getData_PCE(self):
         return(self.grab_PCE_ascii())
@@ -1972,15 +1996,12 @@ class PygeodynReader:
         self.Density           = {}
         self.Residuals_obs     = {}
         self.Residuals_summary = {}
-        self.Statistics        = {}
+        self.RunSummary        = {}
         
         num_arcs = np.size(self.arc_input)
         
         ##### Go thru the files once and unzip them
-        
-        
         self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1, True )
-        
         ARC_FILES = self.make_list_of_arcfilenames()
         
         for i in ARC_FILES:
@@ -1997,7 +2018,7 @@ class PygeodynReader:
 
         
         for iarc, arc in enumerate(self.arc_input):
-            self.set_file_paths_for_multiple_arcs( arc, iarc )
+            self.set_file_paths_for_multiple_arcs( arc, iarc, False )
             self.check_if_run_converged(self._iieout_filename)
 
             for choice in data_keys:                
@@ -2012,8 +2033,8 @@ class PygeodynReader:
                     self.Residuals_obs[arc]          = self.getData_residsObserved_iieout()
                 elif choice ==  'Residuals_summary':
                     self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
-                elif choice == 'Statistics':
-                    self.Statistics[arc]             = self.getData_stats_endOfFile_iieout()
+                elif choice == 'RunSummary':
+                    self.RunSummary[arc]             = self.getData_RunSummary_iieout()
                 elif choice == 'Trajectory_orbfil':
 #                     print('TESTTESTTEST')
                     self.Trajectory_orbfil[arc]      = self.getData_Trajectory_orbfil()
@@ -2028,24 +2049,478 @@ class PygeodynReader:
             
             
             
-#             print('DONE with ARC:' , arc)
-#         self.organize_output_object_keys(data_keys, arc)
+        
+
+
+    def ResidInvestigation_make_common_residsDF(self):
+
+        ###### GET THE PCE DATA:
+        StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+        SAT_ID = int(self.__dict__['global_params']['SATID'])
+        which_stat = 'CURRENT_VALUE'
+
+        C_1 = {}
+        
+        for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+            ####--------------------- Residual  ---------------------
+
+            arc_first_time  = self.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
+            arc_last_time   = self.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
+
+            arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
+            arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
+            
+            
+#             print('arc',arc)
+#             print('arc_first_time    ',arc_first_time)
+#             print('arc_last_time     ',arc_last_time)
+#             print('arc_first_time_str',arc_first_time_str)
+#             print('arc_last_time_str ',arc_last_time_str)
+            
+            
+            A=[]
+            for i,val in enumerate(np.arange(-20,20)):
+                A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
+            B=[]
+            for i,val in enumerate(np.arange(-20,20)):
+                B.append(str(pd.to_datetime(arc_last_time)+pd.to_timedelta(val,'s')))
+
+            ####---------------------------------------------------------
+            last_line = False
+            with open(StateVector_PCE_datafile, 'r') as f:
+                for line_no, line_text in enumerate(f):
+                    if any(times in line_text for times in A):
+                        first_line = line_no
+                    if any(times in line_text for times in B):
+                        last_line = line_no
+                        break
+
+                if not last_line:
+                    last_line = first_line +32220
+                    print('No matching lastline time: ',arc_last_time_str, last_line )
+
+            ####   IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
+            ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
+            print('Loading PCE data for ...', arc )
+            PCE_data = pd.read_csv(StateVector_PCE_datafile, 
+                        skiprows = first_line, 
+                        nrows=last_line-first_line,           
+                        sep = '\s+',
+                        dtype=str,
+                        names = [
+                                'Date',
+                                'MJDSECs', 
+                                'RSECS', #(fractional secs)
+                                'GPS offset', # (UTC - GPS offset (secs))
+                                'X_pce',
+                                'Y_pce',
+                                'Z_pce',
+                                'Xdot_pce',
+                                'Ydot_pce',
+                                'Zdot_pce',
+                                'YYMMDDhhmmss',
+                                    ],)
+            
+            PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
+            del PCE_data['YYMMDDhhmmss']
+            del PCE_data['MJDSECs']
+            del PCE_data['RSECS']
+            del PCE_data['GPS offset']
+            del PCE_data['Date']
+
+            
+            orbfil_arc1 = self.__dict__['Trajectory_orbfil'][arc]['data_record']
+            orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
+            
+            del orbfil_arc1['Date_UTC']
+            del orbfil_arc1['MJDSEC ET']
+            del orbfil_arc1['Satellite Geodetic Latitude']
+            del orbfil_arc1['Satellite East Longitude']
+            del orbfil_arc1['Satellite Height']
+            del orbfil_arc1['MJDS_UTC']
+
+
+            ### C_1 is a dataframe containing all data between the two files where the dates match
+            C_1[arc] = pd.merge(left=orbfil_arc1, left_on='Date_pd',
+                 right=PCE_data, right_on='Date_pd')
+
+#             print(C_1[arc].columns)
+            C_1[arc] = C_1[arc].rename(columns={"Satellite Inertial X coordinate": "X_orbfil",
+                                     "Satellite Inertial Y coordinate": "Y_orbfil",
+                                     "Satellite Inertial Z coordinate": "Z_orbfil",
+                                     "Satellite Inertial X velocity"  : "Xdot_orbfil",
+                                     "Satellite Inertial Y velocity"  : "Ydot_orbfil",
+                                     "Satellite Inertial Z velocity"  : "Zdot_orbfil",
+                                    })
+#             print(C_1[arc].columns)
+
+        return(C_1)
+
+
+    def ResidInvestigation_get_residuals_coordsystems(self, C_1):
+
+        orbit_resids = {} 
+
+        for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+#             print(arc)
+
+            data_orbfil = {}
+            data_PCE    = {}
+            resids      = {}
+            ### Convert the PCE data to NTW
+            print('Converting PCE data to other coordinates...')
+            X = C_1[arc]['X_pce'].astype(float)
+            Y = C_1[arc]['Y_pce'].astype(float)
+            Z = C_1[arc]['Z_pce'].astype(float)
+            Xdot = C_1[arc]['Xdot_pce'].astype(float)
+            Ydot = C_1[arc]['Ydot_pce'].astype(float)
+            Zdot = C_1[arc]['Zdot_pce'].astype(float)
+            state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+            data_PCE['Date'] = C_1[arc]['Date_pd']
+
+            ##### NTW Coordinate System
+#             NTW_PCE  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
+            NTW_pce =  [Convert_cartesian_to_NTW_returnall(x_pce, 0, True) for x_pce in state_vector]
+#             Rvec_ntw_pce = []
+            Tmat         = []
+            n_pce        = []
+            t_pce        = []
+            w_pce        = []
+
+            for vec,matrix in NTW_pce:
+                Tmat.append(matrix)
+                n_pce.append( vec[0])
+                t_pce.append( vec[1])
+                w_pce.append( vec[2])        
+        
+            data_PCE['N'] = n_pce
+            data_PCE['T'] = t_pce
+            data_PCE['W'] = w_pce
+            ##### XYZ Coordinate System
+            data_PCE['X'] = X
+            data_PCE['Y'] = Y
+            data_PCE['Z'] = Z
+            data_PCE['Xdot'] = Xdot
+            data_PCE['Ydot'] = Ydot
+            data_PCE['Zdot'] = Zdot
+            ##### R theta phi Coordinate System
+            data_PCE['R']     = np.sqrt( np.square(X) + 
+                                            np.square(Y) +
+                                            np.square(Z) )
+            data_PCE['theta'] = np.arctan(Y / X)
+            data_PCE['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
+                                            np.square(Y) +
+                                            np.square(Z) )))
+    
+    
+        ### Convert the ORBIT FILE data to NTW
+            print('Converting OrbitFile data to other coordinates...', arc)
+
+
+
+            X = C_1[arc]['X_orbfil']
+            Y = C_1[arc]['Y_orbfil']
+            Z = C_1[arc]['Z_orbfil']
+            Xdot = C_1[arc]['Xdot_orbfil']
+            Ydot = C_1[arc]['Ydot_orbfil']
+            Zdot = C_1[arc]['Zdot_orbfil']
+            state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+            data_orbfil['Date'] = C_1[arc]['Date_pd']
+
+            ##### NTW Coordinate System
+#             NTW_orbfil  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
+            NTW_orb  = [Convert_cartesian_to_NTW_returnall(x_orb, Tmat_i, False) for x_orb, Tmat_i in zip(state_vector,Tmat)]
+            n_orb        = []
+            t_orb        = []
+            w_orb        = []
+
+            for vecorb,matrixorb in NTW_orb:
+                n_orb.append( vecorb[0])
+                t_orb.append( vecorb[1])
+                w_orb.append( vecorb[2])        
+
+            data_orbfil['N'] = n_orb
+            data_orbfil['T'] = t_orb
+            data_orbfil['W'] = w_orb
+            ##### XYZ Coordinate System
+            data_orbfil['X'] = X
+            data_orbfil['Y'] = Y
+            data_orbfil['Z'] = Z
+            data_orbfil['Xdot'] = Xdot
+            data_orbfil['Ydot'] = Ydot
+            data_orbfil['Zdot'] = Zdot
+            ##### R theta phi Coordinate System
+            data_orbfil['R']     = np.sqrt( np.square(X) + 
+                                            np.square(Y) +
+                                            np.square(Z) )
+            data_orbfil['theta'] = np.arctan(Y / X)
+            data_orbfil['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
+                                            np.square(Y) +
+                                            np.square(Z) )))
+
+
+
+
+            ### RESIDUALS:
+            resids['Date'] = C_1[arc]['Date_pd']
+
+            ##### NTW Coordinate System
+            resids['N'] = (np.array(data_PCE['N']) - np.array(data_orbfil['N']))
+            resids['T'] = (np.array(data_PCE['T']) - np.array(data_orbfil['T']))
+            resids['W'] = (np.array(data_PCE['W']) - np.array(data_orbfil['W']))
+            ##### XYZ Coordinate System
+            resids['X'] = (np.array(data_PCE['X']) - np.array(data_orbfil['X']))
+            resids['Y'] = (np.array(data_PCE['Y']) - np.array(data_orbfil['Y']))
+            resids['Z'] = (np.array(data_PCE['Z']) - np.array(data_orbfil['Z']))
+            ##### R theta phi Coordinate System
+            resids['R']     = (np.array(data_PCE['R'])     - np.array(data_orbfil['R']))
+            resids['theta'] = (np.array(data_PCE['theta']) - np.array(data_orbfil['theta']))
+            resids['phi']   = (np.array(data_PCE['phi'])   - np.array(data_orbfil['phi']))
+
+            orbit_resids[arc] = {}
+            orbit_resids[arc]['data_orbfil'] = data_orbfil
+            orbit_resids[arc]['data_PCE']    = data_PCE
+            orbit_resids[arc]['resids']      = resids
+
+
+
+        return(orbit_resids)
+
+
+    def STATS_residuals(self, residuals):
+        import numpy as np
+#         print('size of resids',np.size(residuals))
+        
+        n = np.size(residuals)
+        mean = (1/n)*(np.sum(residuals))
+        variance = (1/n)*(np.sum(np.square(residuals)))
+        rms = np.sqrt(variance)
+        rms_about_zero = np.sqrt((n/(n-1))*variance)
+        return(mean,rms,rms_about_zero)
+
+        
+        
+        
+    def post_getData_ValidationMetrics(self):
+        
+       
+
+        
+        
+        #### Construct and save the relevent run information and stats for each arc
+
+        data={'ARC'          :  [],
+             'ArcLength'     :  [],
+             'Total_iters'   :  [],
+#              'RMS POS (run)' :  [] ,
+#              'RMS VEL (run)' :  [] ,
+             'RMS_total_XYZ'     :  [] ,
+             'w_RMS_total_XYZ'   :  [] ,
+#              'PCEX_NUMBER'   :  [] ,
+#              'PCEX_MEAN'     :  [] ,
+             'PCEX_RMS'      :  [] ,
+#              'PCEX_No.-WTD'  :  [] ,
+#              'PCEX_WTD-MEAN' :  [] ,
+             'PCEX_WTD-RMS'  :  [] ,
+#              'PCEX_TYPE'     :  [] ,
+#              'PCEY_NUMBER'   :  [] ,
+#              'PCEY_MEAN'     :  [] ,
+             'PCEY_RMS'      :  [] ,
+#              'PCEY_No.-WTD'  :  [] ,
+#              'PCEY_WTD-MEAN' :  [] ,
+             'PCEY_WTD-RMS'  :  [] ,
+#              'PCEY_TYPE'     :  [] ,
+#              'PCEZ_NUMBER'   :  [] ,
+#              'PCEZ_MEAN'     :  [] ,
+             'PCEZ_RMS'      :  [] ,
+#              'PCEZ_No.-WTD'  :  [] ,
+#              'PCEZ_WTD-MEAN' :  [] ,
+             'PCEZ_WTD-RMS'  :  [] ,
+#              'PCEZ_TYPE'     :  [] ,
+#              'X_i'    :  [] ,
+#              'Y_i'    :  [] ,
+#              'Z_i'    :  [] ,
+#              'Xdot_i' :  [] ,
+#              'Ydot_i' :  [] ,
+#              'Zdot_i' :  [] ,
+#              'X_f'    :  [] ,
+#              'Y_f'    :  [] ,
+#              'Z_f'    :  [] ,
+#              'Xdot_f' :  [] ,
+#              'Ydot_f' :  [] ,
+#              'Zdot_f' :  [] ,
+            }
+        
+#         print(self.__dict__['global_params']['arc_input'])
+        self.Statistics        = {}
+        
+        for iarc, arc in enumerate(self.__dict__['global_params']['arc_input']):
+           
+            #### GET THE TOTAL RMS of the RESIDUALS
+            final_iter  = float(self.__dict__['run_parameters'+arc]['total_iterations'])
+            index_iter  = self.__dict__['Residuals_summary'][arc].Iter == final_iter
+            
+            #### Index the component RMS values
+            index_PCEX = self.__dict__['Residuals_summary'][arc][index_iter]['TYPE'] =='PCEX'
+            index_PCEY = self.__dict__['Residuals_summary'][arc][index_iter]['TYPE'] =='PCEY'
+            index_PCEZ = self.__dict__['Residuals_summary'][arc][index_iter]['TYPE'] =='PCEZ'
+            #
+            rms_PCEX = float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['RMS'])
+            rms_PCEY = float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['RMS'])
+            rms_PCEZ = float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['RMS'])
+            w_rms_PCEX = float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['WTD-RMS'])
+            w_rms_PCEY = float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['WTD-RMS'])
+            w_rms_PCEZ = float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['WTD-RMS'])
+
+            
+            #### Total number of observational Residuals
+            N = np.sum(np.array(self.__dict__['Residuals_summary'][arc][index_iter]['NUMBER']))
+            RMS_total = np.sqrt( ( np.square(rms_PCEX) + np.square(rms_PCEY) + np.square(rms_PCEZ) )/3  )
+            w_RMS_total = np.sqrt( ( np.square(w_rms_PCEX) + np.square(w_rms_PCEY) + np.square(w_rms_PCEZ) )/3  )
+            
+            ### Get Arc length from the run param settings
+            txt = self.__dict__['global_params']['run_settings']['arc_length']
+            chars = [s for s in [char for char in txt] if s.isdigit()]
+            arc_length = int(''.join(chars))
+
+            data['ARC'].append(arc)
+            data['ArcLength'].append(int(arc_length))
+            data['Total_iters'].append(int(final_iter))
+            
+
+            data['RMS_total_XYZ'].append(RMS_total)     
+            data['w_RMS_total_XYZ'].append(w_RMS_total)
+
+#             data['PCEX_NUMBER'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['NUMBER'])   )
+#             data['PCEX_MEAN'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['MEAN'])     )
+            data['PCEX_RMS'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['RMS'])      )
+#             data['PCEX_No.-WTD'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['No.-WTD'])  )
+#             data['PCEX_WTD-MEAN'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['WTD-MEAN']) )
+            data['PCEX_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['WTD-RMS']))
+#             data['PCEX_TYPE'].append((self.__dict__['Residuals_summary'][arc][index_iter][index_PCEX]['TYPE'].values))
+#             data['PCEY_NUMBER'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['NUMBER']))
+#             data['PCEY_MEAN'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['MEAN']))
+            data['PCEY_RMS'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['RMS']))
+#             data['PCEY_No.-WTD'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['No.-WTD']))
+#             data['PCEY_WTD-MEAN'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['WTD-MEAN']) )
+            data['PCEY_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['WTD-RMS']))
+#             data['PCEY_TYPE'].append((self.__dict__['Residuals_summary'][arc][index_iter][index_PCEY]['TYPE'].values))
+#             data['PCEZ_NUMBER'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['NUMBER']))
+#             data['PCEZ_MEAN'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['MEAN']))
+            data['PCEZ_RMS'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['RMS']))
+#             data['PCEZ_No.-WTD'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['No.-WTD']))
+#             data['PCEZ_WTD-MEAN'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['WTD-MEAN']))
+            data['PCEZ_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['WTD-RMS']))
+#             data['PCEZ_TYPE'].append((self.__dict__['Residuals_summary'][arc][index_iter][index_PCEZ]['TYPE'].values))
+            
+            ##### IF FILES NOT CONVERGED, turn off
+#             data['RMS POS (run)'].append(self.__dict__['RunSummary'][arc]['RMS POS']) 
+#             data['RMS VEL (run)'].append(self.__dict__['RunSummary'][arc]['RMS VEL']) 
+
+#             data['X_f'].append(self.__dict__['RunSummary'][arc]['X POS'])
+#             data['Y_f'].append(self.__dict__['RunSummary'][arc]['Y POS'])
+#             data['Z_f'].append(self.__dict__['RunSummary'][arc]['Z POS'])
+#             data['Xdot_f'].append(self.__dict__['RunSummary'][arc]['X VEL'])
+#             data['Ydot_f'].append(self.__dict__['RunSummary'][arc]['Y VEL'])
+#             data['Zdot_f'].append(self.__dict__['RunSummary'][arc]['Z VEL'])
+
+    
+    
+            
+        #### Get the OrbFil and PCE data for the datapoints that match in time
+        CombinedOrbitsDF  = self.ResidInvestigation_make_common_residsDF()      
+        OrbitResids = self.ResidInvestigation_get_residuals_coordsystems(CombinedOrbitsDF)
+        CombinedOrbitsDF = CombinedOrbitsDF
+        self.OrbitResids = OrbitResids
+        
+        
+        data['N_RMS'] = []
+        data['T_RMS'] = []
+        data['W_RMS'] = []
+        data['RMS_total_NTW'] = []
+        
+        for iarc, arc in enumerate(self.__dict__['global_params']['arc_input']):
+            print('arc',arc)
+#             print("OrbitResids[arc]['resids']['N']",OrbitResids[arc]['resids']['N'])
+            
+            N_mean, N_rms, N_rms_0 = self.STATS_residuals(OrbitResids[arc]['resids']['N'])
+            T_mean, T_rms, T_rms_0 = self.STATS_residuals(OrbitResids[arc]['resids']['T'])
+            W_mean, W_rms, W_rms_0 = self.STATS_residuals(OrbitResids[arc]['resids']['W'])
+            data['N_RMS'].append(N_rms_0)
+            data['T_RMS'].append(T_rms_0)
+            data['W_RMS'].append(W_rms_0)
+        
+#             Num_ntw = int(np.size((OrbitResids[arc]['resids']['T'])))
+#             print('num of measures N', int(np.size((OrbitResids[arc]['resids']['N']))))
+#             print('num of measures T', int(np.size((OrbitResids[arc]['resids']['T']))))
+#             print('num of measures W', int(np.size((OrbitResids[arc]['resids']['W']))))
+            
+            RMS_total_ntw = np.sqrt( ( np.square(N_rms_0) + np.square(T_rms_0) + np.square(W_rms_0) )/3  )
+            data['RMS_total_NTW'].append(RMS_total_ntw)
+        
+        self.Statistics = pd.DataFrame.from_dict(data) 
+#         self.Statistics = data
+       
+    
+       
+     ### Free up space by removing any ancillary data from the returned Object
+        def Pygeodyn_OBJECT_freeupmemory(OBJ):
+            SAT_ID = int(OBJ.__dict__['global_params']['SATID'])
+
+            for i,val in enumerate(OBJ.__dict__['Density'].keys()):
+
+                ####-----------------------------------------------------------------
+                #### DELETE UNNECESSARY VARS IN DENSITY
+
+#                 del OBJ.__dict__['Density'][val]['Lat']
+#                 del OBJ.__dict__['Density'][val]['Lon']
+#                 del OBJ.__dict__['Density'][val]['Height (meters)']
+                del OBJ.__dict__['Density'][val]['drhodz (kg/m**3/m)']
+                del OBJ.__dict__['Density'][val]['flux_daily']
+                del OBJ.__dict__['Density'][val]['flux_avg']
+                del OBJ.__dict__['Density'][val]['Kp']
+
+                ####-----------------------------------------------------------------
+                #### DELETE UNNECESSARY VARS IN Residuals_obs
+#                 del OBJ.__dict__['Residuals_obs'][val]['Sat_main']
+#                 del OBJ.__dict__['Residuals_obs'][val]['track_1']
+#                 del OBJ.__dict__['Residuals_obs'][val]['track_2']
+#                 del OBJ.__dict__['Residuals_obs'][val]['Note']
+#                 del OBJ.__dict__['Residuals_obs'][val]['Elev1']
+#                 del OBJ.__dict__['Residuals_obs'][val]['Elev2']
+#                 del OBJ.__dict__['Residuals_obs'][val]['StatSatConfig']
+#                 del OBJ.__dict__['Residuals_obs'][val]['Observation']
+#                 del OBJ.__dict__['Residuals_obs'][val]['Residual']
+#                 del OBJ.__dict__['Residuals_obs'][val]['RatiotoSigma']
+
+                ####-----------------------------------------------------------------
+                #### DELETE UNNECESSARY VARIABLES IN AdjustedParams
+                ####-----------------------------------------------------------------
+                #### DELETE UNNECESSARY VARIABLES IN Trajectory_orbfil
+#                 del OBJ.__dict__['Trajectory_orbfil'][val]['header']
+#                 del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Geodetic Latitude']
+#                 del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite East Longitude']
+#                 del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Height']
+#                 del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['MJDSEC ET']
+            
+    
+            del OBJ.__dict__['Trajectory_orbfil']
+            del OBJ.__dict__['Residuals_summary']
+#             del OBJ.__dict__['RunSummary']
+            return(OBJ)
+    
+        self = Pygeodyn_OBJECT_freeupmemory(self)
+
+    
+
+
+               
         
         
         
         
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+### END OF CLASS       
         

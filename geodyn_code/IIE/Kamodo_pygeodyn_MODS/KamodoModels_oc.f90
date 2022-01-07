@@ -64,8 +64,8 @@
       INTEGER(8) :: IYYDDD
 
       CHARACTER(len = 12) i_YYMMDDHHMMSS
-      CHARACTER(len = 6) i_YYMMDD
-      CHARACTER(len = 6) i_HHMMSS
+      CHARACTER(len = 6)  i_YYMMDD
+      CHARACTER(len = 6)  i_HHMMSS
       CHARACTER(len = 300) global_path
       CHARACTER(len = 300) model_path1
       CHARACTER(len = 300) model_path2
@@ -73,27 +73,21 @@
       
       CHARACTER(len = 200) model_path
       CHARACTER(len = 200) orbitcloud_file
-      integer :: i_read
-      integer :: ii_read
-      integer :: date_index
-      CHARACTER(len = 70) :: results_file
+      integer :: i_row
+      integer :: inum
       
       CHARACTER(len = 12) :: date
-
-      CHARACTER(len=70),dimension(9) :: char_ar
-      
       CHARACTER(len = 12),dimension(9) :: dates
       REAL,dimension(9) :: lons
       REAL,dimension(9) :: lats
       REAL,dimension(9) :: alts
       DOUBLE PRECISION,dimension(9) :: rhos
-      INTEGER,dimension(9) :: corners
-
+!
       REAL :: lon
       REAL :: lat
       REAL :: alt
       DOUBLE PRECISION :: rho_in
-      INTEGER :: corner
+      !INTEGER :: corner
 
       REAL ::  min_lon
       REAL ::  max_lon
@@ -102,22 +96,12 @@
       REAL ::  min_alt
       REAL ::  max_alt
 
-!      intent in model_path
-    !  REAL,dimension(3) :: C000
-    !  REAL,dimension(3) :: C100
-    !  REAL,dimension(3) :: C001
-    !  REAL,dimension(3) :: C101
-    !  REAL,dimension(3) :: C010
-    !  REAL,dimension(3) :: C110
-   !   REAL,dimension(3) :: C011
-    !  REAL,dimension(3) :: C111
-      
-    !  REAL,dimension(2) :: C00
-    !  REAL,dimension(2) :: C01
-    !  REAL,dimension(2) :: C10
-    ! REAL,dimension(2) :: C11
-
-        
+      !real, allocatable :: data_input(:,:)
+      CHARACTER(len = 12), allocatable :: datearray(:)
+      real, allocatable :: lonarray(:)
+      real, allocatable :: latarray(:)
+      real, allocatable :: altarray(:)
+      DOUBLE PRECISION, allocatable :: rho_inarray(:)
         
 !**********************************************************************
 !* START OF EXECUTABLE CODE *******************************************
@@ -131,7 +115,49 @@
       if(ICNT.eq.1)then
           WRITE(6,*) 'CHECK-- KamodoModels_oc.f90: using Kamodo '
           WRITE(6,*) 'kamodo_model:             ', kamodo_model
+          
+          !!!! Open the file on the first entry
+          orbit_cloud_path = trim(orbitcloud_file)
+          open (123,  file=trim(orbit_cloud_path), status='old',action="read")   
+          
+          !!! Read thru the file once to find how long it is.
+          n = 0
+          do
+            read(123,*,end=1)
+            n = n+1
+          end do
+          !!! set the pointer back to the start of file
+          WRITE(6,*) 'read the file  n:   ', n
+
+          1 rewind(123)
+            
+          !!! Allocate arrays that are length of file
+          allocate(datearray(n))
+          allocate(lonarray(n))
+          allocate(latarray(n))
+          allocate(altarray(n))
+          allocate(rho_inarray(n))
+          do i = 1, n
+              WRITE(6,*) 'i:   ', i
+
+        !!! Loop thru the file and save as arrays
+        read(UNIT=123,FMT="(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8)") &
+           &      datearray(i), lonarray(i), latarray(i),              &
+           &      altarray(i), rho_inarray(i)          
+
+          end do
+          close(123)
+          
+            WRITE(6,*) 'File read in correctly?'
+            WRITE(6,*) '     datearray     ',datearray(1)
+            WRITE(6,*) '     lonarray      ',lonarray(1)
+            WRITE(6,*) '     latarray      ',latarray(1)
+            WRITE(6,*) '     altarray      ',altarray(1)
+            WRITE(6,*) '     rho_inarray   ',rho_inarray(1)
       endif
+      
+      WRITE(6,*) 'file read and data inputted to arrays:   '
+
 !                                                                       &
 !!*********************************************************************
 !!    PREPARE THE DATA INPUTS TO KAMODO:
@@ -173,114 +199,106 @@
 !      write(i_LAT,'(F20.14)')   GLAT
 !      write(i_ALTKM,'(F20.13)') ALTKM
 !                                                                       &
-!!  GET THE ORBIT DATA
-       !global_path = "/data/data_geodyn/atmos_models_data/tiegcm/"
-       !model_path1 = "2018/Lutz_Rastaetter_072319_IT_1/"
-       !model_path2=trim(global_path)//trim(model_path1)
        
-       orbit_cloud_path = trim(orbitcloud_file)
-       !WRITE(6,*) 'model_path:          ', model_path
-       !WRITE(6,*) 'orbitcloud_file:    ', orbitcloud_file
-
-       !WRITE(6,*) 'kamodo-OC = orbit_cloud_path:    ', orbit_cloud_path
-
-      
-      
-   nrows=1000000000
-   open (123,  file=trim(orbit_cloud_path), status='old')                                   
-     do i_read = 1, nrows
+   
+   !#####  Open the file   
+   !open (123,  file=trim(orbit_cloud_path), status='old')                                
+   !inum = (ICNT + (ICNT-1)*9) - 1
+   !  do 50 ilines = 1, inum   
+   !      READ(123,*)     
+   !50  continue
+   
+   nrows=n
+   !#####  Read the file, looping through the rows and compare the date in each row to the date GEODYN is requesting
+   do i_row = 1, nrows    
+      !#####  If the date of the row matches the requested date, load the remaining values in that row into the save arrays
+      date = datearray(i_row)
+      if (i_YYMMDDHHMMSS == date ) then
+          !WRITE(6,*) 'inum          ', inum
+          !WRITE(6,*) 'i_row           ', i_row
+          !WRITE(6,*) 'i_YYMMDDHHMMSS  ', i_YYMMDDHHMMSS
+          !WRITE(6,*) 'date            ', date
         
-        WRITE(6,*) 'nrows', nrows
-        
-        read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-           &       date, lon, lat, alt, rho_in, corner  
-           
-           WRITE(6,*) 'date    ', date
-           WRITE(6,*) 'lon     ', lon
-           WRITE(6,*) 'lat     ', lat
-           WRITE(6,*) 'alt     ', alt
-           WRITE(6,*) 'rho_in  ', rho_in
-           WRITE(6,*) 'corner  ', corner
+        !#####  Read the next 8 rows in to form the cube around our ephemeris point on this Time
+          !WRITE(6,*) ' '
+          do iloop=1,9
+            dates(iloop) = datearray(  i_row + (iloop-1))
+            lons(iloop)  = lonarray(   i_row + (iloop-1))
+            lats(iloop)  = latarray(   i_row + (iloop-1))
+            alts(iloop)  = altarray(   i_row + (iloop-1))
+            rhos(iloop)  = rho_inarray(i_row + (iloop-1))
+            !WRITE(6,*) 'dates in datesoop ', datearray(  i_row + (iloop-1))
+          end do
+          !WRITE(6,*) '-------------------------------------------------'
 
-
-          if ( i_YYMMDDHHMMSS == date ) then   
-            !char_ar(1) = results_file
-            dates(1)   = date
-            lons(1)    = lon
-            lats(1)    = lat
-            alts(1)    = alt
-            rhos(1)    = rho_in
-            corners(1) = corner
-!                                                                       &
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(2),lons(2),lats(2),alts(2),rhos(2),corners(2)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(3),lons(3),lats(3),alts(3),rhos(3),corners(3)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(4),lons(4),lats(4),alts(4),rhos(4),corners(4)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(5),lons(5),lats(5),alts(5),rhos(5),corners(5)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(6),lons(6),lats(6),alts(6),rhos(6),corners(6)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(7),lons(7),lats(7),alts(7),rhos(7),corners(7)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(8),lons(8),lats(8),alts(8),rhos(8),corners(8)   
-         read(123,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8,1x,I2)") &
-            &   dates(9),lons(9),lats(9),alts(9),rhos(9),corners(9)   
-
-
-    
-    min_lon = MINVAL(lons)
-    max_lon = MAXVAL(lons)
-    min_lat = MINVAL(lats)
-    max_lat = MAXVAL(lats)
-    min_alt = MINVAL(alts)
-    max_alt = MAXVAL(alts)
-
-    
-    if(GLON.gt.max_lon)then
-        WRITE(6,*) 'OrbitCloudError-- lon ABOVE bounds:    ', GLON, max_lon
-        STOP 16
-    endif
-    if(GLON.lt.min_lon)then
-        WRITE(6,*) 'OrbitCloudError-- lon BELOW bounds:    ', GLON, min_lon
-        STOP 16
-    endif
-    if(GLAT.gt.max_lat)then
-        WRITE(6,*) 'OrbitCloudError-- lat ABOVE bounds:    ', GLAT, max_lat
-        STOP 16
-    endif
-    if(GLAT.lt.min_lat)then
-        WRITE(6,*) 'OrbitCloudError-- lat BELOW bounds:    ', GLAT, min_lat
-        STOP 16
-    endif
+     !####  Check the mimum reqd values to be sure we are still within the cube.
+   !  min_lon = MINVAL(lons)
+  !   max_lon = MAXVAL(lons)
+ !    min_lat = MINVAL(lats)
+!     max_lat = MAXVAL(lats)
+     min_alt = MINVAL(alts)
+     max_alt = MAXVAL(alts)
+!    if(GLON.gt.max_lon)then
+!        WRITE(6,*) 'OrbitCloudError-- lon ABOVE bounds:    ', GLON, max_lon
+!        STOP 16
+!    endif
+!    if(GLON.lt.min_lon)then
+!        WRITE(6,*) 'OrbitCloudError-- lon BELOW bounds:    ', GLON, min_lon, max_lon
+!        WRITE(6,*) ' i_YYMMDDHHMMSS              ', i_YYMMDDHHMMSS
+!        WRITE(6,*) ' geodyn_GLON                ', GLON
+!        WRITE(6,*) ' geodyn_GLAT                ', GLAT
+!        WRITE(6,*) ' geodyn_ALTKM               ', ALTKM
+!        WRITE(6,*) ' '
+!        WRITE(6,*) ' date                       ', dates
+!        WRITE(6,*) ' orbitcloud_lons center     ', lons(1)
+!        WRITE(6,*) ' orbitcloud_lats center     ', lats(1)
+!        WRITE(6,*) ' orbitcloud_alts center     ', alts(1)
+!        STOP 16
+!    endif
+!    if(GLAT.gt.max_lat)then
+!        WRITE(6,*) 'OrbitCloudError-- lat ABOVE bounds:    ', GLAT, max_lat
+!        STOP 16
+!    endif
+!    if(GLAT.lt.min_lat)then
+!        WRITE(6,*) 'OrbitCloudError-- lat BELOW bounds:    ', GLAT, min_lat
+!        STOP 16
+!    endif
     if(ALTKM.gt.max_alt)then
-        WRITE(6,*) 'OrbitCloudError-- alt ABOVE bounds:    ', ALTKM, max_alt
+        WRITE(6,*) "OrbitCloudError-- alt ABOVE bounds:    ", ALTKM, max_alt
         STOP 16
     endif
     if(ALTKM.lt.min_alt)then
-        WRITE(6,*) 'OrbitCloudError-- alt BELOW bounds:    ', ALTKM, min_alt
+        WRITE(6,*) "OrbitCloudError-- alt BELOW bounds:    ", ALTKM, min_alt
+        WRITE(6,*) ' i_YYMMDDHHMMSS             ', i_YYMMDDHHMMSS
+        WRITE(6,*) ' geodyn_GLON                ', GLON
+        WRITE(6,*) ' geodyn_GLAT                ', GLAT
+        WRITE(6,*) ' geodyn_ALTKM               ', ALTKM
+        WRITE(6,*) ' '
+        WRITE(6,*) ' date                       ', dates
+        WRITE(6,*) ' orbitcloud_lons center     ', lons(1)
+        WRITE(6,*) ' orbitcloud_lats center     ', lats(1)
+        WRITE(6,*) ' orbitcloud_alts center     ', alts(1)
         STOP 16
     endif
 
     
 
 
-        
-           exit
+        !########    EXIT if you got the right date
+           exit  !!!! CHANGE HERE
+        !########   
+           
            endif
 
-       end do
+       end do   !!!! CHANGE HERE
 
-      close (123) 
+      !close (123) 
 !           WRITE(6,"(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,E15.8,1x,I3)") &
 !               &       date, lon, lat, alt, rho, corner   
 
 
 !!!!! Once we have our saved values we interpolate the values of the cube 
 !!!!!      to a single point (the one requested) by GLAT, GLON, ALTKM
-
     delta_deg = 2
     delta_m   = 1
     x  = GLON
@@ -304,8 +322,6 @@
    C011 = rhos(3)  ![2]    ! # top,    back,  Left
    C111 = rhos(5)  ![4]    ! # top,    back,  right
     !WRITE(6,*) 'C000:    ', C000
-
-
 
     !##===================================================================
     !##        Manually INTERPOLATE-- Trilinear Interpolation Calculation
@@ -340,8 +356,6 @@
     DRHODZ = 0
     
    
-
-
 
 !                                                                       &
 

@@ -237,46 +237,85 @@ def Convert_cartesian_to_RSW_returnall(state_vector):
 
 
 
-def Convert_cartesian_to_NTW(state_vector):
-    '''
-    ###### The Satellite Coordinate System: NTW
-    ###        often used to describe orbital errors, relative positions, 
-               and displacements of satellite orbits. 
+# def Convert_cartesian_to_NTW_getT(state_vector):
+#     '''
+#     ###### The Satellite Coordinate System: NTW
+#     ###        often used to describe orbital errors, relative positions, 
+#                and displacements of satellite orbits. 
     
-    ### The NTW system moves with the satellite.
-    ###     T axis is tangential to the orbit and always points to the velocity vector. 
-    ###     N axis lies in the orbital plane, normal to the velocity vector.
-    ###     W axis is normal to the orbital plane (as in the RSW system)
+#     ### The NTW system moves with the satellite.
+#     ###     T axis is tangential to the orbit and always points to the velocity vector. 
+#     ###     N axis lies in the orbital plane, normal to the velocity vector.
+#     ###     W axis is normal to the orbital plane (as in the RSW system)
     
-    ### NOTE: We define in-track or tangential displacements as deviations along
-              the T axis. In-track errors are not the same as along-track variations
-              in the RSW system. One way to remember the distinction is that the 
-              in-track errors are in the direc- tion of the velocity, whereas 
-              along-track variations are simply along the velocity vector.
-    '''
+#     ### NOTE: We define in-track or tangential displacements as deviations along
+#               the T axis. In-track errors are not the same as along-track variations
+#               in the RSW system. One way to remember the distinction is that the 
+#               in-track errors are in the direc- tion of the velocity, whereas 
+#               along-track variations are simply along the velocity vector.
+#     '''
 
-    r_vec = state_vector[:3]    # np.array([X,   Y,   Z   ])
-    v_vec = state_vector[-3:]    # np.array([Xdot,Ydot,Zdot])
-    v_vec_norm = np.linalg.norm(v_vec)
+#     r_vec = state_vector[:3]    # np.array([X,   Y,   Z   ])
+#     v_vec = state_vector[-3:]    # np.array([Xdot,Ydot,Zdot])
+#     v_vec_norm = np.linalg.norm(v_vec)
 
-    T_hat = v_vec/v_vec_norm
-    W_hat = (np.cross(r_vec,v_vec)) / np.linalg.norm(np.cross(r_vec,v_vec))
-    N_hat = np.cross(T_hat, W_hat)
-
-
-    transmat_NTW =  np.transpose(np.array([N_hat, T_hat, W_hat ]))
-    inverse_transmat_NTW = np.linalg.inv(transmat_NTW)
+#     T_hat = v_vec/v_vec_norm
+#     W_hat = (np.cross(r_vec,v_vec)) / np.linalg.norm(np.cross(r_vec,v_vec))
+#     N_hat = np.cross(T_hat, W_hat)
 
 
-    r_vec_NTW = np.matmul(inverse_transmat_NTW, r_vec  )
+#     transmat_NTW =  np.transpose(np.array([N_hat, T_hat, W_hat ]))
+#     inverse_transmat_NTW = np.linalg.inv(transmat_NTW)
+
+
+#     r_vec_NTW = np.matmul(inverse_transmat_NTW, r_vec  )
+    
+# #     n = r_vec_NTW[0]
+#     t = r_vec_NTW[1]
+# #     w = r_vec_NTW[2]
+#     return t
+
+
+# def Convert_cartesian_to_NTW_returnall(state_vector):
+#     '''
+#     ###### The Satellite Coordinate System: NTW
+#     ###        often used to describe orbital errors, relative positions, 
+#                and displacements of satellite orbits. 
+    
+#     ### The NTW system moves with the satellite.
+#     ###     T axis is tangential to the orbit and always points to the velocity vector. 
+#     ###     N axis lies in the orbital plane, normal to the velocity vector.
+#     ###     W axis is normal to the orbital plane (as in the RSW system)
+    
+#     ### NOTE: We define in-track or tangential displacements as deviations along
+#               the T axis. In-track errors are not the same as along-track variations
+#               in the RSW system. One way to remember the distinction is that the 
+#               in-track errors are in the direc- tion of the velocity, whereas 
+#               along-track variations are simply along the velocity vector.
+#     '''
+
+#     r_vec = state_vector[:3]    # np.array([X,   Y,   Z   ])
+#     v_vec = state_vector[-3:]    # np.array([Xdot,Ydot,Zdot])
+#     v_vec_norm = np.linalg.norm(v_vec)
+
+#     T_hat = v_vec/v_vec_norm
+#     W_hat = (np.cross(r_vec,v_vec)) / np.linalg.norm(np.cross(r_vec,v_vec))
+#     N_hat = np.cross(T_hat, W_hat)
+
+
+#     transmat_NTW =  np.transpose(np.array([N_hat, T_hat, W_hat ]))
+#     inverse_transmat_NTW = np.linalg.inv(transmat_NTW)
+
+
+#     r_vec_NTW = np.matmul(inverse_transmat_NTW, r_vec  )
     
 #     n = r_vec_NTW[0]
-    t = r_vec_NTW[1]
+#     t = r_vec_NTW[1]
 #     w = r_vec_NTW[2]
-    return t
+#     return(n, t, w)
 
 
-def Convert_cartesian_to_NTW_returnall(state_vector):
+def Convert_cartesian_to_NTW_returnall(state_vector, Tmat_input, PCE_bool = True):
     '''
     ###### The Satellite Coordinate System: NTW
     ###        often used to describe orbital errors, relative positions, 
@@ -294,25 +333,41 @@ def Convert_cartesian_to_NTW_returnall(state_vector):
               along-track variations are simply along the velocity vector.
     '''
 
-    r_vec = state_vector[:3]    # np.array([X,   Y,   Z   ])
-    v_vec = state_vector[-3:]    # np.array([Xdot,Ydot,Zdot])
-    v_vec_norm = np.linalg.norm(v_vec)
+#     print('state_vector', state_vector)
+    
+    r_vec = state_vector[:3]    
+    v_vec = state_vector[-3:]   
+    v_vec_norm = np.linalg.norm(v_vec, ord=2)
 
     T_hat = v_vec/v_vec_norm
-    W_hat = (np.cross(r_vec,v_vec)) / np.linalg.norm(np.cross(r_vec,v_vec))
+    W_hat = (np.cross(r_vec,v_vec)) / np.linalg.norm(np.cross(r_vec,v_vec), ord=2)
     N_hat = np.cross(T_hat, W_hat)
+    
+    ### Transformation matrix
+#     transmat_NTW =  np.transpose(np.array([N_hat, T_hat, W_hat ]))
+#     transmat_NTW =  np.vstack([N_hat, T_hat, W_hat ])
+    if PCE_bool == True:
+        transmat_NTW  =  [[ N_hat[0] , T_hat[0] , W_hat[0] ],
+                          [ N_hat[1] , T_hat[1] , W_hat[1] ],
+                          [ N_hat[2] , T_hat[2] , W_hat[2] ] ]
+    else:
+        transmat_NTW = Tmat_input
+    
+#     from scipy.linalg import det
+#     det_transmat_NTW = det(transmat_NTW)
+#     print('transmat_NTW      ',transmat_NTW )
+#     print('det(transmat_NTW) ',det_transmat_NTW )
 
-
-    transmat_NTW =  np.transpose(np.array([N_hat, T_hat, W_hat ]))
     inverse_transmat_NTW = np.linalg.inv(transmat_NTW)
-
 
     r_vec_NTW = np.matmul(inverse_transmat_NTW, r_vec  )
     
     n = r_vec_NTW[0]
     t = r_vec_NTW[1]
     w = r_vec_NTW[2]
-    return n, t, w
+    
+#     data_ntw = (n, t, w)
+    return r_vec_NTW, transmat_NTW
 
 
 

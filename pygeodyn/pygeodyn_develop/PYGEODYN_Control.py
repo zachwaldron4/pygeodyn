@@ -1,5 +1,5 @@
 #### ===============
-#### Import modules:
+#### Import modules:   
 #### ===============
 import numpy as np
 import pandas as pd
@@ -14,7 +14,8 @@ import time
 
 #### modules for reading and converting data
 import linecache
-from   datetime import datetime,timedelta
+from   datetime import datetime,timedelta, timezone
+
 import copy
 import logging
 
@@ -75,9 +76,9 @@ class PygeodynController():
         self.verboseprint('')
         self.verboseprint(self.tabtab,'Current DIR: ', os.getcwd())
         
-        now = datetime.now()
+        now = datetime.now()-timedelta(hours=7)
         current_time = now.strftime("%H:%M:%S")
-        print(self.run_ID,"    Current Time =     ", current_time)
+        print(self.run_ID,"    Current Time =     ", current_time, " GMT-7")
         print(self.run_ID)
 
         ####-------------------------------------------------------------
@@ -147,6 +148,44 @@ class PygeodynController():
         # chmod 777 gives the tmp directory read, write and overwrite priveleges.
         self.make_directory_check_exist(self.TMPDIR_arc) 
         os.system('chmod 777 '+self.TMPDIR_arc)
+        
+        
+        ### Construct the setup file for the Arc of Choice
+        #---- Input iisset file (fort.05)
+        self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +'.bz2'
+        
+
+            
+           
+            
+            
+            
+            
+    def make_output_directories(self):
+        '''
+        This function builds the output directory structure and the temporary run directory
+        
+        '''
+        self.verboseprint('Original -- make_output_and_temprun_directories()')
+
+        #-------------------------------------------------------------
+        #  Make Directories if they do not exists
+        #-------------------------------------------------------------
+
+        ##### Make the GEODYN output directories to be saved later
+        #     If the below directories do not exists, build them: 
+        self.make_directory_check_exist(self.OUTPUTDIR) 
+        self.make_directory_check_exist(self.OUTPUTDIR+'/ORBITS/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/RESIDS/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/PUNCH/')
+        self.make_directory_check_exist(self.OUTPUTDIR+'/IIEOUT/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/TELEM/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/EMAT/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/EMAT/scans/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/IISSET/')
+        self.make_directory_check_exist(self.OUTPUTDIR+'/DENSITY/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/XYZ_TRAJ/')
+#         self.make_directory_check_exist(self.OUTPUTDIR+'/KEP_TRAJ/')
 
         A = subprocess.check_output(["gfortran", "--version"])
         gfortran_v_string = str(A).split('nCopyright')[0][2:-1]
@@ -255,71 +294,42 @@ class PygeodynController():
             f.write('\n')
             f.write( "SETUP FILE INFO          \n")
             f.write( "--------------- \n")
-#             f.write(f"    Epoch start                     {} \n")
-#             f.write(f"    Epoch end                       {} \n")          
-#             f.write('\n')
-#             f.write('\n')
-#             f.write('\n')
 
         
         f.close()
         
+        import logging
+        ### Make an execution log file
         
-        ### Construct the setup file for the Arc of Choice
-        #---- Input iisset file (fort.05)
-        self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +'.bz2'
+#         self.execlog_filename = self.OUTPUTDIR+'/pygeodyn_execlog_'+self.ARC
+#         if os.path.exists(self.execlog_filename):
+#             os.remove(self.execlog_filename) 
+
+        self.execlog_filename = self.log_file
+            
+        logging.basicConfig(filename=self.execlog_filename,
+                            filemode = 'a',
+                            level=logging.INFO,
+                            format='%(levelname)s(%(asctime)s) --- %(module)s.%(funcName)s() \n       %(message)s \n',
+                            datefmt='%Y-%m-%d %H:%M:%S')
+
         
-        print(self.run_ID,"    Cleaning iisset... :   ", self._INPUT_filename)
-#         print(self.run_ID,"        copy and bunzip2")
 
         self.clean_iisset_file()
-        
         self._INPUT_filename      = self.TMPDIR_arc  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
+
 
         with open(self.log_file, 'a') as log_file:
             log_file.write('\n')
             log_file.write('\n')
+            log_file.write(' ——————————————————————————————————————————————————————————————————————————————————— ')
             log_file.write('\n')
-            log_file.write( "EXECUTION LOG / NOTES \n")
-            log_file.write( "------------------------------------- \n")
-            log_file.write( "  (if desired append the execution log here.) \n")
-            
-            
-            
-            
-            
-            
-            
-            
-            
-    def make_output_directories(self):
-        '''
-        This function builds the output directory structure and the temporary run directory
+            log_file.write( "EXECUTION LOG / NOTES  ")
+            log_file.write('\n')
+            log_file.write('\n')
+
         
-        '''
-        self.verboseprint('Original -- make_output_and_temprun_directories()')
-
-        #-------------------------------------------------------------
-        #  Make Directories if they do not exists
-        #-------------------------------------------------------------
-
-        ##### Make the GEODYN output directories to be saved later
-        #     If the below directories do not exists, build them: 
-        self.make_directory_check_exist(self.OUTPUTDIR) 
-        self.make_directory_check_exist(self.OUTPUTDIR+'/ORBITS/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/RESIDS/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/PUNCH/')
-        self.make_directory_check_exist(self.OUTPUTDIR+'/IIEOUT/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/TELEM/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/EMAT/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/EMAT/scans/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/IISSET/')
-        self.make_directory_check_exist(self.OUTPUTDIR+'/DENSITY/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/XYZ_TRAJ/')
-#         self.make_directory_check_exist(self.OUTPUTDIR+'/KEP_TRAJ/')
         
-
-
     def print_runparameters_to_notebook(self):
         '''
         This is the base version of this method. 
@@ -376,12 +386,13 @@ class PygeodynController():
             
     def prepare_tmpdir_for_geodyn_run(self):
         '''  This it the base version of this method.
-             It is overridden in the Satellite Class to be satellite specific. 
+             It canbe overridden in the Satellite Class to be satellite specific. 
              
              Certain satellites and run types require different data inputs on different fortran units.
         '''
-        self.verboseprint('Original -- prepare_tmpdir_for_geodyn_run()')
-        self.verboseprint(self.tabtab,'Current DIR: ',os.getcwd())
+        
+        logger = logging.getLogger(self.execlog_filename)
+        logger.info(f"ORIGINAL- Construct a tmp directory in which to run IIS and IIE")
      
         #### Navigate TO the TMPDIR
         os.chdir(self.TMPDIR_arc)
@@ -478,16 +489,16 @@ class PygeodynController():
 
             
     def run_geodyn_in_tmpdir(self):
-        self.verboseprint('Original -- run_geodyn_in_tmpdir()')
 
-        self.verboseprint(self.tabtab,'Current DIR 1',os.getcwd())    
         ####-------------------------------------
         ####     RUN GEODYN IIS
         ####-------------------------------------
+        
+        logger = logging.getLogger(self.execlog_filename)
+        logger.info(f" chdir to tmp dir: {self.TMPDIR_arc} ")
 
         ### Must change directory to run the IIS executable
         os.chdir(self.TMPDIR_arc)
-        self.verboseprint(self.tabtab,'Current DIR 2',os.getcwd())    
 
         time.sleep(1)
 
@@ -498,8 +509,9 @@ class PygeodynController():
         #### RUN THE EXECUTABLE
         print()
         print(self.run_ID,"         Running IIS" )
-
         command_IIS = self.G2SDIR+'/giis2002_gfortran > '+'iisout 2> '+'iiserr'
+        logger.info(f" Running IIS: {command_IIS} ")
+
         subprocess.run(command_IIS, shell = True)
         time.sleep(1)
 
@@ -532,15 +544,14 @@ class PygeodynController():
         
         ###  Then cleanup temporary files.
         os.system('rm -f ftn* fort.*')
-#         print(self.run_ID,"         End of  IIS" )
         
         
         print()
         print(self.run_ID,"         Running IIE" )
 
-        now = datetime.now()
+        now = datetime.now()-timedelta(hours=7)
         current_time = now.strftime("%H:%M:%S")
-        print(self.run_ID,"         Current Time =", current_time)
+        print(self.run_ID,"         Current Time =", current_time, 'GMT-7')
 
         
         #=====================================================================
@@ -565,6 +576,8 @@ class PygeodynController():
        
         command_IIE = self.G2EDIR+'/giie2002_gfortran > '+'iieout 2> '+'iieerr'
         time.sleep(0.5)
+        logger.info(f" Running IIE: {command_IIE} ")
+
         subprocess.run(command_IIE, shell = True)
         time.sleep(0.5)
         
@@ -576,6 +589,10 @@ class PygeodynController():
             print(self.run_ID,"---------End of IIE" )
         else:
             print('ERRORS FOUND IN IIE:', _iieerr_filename)
+            end = time.time()
+            elapsed = end - start
+            print(self.run_ID,'         Time of IIE: ',elapsed,'secs','(',str(float(elapsed)/60),' mins)')
+
             with open(_iieerr_filename, 'r') as read_iieerrors:
                 # Read & print the entire file
                 print(read_iieerrors.read())
@@ -649,8 +666,9 @@ class PygeodynController():
                         'fort.31': 'orbfil2',
                         'fort.131': 'orbfil',
                         'fort.99': 'densityfil',
-                        'fort.98': 'msis_in_file',
-                        'fort.101':'msis_out_file' ,
+                        'fort.98': 'msisin_file_ephem',
+                        'fort.101': 'msisin_file_gpiflux',
+#                         'fort.101':'msis_out_file' ,
                         'fort.103':'msis_SWI_file' ,
                         }
         for i,val in enumerate(output_files):
@@ -666,7 +684,8 @@ class PygeodynController():
 #         os.system('mv fort.10 ascii_kep')         # i dont want these anymore
         os.system('mv fort.131 orbfil')
         os.system('mv fort.99  densityfil')
-        os.system('mv fort.98 msis_in_file')     
+        os.system('mv fort.98 msisin_file_ephem')     
+        os.system('mv fort.101 msisin_file_gpiflux')     
 #         os.system('mv fort.101 msis_out_file')    # i dont want these anymore
 #         os.system('mv fort.103 msis_SWI_file')    # i dont want these anymore
         os.system('rm -f slvtmp* ftn* fort.*')
@@ -720,8 +739,9 @@ class PygeodynController():
 #         os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
 #         os.system('cp ascii_kep.bz2 '  +self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+     '.bz2')
         os.system('mv IIEOUT.'+ self.ARC+' '+self.OUTPUTDIR+'/IIEOUT/'+ self.ARC+'')
-        
-        os.system('cp msis_in_file '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin')
+                
+        os.system('cp msisin_file_ephem '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin')
+        os.system('cp msisin_file_gpiflux '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin_gpiflux')
 #         os.system('cp msis_out_file '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisout')
 #         os.system('cp msis_SWI_file '+self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisSWI')
 #         os.system('cp punch.gdn.bz2   '+self.OUTPUTDIR+'/PUNCH/'+ self.ARC+'.gdn.bz2')
@@ -733,10 +753,249 @@ class PygeodynController():
         #### Go up 3 levels and delete the temporary directories:
         os.chdir('../../')
         
-        print(self.tabtab,'Deleting: ',self.SERIES)
+        print(self.tabtab,'Deleting tmp/: ',self.SERIES)
         os.system('rm -rf'+' ' +self.SERIES)
+     
+    
+    
+    
+    
+#     ##########################################################################################################
+#     ##### MAKE THE CSV
+#     def make_orbit_cloud_csv(self):
+
+#         import sys
+#         logger = logging.getLogger(self.execlog_filename)
+#         logging.info(f'in make_orbit_cloud_csv()   \n       Path to DEN_CSV file:  {self.msis2_file_path}')
         
+#         DEN_csv = pd.read_csv(self.msis2_file_path, 
+#                             dtype=object,
+#                             names = ['YYMMDD',
+#                                      'HHMMSS',
+#                                      'Height_kilometers',
+#                                      'Lat',
+#                                      'Lon',
+#                                      'STLOC',
+#                                      'AVGFLX',
+#                                      'FLUX',
+#                                          ],
+#                             sep = '\s+',
+#                             )
+
+
+#         sat_time1 = list(DEN_csv['YYMMDD'])  #"031115" #  
+#         sat_time2 = list(DEN_csv['HHMMSS'])  #"120000" #1068897600        
+#         sattime   =    [x+y   for x,y   in zip(sat_time1, sat_time2)]
+
+#         sattime   =    [datetime.strptime(x, '%y%m%d%H%M%S')   for x   in sattime ]
+#         sattime   =    [datetime.timestamp(x)   for x   in sattime ]
+
+#         DEN_csv['sattime_utctimestamp'] = sattime
+#         # DEN_csv['Height_kilometers'] = DEN_csv['Height (meters)'].astype(float)*1e-3
+#         DEN_csv['Lon'] = DEN_csv['Lon'].astype(float)
+#         DEN_csv['Lat'] = DEN_csv['Lat'].astype(float)
+
+#         timeHHMMSS = [] 
+#         for i,val in enumerate(DEN_csv['HHMMSS'].values.astype(int)):
+#             # print(len(str(val)))
+#             if len(str(val)) == 1:
+#                 timehhmmss_val = '00000'+ str(val)
+#                 timeHHMMSS.append(timehhmmss_val)
+#             elif len(str(val)) == 2:
+#                 timehhmmss_val = '0000'+ str(val)
+#                 timeHHMMSS.append(timehhmmss_val)
+#             elif len(str(val)) == 3:
+#                 timehhmmss_val = '000'+ str(val)
+#                 timeHHMMSS.append(timehhmmss_val)
+#             elif len(str(val)) == 4:
+#                 timehhmmss_val = '00'+ str(val)
+#                 timeHHMMSS.append(timehhmmss_val)
+#             elif len(str(val)) == 5:
+#                 timehhmmss_val = '0'+ str(val)
+#                 timeHHMMSS.append(timehhmmss_val)
+#             else:
+#                 timeHHMMSS.append(str(val))
+#         DEN_csv['timeHHMMSS'] = timeHHMMSS
+#         YR = int(18)
+
+#         YYMMDD_list = DEN_csv['YYMMDD'].astype(int).astype(str)
+#         timeHHMMSS_list = DEN_csv['timeHHMMSS'].astype(str)
+
+#         if YR < 10:
+#             year    = ['200' + x[:1]  for x in YYMMDD_list]
+#             month   = [        x[1:3] for x in YYMMDD_list]
+#             day     = [        x[3:]  for x in YYMMDD_list]
+#             hours   = [        x[:2]  for x in timeHHMMSS_list]
+#             minutes = [        x[2:4] for x in timeHHMMSS_list]
+#             secs    = [        x[4:]  for x in timeHHMMSS_list]
+#         else:
+#             year    = ['20' + x[:2]  for x in YYMMDD_list]
+#             month   = [       x[2:4] for x in YYMMDD_list]
+#             day     = [       x[4:]  for x in YYMMDD_list]
+#             hours   = [       x[:2]  for x in timeHHMMSS_list]
+#             minutes = [       x[2:4] for x in timeHHMMSS_list]
+#             secs    = [       x[4:]  for x in timeHHMMSS_list]
+#         #--------------------------------------------------------
+#         DEN_csv['year']  = year
+#         DEN_csv['month'] = month
+#         DEN_csv['day']   = day
+#         DEN_csv['hours']  = hours
+#         DEN_csv['minutes'] = minutes
+#         DEN_csv['secs']  = secs
+#         #--------------------------------------------------------
+#         year= list(map(int, DEN_csv['year'].values))
+#         month= list(map(int, DEN_csv['month'].values))
+#         day= list(map(int, DEN_csv['day'].values))
+#         hour= list(map(int, DEN_csv['hours'].values))
+#         minute = list(map(int, DEN_csv['minutes'].values))
+#         second = list(map(int, DEN_csv['secs'].values))
+
+#         DATE = list(map(datetime, year,month, day, hour,minute,second ))
+
+#         DEN_csv.insert(0, 'Date', DATE)
+
+#         del DEN_csv['timeHHMMSS']
+#         del DEN_csv['year']
+#         del DEN_csv['month']
+#         del DEN_csv['day']
+#         del DEN_csv['hours']
+#         del DEN_csv['minutes']
+#         del DEN_csv['secs']
+
+#         import sys
+#         sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
+#         from SingleSatelliteFlythrough import SingleModelFlythrough
+#         sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
+#         from SatelliteFlythrough import ModelFlythrough
+
+
+#         times_list = []
+#         lons_list = []
+#         lats_list = []
+#         alts_list = []
+#         rhos_list = []
+#         cube_corner = []
+
+#         count=0
+        
+# #         ##############################################################
+# #         from multiprocessing import set_start_method
+# #         set_start_method("spawn")
+# #         import sys  
+# #         import multiprocessing
+# #         sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/multiprocess_makeorbit_file')
+# #         from multiprocess_makeorbit_file  import multiprocess_makeorbit_file
+# #         multiprocessing.cpu_count()* 2
+# #         pool_size = (multiprocessing.cpu_count() + 2  ) 
+# #         pool = multiprocessing.Pool(processes=pool_size)
+# #         ins = [(DEN_csv, 0, self.orbitcloud_csv_file, self.model_data_path),
+# #                (DEN_csv, 1, self.orbitcloud_csv_file, self.model_data_path),
+# #                ]
+# #         pool.starmap(multiprocess_makeorbit_file, ins)
+# #         ##############################################################
+
+        
+#         #### Open the file
+#         #### We will loop thru the DEN CSV and if the file already contains the the date, don't overwrite.
+#         ### NOTE: The below will search thru the file to see if the date is already in there but it does not account for the fact that the data must be written in blocks of 9 points of the cube.  This is a limitation and should be addressed eventually
+        
+#         print('TEST1')
+#         file = open(self.orbitcloud_csv_file,  'r+')
+#         for it,val in enumerate(DEN_csv['Date'][:]):
+#             date_index = DEN_csv['YYMMDD'][it] + DEN_csv['HHMMSS'][it]
+# #             print('TEST2')
+   
+# #             for iline, line in enumerate(file):
+# #                 print('TEST3')
+# #                 print(iline, line)
+# #                 print(type(line))
+# #                 if date_index in line:
+# #                     print('exists!', val, date_index, line)
+# #                     pass
+# #                 elif (date_index not in line) or (line == '\n'):
+#             unix_time  = DEN_csv['sattime_utctimestamp'][it]
+#             print(f"**** {date_index} -- {count} ****")
+
+#             count+=1
+
+#             ### Get the coordinates along the orbit:
+#             lon = float(DEN_csv['Lon'][it])
+#             lat = float(DEN_csv['Lat'][it])
+#             alt = float(DEN_csv['Height_kilometers'][it])
+#             center_coord = [lon, lat, alt]
+
+
+#             ### Find the coordinates of the cube surround the orbit point:
+#             delta_deg = 2    # degrees
+#             delta_m = 1000.*1e-3 # meters to kilometers
+#             A = [lon + delta_deg, lat+delta_deg, alt+delta_m]  # top,    front, left
+#             B = [lon + delta_deg, lat-delta_deg, alt+delta_m]  # top,    back,  Left
+#             C = [lon - delta_deg, lat+delta_deg, alt+delta_m]  # top,    front, right
+#             D = [lon - delta_deg, lat-delta_deg, alt+delta_m]  # top,    back,  right
+#             E = [lon + delta_deg, lat+delta_deg, alt-delta_m]  # bottom, front, left
+#             F = [lon + delta_deg, lat-delta_deg, alt-delta_m]  # bottom, back,  left
+#             G = [lon - delta_deg, lat+delta_deg, alt-delta_m]  # bottom, front, right
+#             H = [lon - delta_deg, lat-delta_deg, alt-delta_m]  # bottom, back,  right
+
+
+#             ### Store the cube's coordinates in the dictionary index
+#             cube_corners_and_center = []
+#             cube_corners_and_center.append(center_coord)
+#             cube_corners_and_center.append(A)
+#             cube_corners_and_center.append(B)
+#             cube_corners_and_center.append(C)
+#             cube_corners_and_center.append(D)
+#             cube_corners_and_center.append(E)
+#             cube_corners_and_center.append(F)
+#             cube_corners_and_center.append(G)
+#             cube_corners_and_center.append(H)
+
+#             #### Import Coordinates to Kamodo
+#             ##
+#             #### Kamodo static inputs:
+#             model          = 'TIEGCM'
+#             file_dir       = self.model_data_path+'/'
+#             logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
+#             variable_list  = ['rho','psi_O2', 'psi_O',  'psi_He', 'T_n']
+#             coord_type     = 'SPH'
+#             coord_grid     = 'sph'
+#             high_res       = 1.
+#             verbose        = False  
+#             csv_output     = '' 
+#             plot_output    = ''
+
+
+#             #### Extract the coordinates from each list to plug into Kamodo with vectorization
+#             lons_in = [item[0] for item in cube_corners_and_center]
+#             lats_in = [item[1] for item in cube_corners_and_center]
+#             alts_in = [item[2] for item in cube_corners_and_center]
+
+#             ## Gather inputs for Kamodo
+#             sat_time       = unix_time*np.ones(np.size(alts_in))
+#             c1             = lons_in
+#             c2             = lats_in
+#             c3             = alts_in
+#             ## Plug vectorized coordinates into Kamodo
+#             results = ModelFlythrough(model, file_dir, variable_list, sat_time, c1, c2, c3, 
+#                                 coord_type, coord_grid, high_res=20., verbose=False, 
+#                                 csv_output='', plot_output='')
+#             corners = ['0','1','2','3','4','5','6','7','8']
+#             for i,valrho in enumerate(results['rho']):
+# #                 print('writing to file')
+#                 file.write(f"{date_index}   {results['c1'][i]:8.4f}   {results['c2'][i]:8.4f}   {results['c3'][i]:8.4f}   {valrho:15.8e}   {corners[i]} \n")
+
+        
+#         file.close()
+
+
+# ##########################################################################################################
+
+
+    ##########################################################################################################
+    ##### MAKE THE CSV
     def make_orbit_cloud_csv(self):
+        import time
+        start = time.time()
 
         import sys
         logger = logging.getLogger(self.execlog_filename)
@@ -749,14 +1008,21 @@ class PygeodynController():
                                      'Height_kilometers',
                                      'Lat',
                                      'Lon',
-                                     'STLOC',
-                                     'AVGFLX',
-                                     'FLUX',
+#                                      'STLOC',
+#                                      'AVGFLX',
+#                                      'FLUX',
                                          ],
                             sep = '\s+',
                             )
 
 
+
+
+        
+        
+        
+        
+        
         sat_time1 = list(DEN_csv['YYMMDD'])  #"031115" #  
         sat_time2 = list(DEN_csv['HHMMSS'])  #"120000" #1068897600        
         sattime   =    [x+y   for x,y   in zip(sat_time1, sat_time2)]
@@ -765,7 +1031,6 @@ class PygeodynController():
         sattime   =    [datetime.timestamp(x)   for x   in sattime ]
 
         DEN_csv['sattime_utctimestamp'] = sattime
-        # DEN_csv['Height_kilometers'] = DEN_csv['Height (meters)'].astype(float)*1e-3
         DEN_csv['Lon'] = DEN_csv['Lon'].astype(float)
         DEN_csv['Lat'] = DEN_csv['Lat'].astype(float)
 
@@ -825,7 +1090,6 @@ class PygeodynController():
         second = list(map(int, DEN_csv['secs'].values))
 
         DATE = list(map(datetime, year,month, day, hour,minute,second ))
-
         DEN_csv.insert(0, 'Date', DATE)
 
         del DEN_csv['timeHHMMSS']
@@ -836,59 +1100,46 @@ class PygeodynController():
         del DEN_csv['minutes']
         del DEN_csv['secs']
 
+            ### The Density File has a repeat. shorten to the first full runthrough
+#         vals  = np.arange(DEN_csv.index[0],DEN_csv.index[-1]+1)
+#         df = DEN_csv.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min()
+#         DEN_csv= DEN_csv[:index_date]
+
+        
+        
         import sys
-        sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
-        from SingleSatelliteFlythrough import SingleModelFlythrough
+#         sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
+#         from SingleSatelliteFlythrough import SingleModelFlythrough
         sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
         from SatelliteFlythrough import ModelFlythrough
 
 
-        times_list = []
+        date_list = []
+        unixtimes_list = []
         lons_list = []
         lats_list = []
         alts_list = []
-        rhos_list = []
-        cube_corner = []
 
         count=0
         
-#         ##############################################################
-#         from multiprocessing import set_start_method
-#         set_start_method("spawn")
-#         import sys  
-#         import multiprocessing
-#         sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/multiprocess_makeorbit_file')
-#         from multiprocess_makeorbit_file  import multiprocess_makeorbit_file
-#         multiprocessing.cpu_count()* 2
-#         pool_size = (multiprocessing.cpu_count() + 2  ) 
-#         pool = multiprocessing.Pool(processes=pool_size)
-#         ins = [(DEN_csv, 0, self.orbitcloud_csv_file, self.model_data_path),
-#                (DEN_csv, 1, self.orbitcloud_csv_file, self.model_data_path),
-#                ]
-#         pool.starmap(multiprocess_makeorbit_file, ins)
-#         ##############################################################
-
         
         #### Open the file
         #### We will loop thru the DEN CSV and if the file already contains the the date, don't overwrite.
         ### NOTE: The below will search thru the file to see if the date is already in there but it does not account for the fact that the data must be written in blocks of 9 points of the cube.  This is a limitation and should be addressed eventually
         
-        print('TEST1')
-        file = open(self.orbitcloud_csv_file,  'r+')
+        delta_deg = 2    # degrees
+        delta_m = 1000.*1e-3 # meters to kilometers
+
+        logging.info(f'LON and LAT cube size of orbit_cloud_file: {delta_deg} degrees')
+        logging.info(f'Altitude size of orbit_cloud_file:  {delta_m} kilometers')
+
+        
         for it,val in enumerate(DEN_csv['Date'][:]):
             date_index = DEN_csv['YYMMDD'][it] + DEN_csv['HHMMSS'][it]
-#             print('TEST2')
-   
-#             for iline, line in enumerate(file):
-#                 print('TEST3')
-#                 print(iline, line)
-#                 print(type(line))
-#                 if date_index in line:
-#                     print('exists!', val, date_index, line)
-#                     pass
-#                 elif (date_index not in line) or (line == '\n'):
             unix_time  = DEN_csv['sattime_utctimestamp'][it]
-            print(f"**** {date_index} -- {count} ****")
+#             print(f"**** {date_index} -- {count} ****")
 
             count+=1
 
@@ -898,18 +1149,52 @@ class PygeodynController():
             alt = float(DEN_csv['Height_kilometers'][it])
             center_coord = [lon, lat, alt]
 
+            lon_plus_delta = lon + delta_deg
+            lon_mins_delta = lon - delta_deg
+            lat_plus_delta = lat + delta_deg
+            lat_mins_delta = lat - delta_deg
+
+            ### WRAP THE LONS AROUND -180 to 180
+            if lon_plus_delta < -180:
+                lon_plus_delta = np.mod(lon_plus_delta, 180)
+            elif lon_plus_delta > 180:
+                lon_plus_delta = np.mod(lon_plus_delta, -180)
+            else:        
+                lon_plus_delta = lon_plus_delta
+
+            if lon_mins_delta < -180:
+                lon_mins_delta = np.mod(lon_mins_delta, 180)
+            elif lon_mins_delta > 180:
+                lon_mins_delta = np.mod(lon_mins_delta, -180)
+            else:
+                lon_mins_delta = lon_mins_delta
+
+
+            if lat_plus_delta < -90:
+                lat_plus_delta = np.mod(lat_plus_delta, 90)
+            elif lat_plus_delta > 90:
+                lat_plus_delta = np.mod(lat_plus_delta, -90)
+            else:
+                lat_plus_delta = lat_plus_delta
+
+            if lat_mins_delta < -90:
+                lat_mins_delta = np.mod(lat_mins_delta, 90)
+            elif lat_mins_delta > 90:
+                lat_mins_delta = np.mod(lat_mins_delta, -90)
+            else:
+                lat_mins_delta = lat_mins_delta
+
+
 
             ### Find the coordinates of the cube surround the orbit point:
-            delta_deg = 2    # degrees
-            delta_m = 1000.*1e-3 # meters to kilometers
-            A = [lon + delta_deg, lat+delta_deg, alt+delta_m]  # top,    front, left
-            B = [lon + delta_deg, lat-delta_deg, alt+delta_m]  # top,    back,  Left
-            C = [lon - delta_deg, lat+delta_deg, alt+delta_m]  # top,    front, right
-            D = [lon - delta_deg, lat-delta_deg, alt+delta_m]  # top,    back,  right
-            E = [lon + delta_deg, lat+delta_deg, alt-delta_m]  # bottom, front, left
-            F = [lon + delta_deg, lat-delta_deg, alt-delta_m]  # bottom, back,  left
-            G = [lon - delta_deg, lat+delta_deg, alt-delta_m]  # bottom, front, right
-            H = [lon - delta_deg, lat-delta_deg, alt-delta_m]  # bottom, back,  right
+            A = [lon_plus_delta, lat_plus_delta, alt+delta_m]  # top,    front, left
+            B = [lon_plus_delta, lat_mins_delta, alt+delta_m]  # top,    back,  Left
+            C = [lon_mins_delta, lat_plus_delta, alt+delta_m]  # top,    front, right
+            D = [lon_mins_delta, lat_mins_delta, alt+delta_m]  # top,    back,  right
+            E = [lon_plus_delta, lat_plus_delta, alt-delta_m]  # bottom, front, left
+            F = [lon_plus_delta, lat_mins_delta, alt-delta_m]  # bottom, back,  left
+            G = [lon_mins_delta, lat_plus_delta, alt-delta_m]  # bottom, front, right
+            H = [lon_mins_delta, lat_mins_delta, alt-delta_m]  # bottom, back,  right
 
 
             ### Store the cube's coordinates in the dictionary index
@@ -924,20 +1209,6 @@ class PygeodynController():
             cube_corners_and_center.append(G)
             cube_corners_and_center.append(H)
 
-            #### Import Coordinates to Kamodo
-            ##
-            #### Kamodo static inputs:
-            model          = 'TIEGCM'
-            file_dir       = self.model_data_path+'/'
-            logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
-            variable_list  = ['rho','psi_O2', 'psi_O',  'psi_He', 'T_n']
-            coord_type     = 'SPH'
-            coord_grid     = 'sph'
-            high_res       = 1.
-            verbose        = False  
-            csv_output     = '' 
-            plot_output    = ''
-
 
             #### Extract the coordinates from each list to plug into Kamodo with vectorization
             lons_in = [item[0] for item in cube_corners_and_center]
@@ -946,25 +1217,74 @@ class PygeodynController():
 
             ## Gather inputs for Kamodo
             sat_time       = unix_time*np.ones(np.size(alts_in))
+            dates          = [date_index]*np.size(alts_in)
             c1             = lons_in
             c2             = lats_in
             c3             = alts_in
-            ## Plug vectorized coordinates into Kamodo
-            results = ModelFlythrough(model, file_dir, variable_list, sat_time, c1, c2, c3, 
-                                coord_type, coord_grid, high_res=20., verbose=False, 
-                                csv_output='', plot_output='')
-            corners = ['0','1','2','3','4','5','6','7','8']
-            for i,valrho in enumerate(results['rho']):
-#                 print('writing to file')
-                file.write(f"{date_index}   {results['c1'][i]:8.4f}   {results['c2'][i]:8.4f}   {results['c3'][i]:8.4f}   {valrho:15.8e}   {corners[i]} \n")
+            
+            
+            unixtimes_list.extend(sat_time)
+            date_list.extend(dates)
+            lons_list.extend(c1)
+            lats_list.extend(c2)
+            alts_list.extend(c3)
+        
+        #### Import Coordinates to Kamodo
+        ##
+        #### Kamodo static inputs:
+        model          = 'TIEGCM'
+        file_dir       = self.model_data_path+'/'
+        logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
+        variable_list  = ['rho','psi_O2', 'psi_O',  'psi_He', 'T_n']
+        coord_type     = 'SPH'
+        coord_grid     = 'sph'
+        high_res       = 1.
+        verbose        = False  
+        csv_output     = '' 
+        plot_output    = ''        
+        
+        
+        print('Running thru Kamodo')
+        results = ModelFlythrough(model, file_dir, variable_list, unixtimes_list, lons_list, lats_list, alts_list,
+                                  coord_type, coord_grid, high_res=20., verbose=False,csv_output='', plot_output='')
+        end = time.time()
+        elapsed = end - start
+        print('Kamodo Total Run Time:', elapsed,       'seconds' )
+        print('Kamodo Total Run Time:', elapsed/60,    'minutes' )
 
         
-        file.close()
+        with open(self.orbitcloud_csv_file, 'r+') as file:
+            for ii, valrho in enumerate(results['rho']):
+#                 print(results['utc_time'][ii])
+#                 print(datetime.fromtimestamp(results['utc_time'][ii]))
+#                 print()
+#                 print(datetime.strptime(results['utc_time'][ii], '%Y-%m-%d %H:%M:%S'))
+                file.write(f"{datetime.strftime(datetime.fromtimestamp(results['utc_time'][ii]), '%y%m%d%H%M%S')}   {results['c1'][ii]:8.4f}   {results['c2'][ii]:8.4f}   {results['c3'][ii]:8.4f}   {valrho:15.8e} \n")
+        
+        end = time.time()
+        elapsed = end - start
+        print('Save Orbit Cloud file Total Run Time:', elapsed,       'seconds' )
+        print('Save Orbit Cloud file Total Run Time:', elapsed/60,    'minutes' )
+
+#                 file.write(f"{date_val}   {lons_list[ii]:8.4f}   {lats_list[ii]:8.4f}   {alts_list[ii]:8.4f} \n")
 
 
 
 
+            ## Plug vectorized coordinates into Kamodo
+#             results = ModelFlythrough(model, file_dir, variable_list, sat_time, c1, c2, c3, 
+#                                 coord_type, coord_grid, high_res=20., verbose=False, 
+#                                 csv_output='', plot_output='')
+#             corners = ['0','1','2','3','4','5','6','7','8']
+#             for i,valrho in enumerate(results['rho']):
+#                 print('writing to file')
+#                 file.write(f"{date_index}   {results['c1'][i]:8.4f}   {results['c2'][i]:8.4f}   {results['c3'][i]:8.4f}   {valrho:15.8e}   {corners[i]} \n")
 
+        
+#         file.close()
+
+
+##########################################################################################################
 
         
     
@@ -998,47 +1318,33 @@ class PygeodynController():
                 
         '''
         
-        
-        
-        
-        
+                
         from os.path import exists
 
         if self.den_model == 'tiegcm_oc':
                 ####   If we are using one of the models that require Kamodo, we will want to
                 ####   do a pre-run initialization to get the orbit output along the satellite using MSISe2
-            print('RUNNING THE ORBIT CLOUD METHOD')
-            
-            
+                     
             
             ### Make an execution log file
-            self.set_density_model_setup_params('tiegcm_oc' )
             iarc =0
             arc=self.arc_input[0]
+            self.arcnumber = iarc
+
             self.set_file_paths_for_multiple_arcs( arc , iarc)            
-            SERIES = self.DEN_DIR + '_' + self.ACCELS + self.SpecialRun_name
-            OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.DEN_DIR+'/'+SERIES
-            
-#             print('ARC                   ', arc)
-#             print('self.arcdate_for_files', self.arcdate_for_files)
-#             print('self.ARC              ', self.ARC)
-            self.execlog_filename = OUTPUTDIR+'/pygeodyn_execlog_'+self.ARC
-
-            if exists(self.execlog_filename):
-                os.remove(self.execlog_filename) 
-
-            import logging
-            logging.basicConfig(filename=self.execlog_filename,
-                                level=logging.INFO,
-                                format='%(levelname)s(%(asctime)s) --- %(module)s.%(funcName)s() \n       %(message)s \n',
-                                datefmt='%I:%M:%S')
+            self.set_density_model_setup_params('tiegcm_oc' )
+            self.setup_directories_and_geodyn_input()
+            self.make_output_directories()
+            print('1- ', arc)
+            logger = logging.getLogger(self.execlog_filename)
             logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
 
-            #### RUN 1st WITH MSIS2 IFTHE FILE DOES NOT EXIST
+            #### RUN 1st WITH MSIS2 IF THE FILE DOES NOT EXIST
             self.set_density_model_setup_params( 'msis2' )
             for iarc, arc in enumerate(self.arc_input):
-                self.set_file_paths_for_multiple_arcs( arc , iarc)            
-                
+                self.arcnumber = iarc
+                self.set_file_paths_for_multiple_arcs( arc , iarc) 
+                print('2- MSIS2', arc)
                 SERIES = self.DEN_DIR + '_' + self.ACCELS + self.SpecialRun_name
                 OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.DEN_DIR+'/'+SERIES
                 self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
@@ -1048,20 +1354,27 @@ class PygeodynController():
                 
                 
                 self.msis2_file_path = OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin'
+#                 self.msis2_file_path = OUTPUTDIR+'/DENSITY/'+self.ARC+'.bz2'
                 file_exists = exists(self.msis2_file_path)
+#                 print('quick filecheck: ',file_exists,)
                 if file_exists:
+                    print('file_exists (msis2 density file):',self.msis2_file_path )
+#                     os.system('bunzip2 -v '+self.msis2_file_path)
+#                     self.msis2_file_path =  OUTPUTDIR+'/DENSITY/'+self.ARC
                     logging.info('A similar MSIS2 output has been made. Check to see if its stepsize is consistent.')
                     msis2_log_file =  OUTPUTDIR+'/pygeodyn_runlog_'+self.ARC+'.txt'
 
                     with open(msis2_log_file, 'r') as f:
                         for line_no, line in enumerate(f):
-                            if 'STEP' in line:
+                            if 'STEP             ' in line:
                                 check_stepsizeline = line
-                    check_stepsize = float(check_stepsizeline[-8:])
+#                     print(check_stepsizeline[-5:])
+
+                    check_stepsize = float(check_stepsizeline[-5:])
                     if self.geodyn_StepSize == check_stepsize:
                         logging.info(f'The MSIS2 run has the correct STEP size of {self.geodyn_StepSize}')
 
-                        continue
+#                         continue
                     else:
 #                         print("RUN THE MSIS VERSION FIRST")
                         logging.info(f'The existing MSIS2 run has the wrong stepsize  (found STEP to be {check_stepsize}, but need {self.geodyn_StepSize}). Running MSIS2 thru GEODYN with correct step size.')
@@ -1070,7 +1383,6 @@ class PygeodynController():
                         self.print_runparameters_to_notebook()
                         self.prepare_tmpdir_for_geodyn_run()
                         self.run_geodyn_in_tmpdir()
-
                         self.post_geodynrun_savefiles_and_cleanup()
 
                 else:
@@ -1083,30 +1395,47 @@ class PygeodynController():
                     self.post_geodynrun_savefiles_and_cleanup()
                 
                                 
-            logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud tiegcm data. ')
+                logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud tiegcm data. ')
 
-            ## TODO: make the tiegcm files an input option
-            orbitcloud_csv_check = exists(self.orbitcloud_csv_file)
-            if orbitcloud_csv_check:
-                logging.info(f'Orbit Cloud exists:  {self.orbitcloud_csv_file }')
-                from time import perf_counter
-                t0=perf_counter()
-                print('time at start:', perf_counter()-t0)
-                self.make_orbit_cloud_csv()
-                print('time at start:', perf_counter()-t0)
+                ## TODO: make the tiegcm files an input option
+                orbitcloud_csv_check = exists(self.orbitcloud_csv_file)
+                print('2.5 check- ',orbitcloud_csv_check)
 
-            else:
-                ### Construct the orbit cloud CSV
-                logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
-               
-                f = open(self.orbitcloud_csv_file, "w")
-                f.write("\n")
-                f.close()
-                from time import perf_counter
-                t0=perf_counter()
-                print('time at start:', perf_counter()-t0)
-                self.make_orbit_cloud_csv()
-                print('time at start:', perf_counter()-t0)
+                if orbitcloud_csv_check:
+                    print('3- tiegcm construct orbit cloud', arc)
+
+                    self.set_file_paths_for_multiple_arcs( arc , iarc)            
+                    SERIES = self.DEN_DIR + '_' + self.ACCELS + self.SpecialRun_name
+                    OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.DEN_DIR+'/'+SERIES
+                    self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
+                                           str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+
+
+                    logging.info(f'Orbit Cloud exists:  {self.orbitcloud_csv_file }')
+                    self.make_orbit_cloud_csv()
+
+                else:
+                    ### Construct the orbit cloud CSV
+                    logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
+                    ### Use the msis2 file to identify the density file that will be use to index the satellite ephemeris within kamodo
+                    self.set_file_paths_for_multiple_arcs( arc , iarc)            
+                    print('3.5- tiegcm construct orbit cloud', arc)
+
+                    SERIES = self.DEN_DIR + '_' + self.ACCELS + self.SpecialRun_name
+                    OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.DEN_DIR+'/'+SERIES
+                    self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
+                                           str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+
+                    f = open(self.orbitcloud_csv_file, "w")
+                    f.write("\n")
+                    f.close()
+                    from time import perf_counter
+                    t0=perf_counter()
+                    print('time at start:', perf_counter()-t0)
+                    self.set_file_paths_for_multiple_arcs( arc , iarc)            
+                    self.make_orbit_cloud_csv()
+                    print('time at start:', perf_counter()-t0)
+                    print('4- tiegcm construct orbit  cloud', arc)
 
                 
 
@@ -1114,21 +1443,31 @@ class PygeodynController():
             #### RUN 2nd TIME WITH TIEGCM_oc (inputting the CSV orbitcloud) 
             self.set_density_model_setup_params( 'tiegcm_oc' )
             for iarc, arc in enumerate(self.arc_input):
+                self.arcnumber = iarc
                 if self.satellite == 'icesat2':
+                    print('5 running GEODYN', arc)
                     self.set_file_paths_for_multiple_arcs( arc , iarc)            
                     self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
                                    str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
 
-                    self.model_data_path ='/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1' 
+#                     self.model_data_path ='/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1' 
+                    self.model_data_path = self.run_settings['model_data_path']
+
                     logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
+                    
+                #### Write the model path and orbitcloud filename to a file for GEODYN
                     filemodels = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_modelpaths.txt","w+")
                     filemodels.write(self.model_data_path+'\n')
                     filemodels.write(self.orbitcloud_csv_file+  '\n')
                     filemodels.close()
                 else:
+#                     print('Not using correct sat?')
                     logging.info(f'Not using correct sat?  {self.satellite}')
+                print('6 running GEODYN', arc)
 
-                self.set_file_paths_for_multiple_arcs( arc , iarc)            
+                self.set_file_paths_for_multiple_arcs( arc , iarc)      
+                print('7 running GEODYN', arc)
+
                 self.setup_directories_and_geodyn_input()
                 self.make_output_directories()
                 self.print_runparameters_to_notebook()
@@ -1137,13 +1476,14 @@ class PygeodynController():
                 self.post_geodynrun_savefiles_and_cleanup()
                 
         
-        else:
-            logging.info(f'Running PYGEODYN in regular fashion')
-
+        else:  # regular run of GEODYN not using tiegcm Orbit Cloud
+            
             for iarc, arc in enumerate(self.arc_input):
+                self.arcnumber = iarc
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
                 self.setup_directories_and_geodyn_input()
                 self.make_output_directories()
+
                 self.print_runparameters_to_notebook()
                 self.prepare_tmpdir_for_geodyn_run()
                 self.run_geodyn_in_tmpdir()

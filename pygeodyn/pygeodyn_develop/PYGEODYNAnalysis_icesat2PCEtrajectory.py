@@ -32,11 +32,12 @@ col2 = px.colors.qualitative.Plotly[1]
 col3 = px.colors.qualitative.Plotly[2]
 col4 = px.colors.qualitative.Plotly[3]
 col5 = px.colors.qualitative.Plotly[4]
+col6 = px.colors.qualitative.Plotly[5]
 
 
 import sys
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
-from common_functions          import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW
+from common_functions          import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW_getT
 
 
 
@@ -276,6 +277,11 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
         y_annot = .45
         col = col5
         m_size = 1
+    elif plot_num == 5:
+        x_annot = 1.09
+        y_annot = .35
+        col = col6
+        m_size = 1
         
 #     if plot_num == 0:
 #         col = col1
@@ -324,9 +330,13 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
                                    y=val_list_1,
                                    name= model_m1 ,#+ ' |  Arc ' +str(i_arc) +' | Iters: '+ str(last_iter),
                                    mode='markers',
-                                   marker=dict(
-                                   color=col,
-                                   size=7,),
+                                   marker=dict(color=col, size=10,
+                                          line=dict(width=0.4,
+                                             color='gray'),
+                                              ),
+#                                    marker=dict(
+#                                    color=col,
+#                                    size=7,),
                                    showlegend=False,
                                    ),
                                    row=1, col=1,
@@ -346,7 +356,7 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
         
         arc_date_1 = datetime.strptime(arc_date_1, '%Y.%j')
         arc_date_2 = arc_date_1 + (pd.to_timedelta(24,'h'))
-        fig = add_arc_background_w_text(fig, 2.2, arc_date_1, arc_date_2, i_arc, 0.2, False)
+        fig = add_arc_background_w_text(fig, 2.2, arc_date_1, arc_date_2, i_arc, 0.1, False)
 
     #### SECOND PLOT (PERC diff b/w apriori and Cd)
     fig = legend_as_annotation(fig, obj_m1.__dict__['global_params']['den_model'], col, x_annot, y_annot)
@@ -354,11 +364,14 @@ def plot_cd_and_percdiff_from_apriori(fig, obj_m1, plot_num):
     fig.add_trace(go.Scattergl(x=obj_m1_stats['all_dates'],
                              y=obj_m1_stats['ratio_cd'],
                             name= model_m1,
-                            mode='markers',
-                            marker=dict(
-                            color=col,
-                            size=7,
-                            ),
+                           mode='markers',
+                           marker=dict(color=col, size=10,
+                                  line=dict(width=0.4,
+                                     color='gray'),
+                                      ),
+#                                    marker=dict(
+#                                    color=col,
+#                                    size=7,),
                             showlegend=False,
                             ),
                             row=2, col=1,)
@@ -968,6 +981,10 @@ def plot_residual_meas_summary(fig, obj_m1, plot_num):
         x_annot = 1.09
         y_annot = .95-(.13*5)
         col = col5
+    elif plot_num == 5:
+        x_annot = 1.09
+        y_annot = .95-(.13*6)
+        col = col6
     mark_size = 10
 
 
@@ -985,8 +1002,12 @@ def plot_residual_meas_summary(fig, obj_m1, plot_num):
                                  y=[mean_arc],
                                  name= 'Arc: '+str(i_arc),
                                  mode='markers',
-                                 marker=dict(color=col,
-                                 size=10,),
+                                   marker=dict(color=col, size=10,
+                                          line=dict(width=0.4,
+                                             color='gray'),
+                                              ),
+#                                  marker=dict(color=col,
+#                                  size=10,),
                                  showlegend=False,
                                  ),
                                   row=1, col=1,
@@ -995,8 +1016,12 @@ def plot_residual_meas_summary(fig, obj_m1, plot_num):
                              y=[rms_arc],
                              name= 'Arc: '+str(i_arc),
                              mode='markers',
-                             marker=dict(color=col,
-                             size=10,),
+                                   marker=dict(color=col, size=10,
+                                          line=dict(width=0.4,
+                                             color='gray'),
+                                              ),
+#                              marker=dict(color=col,
+#                              size=10,),
                              showlegend=False,
                              ),
                               row=2, col=1,
@@ -1276,6 +1301,11 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
         y_annot = .45
         col = col5
         m_size = 1
+    elif plot_num == 5:
+        x_annot = 1.09
+        y_annot = .35
+        col = col6
+        m_size = 1
 
     data_nums_2 = decimation
     dates_scal, dens_scal = scale_density_with_cdadjustment(obj_m1)
@@ -1291,9 +1321,10 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
                                      y=obj_m1.Density[arc]['rho (kg/m**3)'][::data_nums_2],
                                      name = obj_m1.__dict__['global_params']['den_model'],
                                      mode='markers',
-                                        marker=dict(color=col,
-                                        size=4,
-                                        ),
+                                    marker=dict(color=col, size=6,
+                                    line=dict(width=0.4,
+                                    color='gray'),
+                                    ),
                                       showlegend=False,
                                        ),
                                       secondary_y=False,
@@ -1306,7 +1337,10 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
                                        y = dens_scal[i_plot][::data_nums_2],
                                 name = 'Scaled '+ obj_m1.__dict__['global_params']['den_model'],
                                  mode='markers',
-                                    marker=dict(color=col,size=4),
+                                    marker=dict(color=col, size=6,
+                                    line=dict(width=0.4,
+                                    color='gray'),
+                                    ),
                                   showlegend=False,
                                    ),
                                    secondary_y=False,
@@ -1321,6 +1355,8 @@ def plot_ScaleDensity_with_CdScaleFactor__2(fig, obj_m1, plot_num, decimation):
                                             arc_date_1, arc_date_2, i_arc, 0.1, False)
 
 
+
+        
     fig.update_layout(
         title="Density along ICESat2's Orbit",
         )
@@ -1698,6 +1734,12 @@ def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
         col = col5
         m_size = 2
 
+    elif plot_num == 5:
+        x_annot = 1.09
+        y_annot = .01
+        col = col6
+        m_size = 1.8
+
     ###### GET THE PCE DATA:
     StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
     SAT_ID = int(obj_m1.__dict__['global_params']['SATID'])
@@ -1705,50 +1747,41 @@ def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
     data_skip = 15
 
     ####--------------------- Residual  ---------------------
-    for ii,arc in enumerate(obj_m1.__dict__['global_params']['arc_input'][::2]):
+    for ii,arc in enumerate(obj_m1.__dict__['global_params']['arc_input']):#[::2]):
         print(arc)
 
-
-
-    #     arc_first_time = obj_m1.__dict__['Trajectory_orbfil'][arcval]['data_record']['Date_UTC'].iloc[0],
-    #     arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arcval]['data_record']['Date_UTC'].iloc[-1],
-    #     arc_first_time_str =  str(arc_first_time[0])  
-    #     arc_last_time_str   =  str(  arc_last_time[0]) 
-
         arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
-        arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-1]
-#         print('arc_first_time',arc_first_time)
-#         print('arc_last_time',arc_last_time)
-# 
+        arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-2]
         
         arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
         arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
 
-#         print('arc_first_time_str',arc_first_time_str)
-#         print('arc_last_time_str',arc_last_time_str)
         
         A=[]
         for i,val in enumerate(np.arange(-20,20)):
             A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
+        B=[]
+        for i,val in enumerate(np.arange(-20,20)):
+            B.append(str(pd.to_datetime(arc_last_time)+pd.to_timedelta(val,'s')))
             
-#         def nearest(items, pivot):
-#             return min(items, key=lambda x: abs(x - pivot))
-        
-#         save_dates = []
         ####---------------------------------------------------------
+        last_line = False
         with open(StateVector_PCE_datafile, 'r') as f:
             for line_no, line_text in enumerate(f):
 #                 save_dates.append(line_text[1:20])
 #                 if arc_first_time_str in line_text:
                 if any(times in line_text for times in A):
-#                     print('Print this if a number works')
                     first_line = line_no
-              
-                if arc_last_time_str in line_text:
+                if any(times in line_text for times in B):
                     last_line = line_no
+
+#                 if arc_last_time_str in line_text:
+#                     last_line = line_no
 #                     print(line_text[1:20])
                     break
-#         print(save_dates)
+            if not last_line:
+                last_line = first_line +32220
+                print('No matching lastline time: ',arc_last_time_str, last_line )
 
         ####   IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
         ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
@@ -1833,10 +1866,10 @@ def NTW_CDratio_IntrackResids(fig, obj_m1, plot_num):
                                name= model_m1,
 #                                mode='markers+text',
                                mode='markers',
-                               marker=dict(
-                               color=col,
-                               size=7,
-                               ),
+                               marker=dict(color=col, size=10,
+                              line=dict(width=0.4,
+                                 color='gray'),
+                                  ),
 #                                text =  ''+str(round(obj_m1.AdjustedParams[arc][last_iter][SAT_ID]['0CD'][i][which_stat], 2)), #str(cd_ratio),
 #                                textposition="top center",
                                showlegend=False,
