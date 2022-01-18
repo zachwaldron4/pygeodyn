@@ -1,0 +1,2 @@
+/data/data_geodyn/atmos_models_data/tiegcm/2018/Nov2018_ccmcRoR
+none
