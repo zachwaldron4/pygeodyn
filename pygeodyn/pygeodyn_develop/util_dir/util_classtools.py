@@ -24,13 +24,9 @@ class Util_Tools:
         pass
 
 
-
-
-
     def set_density_model_setup_params(self, den_model):
         
 #         print('UTIL ---- set_density_model_setup_params ')
-
         
         if den_model == 'msis86':
             self.DEN_DIR       = den_model
@@ -56,29 +52,31 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
             self.iisset_den = '71'
-        elif den_model == 'ctipe':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'ctipe'
-            self.iisset_den = '86'
         #### We will have two methods for running a model in Kamodo: 
         ####                  1) Command Line kamodo call (model_cl)
         ####                  2) OrbitCloud method        (model_oc)
-        elif den_model == 'tiegcm_cl':
-            self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'tiegcm_cl'
-            self.iisset_den = '86'
+#         elif den_model == 'tiegcm_cl':
+#             self.DEN_DIR       = den_model
+#             self.SETUP_DEN_DIR = 'tiegcm_cl'
+#             self.iisset_den = '86'
         elif den_model == 'tiegcm_oc':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'tiegcm_oc'
             self.iisset_den = '86'
-        elif den_model == 'gitm':
+        elif den_model == 'hasdm_oc':
             self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'gitm'
+            self.SETUP_DEN_DIR = 'hasdm_oc'
             self.iisset_den = '86'
 
+        elif den_model == 'jb2008':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'jb2008'
+            self.iisset_den = '71'
+            
+            
         else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71]')   
-            print('Dear zach, please add the remaining models you have added. --from zach')   
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, tiegcm_oc, jb2008]')   
+            print('Dear Zach, please add the remaining models you have added. --from zach')   
 
             
         from re import search
@@ -86,10 +84,18 @@ class Util_Tools:
         if search('tiegcm', self.DEN_DIR):
             if self.satellite == 'icesat2':
                 
-#                 self.model_data_path ='/data/data_geodyn/atmos_models_data/tiegcm/2018/Lutz_Rastaetter_072319_IT_1' 
                 self.model_data_path = self.run_settings['model_data_path']
                 
-                filemodels = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_modelpaths.txt","w+")
+                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels.writelines(self.model_data_path+'\n')
+                filemodels.writelines('none'+'\n')
+                filemodels.close()
+        elif search('hasdm', self.DEN_DIR):
+            if self.satellite == 'icesat2':
+                
+                self.model_data_path = self.run_settings['model_data_path']
+                
+                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
@@ -109,11 +115,11 @@ class Util_Tools:
             verboseprint('Making Directory: ',directory)
         return
 
-    def geodyn_modify_inputs(self, options_in, density_model):
+    def geodyn_modify_inputs(self, DRHODZ_update, density_model):
         
-        if options_in['DRHODZ_update']== True:
+        if DRHODZ_update== True:
             drhodz_val = '1'
-        elif options_in['DRHODZ_update']== False:
+        elif DRHODZ_update== False:
             drhodz_val = '0'
         else:
             sys.exit("DRHODZ option is in incorrect format")
@@ -125,32 +131,70 @@ class Util_Tools:
             model_val = '1'
         elif density_model== 'msis2':
             model_val = '2'
-        elif density_model== 'ctipe_cl':
-            model_val = '3'
-        elif density_model== 'tiegcm_cl':
-            model_val = '4'
-        elif density_model== 'gitm_cl':
-            model_val = '5'
+#         elif density_model== 'ctipe_cl':
+#             model_val = '3'
+#         elif density_model== 'tiegcm_cl':
+#             model_val = '4'
+#         elif density_model== 'gitm_cl':
+#             model_val = '5'
         
         elif density_model== 'tiegcm_oc':
             model_val = '6'
+        elif density_model== 'hasdm_oc':
+            model_val = '6'
             
         elif density_model== 'jaachia71':
-            model_val = '0'        
+            model_val = '0'       
+        elif density_model== 'jb2008':
+            model_val = '1' 
+            
         elif density_model== 'dtm87':
             model_val = '0'
         else:
             sys.exit("Density Model Option (DEN_DIR) is in incorrect format")
             
-        file1 = open("/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_options.txt","w+")
+        file1 = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt","w+")
         file1.writelines(drhodz_val+'\n') # first value is for DrhoDz
         file1.writelines(model_val +'\n') # 2nd values is for model switching
-        file1.writelines('0'+'\n')
-        file1.writelines('0'+'\n')
-        file1.writelines('0'+'\n')
-        file1.writelines('0'+'\n')
+        
+        
+        #######  ADD AN OPTIONAL INPUT VALUE TO FORTRAN
+        if self.PASS_INPUT_VALUE_TO_fortran  == 'None' :
+            file1.writelines('1'+'\n')
+        else:
+            file1.writelines(self.PASS_INPUT_VALUE_TO_fortran+'\n')
+        
+        
+        
+        #######  Choose CD Model to be used by GEODYN
+        if self.cd_model  == 'BWDRAG' :
+            file1.writelines('1'+'\n')
+            
+        elif self.cd_model  == 'DRIA' :
+            file1.writelines('2' +'\n')
+        else:
+            file1.writelines('0' +'\n')
+
         file1.close()
         
+        
+        ##### MAKE CD MODEL INPUT FILE
+        
+        if self.cd_model  == 'DRIA' :
+            file_CDparams = open("/data/geodyn_proj/pygeodyn/temp_runfiles/cd_params.txt","w+")
+            file_CDparams.writelines(str(self.cd_model_params['MS'])    + '\n') 
+            file_CDparams.writelines(str(self.cd_model_params['TW'])    + '\n')  
+            file_CDparams.writelines(str(self.cd_model_params['ALPHA']) + '\n')
+            file_CDparams.writelines(str(self.cd_model_params['KL'])    + '\n')
+            file_CDparams.writelines(str(self.cd_model_params['FRACOX'])+ '\n')
+            
+            
+            file_CDparams.close()
+
+        else:
+            pass
+        
+
         
     def verboseprint(self, *args, **kwargs):
         if self.verbose:
@@ -695,6 +739,7 @@ class Util_Tools:
                 if os.path.exists(self.path_to_model+'DENSITY/'):
                     os.chdir(self.path_to_model+'DENSITY/')
                     os.system('bzip2 -v '+ i )
+                    os.system('bzip2 -v '+ i +'drag_file' )
 
                 if os.path.exists(self.path_to_model+'ORBITS/'):
                     os.chdir(self.path_to_model+'ORBITS/')

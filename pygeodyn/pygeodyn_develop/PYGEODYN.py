@@ -5,11 +5,7 @@ sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_preprocessin
 
 from PYGEODYN_Starlette import Satellite_Starlette
 from PYGEODYN_ICESat2   import  Satellite_ICESat2
-
 from util_classtools import Util_Tools
-
-
-
 
 
 class Inherit_Icesat2(Satellite_ICESat2):
@@ -17,24 +13,20 @@ class Inherit_Icesat2(Satellite_ICESat2):
         Satellite_ICESat2.__init__(self)
         pass
         
-
 class Inherit_Starlette(Satellite_Starlette):
     def __init__(self):
         Satellite_Starlette.__init__(self)
         pass
-
-     
-    
-    
-    
-    
+  
     
 
 # class Pygeodyn(Util_Tools, Inherit_Icesat2, Inherit_Starlette): #Satellite_Starlette,Satellite_ICESat2):
 
 
 class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlette 
-    def __init__(self, run_settings_yaml):  ####  Initialize a Pygeodyn Object with the YAML file containing the run settings as an input.
+    
+    ####  Initialize a Pygeodyn Object with the YAML file containing the run settings as an input.
+    def __init__(self, run_settings_yaml):  
         
         
         import yaml
@@ -44,57 +36,78 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlett
             run_settings = yaml.load(f, Loader=SafeLoader)
         self.run_settings = run_settings
         
-#         print('Settings file: ',f)
-        params = self.run_settings['run_params']
+        
+        self.user              = self.run_settings['user']
+        self.satellite         = self.run_settings['satellite']
+        self.den_model         = self.run_settings['den_model']
+        self.directory_name_specifier   = self.run_settings['directory_name_specifier']
+        self.verbose           = self.run_settings['verbose']
+        self.arc_input         = self.run_settings['arc']
+        self.geodyn_StepSize   = self.run_settings['geodyn_StepSize']
+        self.request_data      = self.run_settings['request_data']      
+        self.empirical_accels  = self.run_settings['empirical_accels']      
+        self.ACCELS            = self.run_settings['ACCELS']      
+        self.arc_length        = self.run_settings['arc_length']
         
         
-        self.satellite         = params['satellite']
-        self.den_model         = params['den_model']
-        self.SpecialRun_name   = params['SpecialRun_name']
-        self.verbose           = params['verbose']
-        self.arc_input         = params['arc']
-        self.geodyn_StepSize   = params['geodyn_StepSize']
-        self.set_density_model_setup_params( self.den_model )
+        
+        ##### SATELLITE SPECIFIC OPTIONS:
+        self.SATELLITE_dir     = self.run_settings['satellite']
+        self.SATID             = self.run_settings['SATID']
+        self.DATA_TYPE         = self.run_settings['DATA_TYPE']
+        self.DRHODZ_update     = self.run_settings['DRHODZ_update']
+        #### File Choices
+        self.g2b_file          = self.run_settings['g2b_file']
+        self.atgrav_file       = self.run_settings['atgrav_file']
+        self.ephem_file        = self.run_settings['ephem_file']
+        self.gravfield_file    = self.run_settings['gravfield_file']
+        self.StateVector_epochs_datafile = self.run_settings['StateVector_epochs_datafile']
         
         
-        self.request_data  =self.run_settings['request_data']      
         
-#         print('Did this run?')
-        if "accels" in params.keys():
-            if params["accels"] == True:
-                self.empirical_accels =  True  
-                self.ACCELS = 'accelon'
-            else:
-                self.empirical_accels =  False  
-                self.ACCELS = 'acceloff'
-        else:
-            self.empirical_accels =  False  
-            self.ACCELS = 'acceloff'
+        self.PASS_INPUT_VALUE_TO_fortran = self.run_settings['PASS_INPUT_VALUE_TO_fortran']
+        self.recompile_on = self.run_settings['recompile_on']
+
         
+        
+        ###### RELEVANT CD MODEL INPUTS
+        self.cd_model        = self.run_settings['cd_model']
+        if self.cd_model == 'DRIA': 
+            self.cd_model_params = self.run_settings['cd_model_params']
+
+        
+        
+        ### Populate the GEODYN user input files with control options
+        self.set_density_model_setup_params( self.den_model )     
+
+        ########## THE BLEOW SHOULD BE REMOVED/UPGRADED WITH AN IMPROVED METHOD FOR CONTROLLING NAMES OF RUNS
         #### The below interprets that no input has been given for special name
-        if self.SpecialRun_name == None:
-            self.SpecialRun_name = ''
+        if self.directory_name_specifier == None:
+            self.directory_name_specifier = ''
         else:
-            self.SpecialRun_name = params['SpecialRun_name']
+            self.directory_name_specifier = self.run_settings['directory_name_specifier']
        
-  
-        #### Hardcoded constants:    
-#         self.action       = params['action']
+ 
+        #------ Point to the GEODYN executables
+        self.GDYN_version =  self.run_settings['GEODYN_iie_MOD_version']  
+        self.G2SDIR       =  '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
+        self.G2EDIR       =  '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
+
+
+        #### Do some book-keeping:    
         self.tab = '  '
         self.tabtab = '       '
-#         if self.action   == 'read':
-#             print(self.tabtab*3   ,"......... READING GEODYN output")
-           
-#             self.request_data = params['request_data'] 
         
-#         elif self.action == 'run':
-#             print(self.tabtab*3   ,"......... RUNNING GEODYN")
-            
-        #### Hardcoded constants:    
-        #------ Point to the GEODYN executables
-        self.GDYN_version     = 'Kamodo_pygeodyn_MODS'  #'pygeodyn_MODS'
-        self.G2SDIR      = '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
-        self.G2EDIR      = '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
+#         if "accels" in params.keys():
+#             if params["accels"] == True:
+#                 self.empirical_accels =  True  
+#                 self.ACCELS = 'accelon'
+#             else:
+#                 self.empirical_accels =  False  
+#                 self.ACCELS = 'acceloff'
+#         else:
+#             self.empirical_accels =  False  
+#             self.ACCELS = 'acceloff'
 
             
             
@@ -105,30 +118,55 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlett
         elif self.satellite == 'starlette':
             Inherit_Starlette.__init__(self)
 
+
             
-#         print('Printing the keys as of Pygeodyn', self.__dict__.keys())
             
-        for i,val in enumerate(self.run_settings):
-#             print(i,val, self.run_settings[val])
-            if val in  ['run_params', 'model_data_path','request_data','cards_to_remove',
-                        'epoch_start','epoch_end', 'file_string',
-                        'cd_adjustment_boolean','total_hours_in_run','hours_between_cd_adj']:
-                pass
-            else:
-                if self.run_settings[val] == self.__dict__[val]:
-                    pass
-#                     print('fine')
-                else:
-#                     print(val)
-#                     print(self.run_settings[val])
-#                     print(self.__dict__[val])
-                    self.__dict__[val] = self.run_settings[val]
+        
+#         ########## ACTUALLY IM NOT SO SURE WAHT THIS IS DOING TBH
+#         ##### The following cleans up the run settings so that they are added to the final object that is returned to the user. 
+#         append_names = []
+#         for i,val in enumerate(self.run_settings):
+#             append_names.append(val)
+        
+#         for i,val in enumerate(self.run_settings):
+#             if val in append_names: 
+# #                         ['run_params', 
+# #                         'model_data_path',
+# #                         'request_data',
+# #                         'cards_to_remove',
+# #                         'epoch_start',
+# #                         'epoch_end', 
+# #                         'file_string',
+# #                         'cd_adjustment_boolean',
+# #                         'total_hours_in_run',
+# #                         'hours_between_cd_adj',
+# #                        'path_to_output_directory',
+# #                         'GEODYN_iie_MOD_version',
+# #                         'arc',
+# #                         'accels',
+# #                         'empirical_accels',
+# #                         'ACCELS',
+# #                         'arc_length',   
+# #                        ]:
+#                 pass
+#             else:
+#                 if self.run_settings[val] == self.__dict__[val]:
+#                     pass
+#                 else:
+#                     self.__dict__[val] = self.run_settings[val]
+            
+            
+            
+            
+            
+            
+            
+            
+            
             
             
             
 ###### THE BELOW ARE ATTEMPTS TO BETTER IMPORT VARIOUS SATELLITES
-            
-            
             
             
 #         super(self, self).__init__()

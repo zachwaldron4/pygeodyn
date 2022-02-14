@@ -76,33 +76,28 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     """
     
     def __init__(self):
-
+        pass
             
         ###### ---------------------------------------------------------------------
         #### HARD CODE the ICESat2 properties
         ###### ---------------------------------------------------------------------
-        self.SATELLITE_dir = 'icesat2'
-        self.SATID         = '1807001'
-#         self.YR            =  2018
-        self.DATA_TYPE     = 'PCE'
-        self.grav_id = '' 
-        self.options_in =  {'DRHODZ_update':True}  
+#         self.SATELLITE_dir = 'icesat2'
+#         self.SATID         = '1807001'
+# #         self.YR            =  2018
+#         self.DATA_TYPE     = 'PCE'
+#         self.grav_id = '' 
+#         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-#         self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running test in Dec. for faster run times
-        self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
-        self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
-        self.ephem_file     = 'ephem1430.data_2025'
-        self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
+#         self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
+#         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+#         self.ephem_file     = 'ephem1430.data_2025'
+#         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
         
 
 #         self.path_to_binaryrvgs     = '/data/data_geodyn/inputs/icesat2/pre_processing/traj_files_rvg'
-        self.StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+#         self.StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
         
-        ###### ---------------------------------------------------------------------
-        ###### SPECIFY ARC NAMING CONVENTION
-        ###### ---------------------------------------------------------------------
-        self.arc_length = '54hr'
 
         
         
@@ -135,18 +130,22 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     self.run_settings['file_string'])
 
         
-        
-        self.path_to_model = ('/data/data_geodyn/results/'+
-                                   self.SATELLITE_dir +'/'+
-                                   self.den_model+'/'+  
-                                   self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
+#         self.SERIES = self.DEN_DIR + '_' + self.ACCELS + self.directory_name_specifier
+        self.SERIES = self.DEN_DIR + '_' + self.cd_model + self.directory_name_specifier
+
+        self.path_to_model = self.run_settings['path_to_output_directory'] + '/'+self.DEN_DIR+'/'+self.SERIES +'/'
+                            #('/data/data_geodyn/results/'+
+                              #     self.SATELLITE_dir +'/'+
+                               #    self.den_model+'/'+  
+                                #   self.den_model+'_'+ self.ACCELS + self.directory_name_specifier +'/')
         file_name =   self.ARC         
 #         print('     Loading ... ', file_name,' ' ,sep = '')
 
-        if unzip_and_loadpaths == True:
-            pass
-        else:
-            print('     Loading ... ', file_name,' ' ,sep = '')
+#         if unzip_and_loadpaths == True:
+#             pass
+#         else:
+#             pass
+#             print('     Loading ... ', file_name,' ' ,sep = '')
         
         
         ####  save the specific file names as "private members" with the _filename convention
@@ -154,6 +153,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self._orbfil_filename = self.path_to_model + 'ORBITS/'+ file_name+'_orb1'
         self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
         self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
+        self._drag_filename  = self.path_to_model + 'DENSITY/' + file_name +'drag_file'    
 #         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
         
@@ -324,8 +324,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         if  self.run_settings['epoch_end'] == None :
             pass
         else:
-            
-            
             epoch_end            = self.run_settings['epoch_end'][self.arcnumber]
             epoch_end_YYMMDD     = epoch_end[:6].strip() 
             epoch_end_HHMM       = epoch_end[7:11].strip()
@@ -338,6 +336,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
         epoch_end_dt = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')
 
+        
+        #### RE-SAVE THE DATE in datetime format for easy printing
+        self.epoch_start_dt = epoch_start_dt
+        self.epoch_end_dt   = epoch_end_dt
+
+        
         dt_2days = pd.Series(pd.to_timedelta(48,'h'))
         dt_1days = pd.Series(pd.to_timedelta(24,'h'))
         
@@ -356,8 +360,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         epoch_start_dt_STR = str(epoch_start_dt)
         date_in_file_flag = False
         
-        print("Epoch Start: "  , epoch_start_dt_STR)
-        print("Epoch End:   "  , epoch_end_dt)
+#         print("Epoch Start: "  , epoch_start_dt_STR)
+#         print("Epoch End:   "  , epoch_end_dt)
 
         with open(self.StateVector_epochs_datafile, 'r') as f:
             for line_no, line_text in enumerate(f):
@@ -614,7 +618,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     else:
                         f.write(line)
         elif self.run_settings['cd_adjustment_boolean'] == False:
-            print('Running without DRAG time dependence')
+#             print('Running without DRAG time dependence')
             with open(iisset_file, "r") as f:
                 lines_all = f.readlines()                
             with open(iisset_file, "w") as f:
@@ -869,8 +873,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         
         #### make symlink to the G2B file and save as ftn40
         if not os.path.exists(self.TMPDIR_arc +'/ftn40'+''):
-#             os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
-            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+            os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+#             shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
             self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'')
         else:
             self.verboseprint(self.tabtab,'copy:  g2b file')

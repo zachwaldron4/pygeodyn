@@ -79,7 +79,7 @@
       CHARACTER(len = 6) i_YYMMDD
       CHARACTER(len = 6) i_HHMMSS
       CHARACTER(len = 12) i_YYMMDDHHMMSS
-      integer, dimension(2) :: optionsin
+      integer, dimension(3) :: optionsin
 !      integer :: i    
 
 !
@@ -118,7 +118,7 @@
         iiun=117
 !
         CALL msisinit(                                                  &
-         & parmpath='/data/geodyn_proj/geodyn_code/IIE/pygeodyn_MODS/', &
+  & parmpath='/data/geodyn_proj/geodyn_code/IIE/Kamodo_pygeodyn_MODS/', &
          & parmfile='msis20.parm',                                      &
 !        & iun=iiun,                                                    &
          & switch_legacy=SWI  )
@@ -258,7 +258,19 @@
 
 !
 !  gtd8d OUTPUTS DENSITY IN G/CC.  CONVERT TO KG/M3.
-      RHO = DEN(6)*1000.D0
+      RHO = DEN(6)*1000.D0 !*(FLOAT(optionsin(3))/FLOAT(100))
+      
+!      if(ICNT.eq.1)then
+!          write(6,*) ' '
+!          write(6,*) 'CHECK: scale ', optionsin(3)
+!          write(6,*) 'CHECK: scale ', FLOAT(optionsin(3))
+!          write(6,*) 'CHECK: perc ', (FLOAT(optionsin(3))/FLOAT(100))
+!          write(6,*) 'CHECK: den ', ( DEN(6)*1000.D0)
+!          write(6,*) 'CHECK: scaleden ', (RHO)
+!          write(6,*) ' '
+!
+!      endif
+
 !
 !-----------------------------------------------------
 !  UPDATED

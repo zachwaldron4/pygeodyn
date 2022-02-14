@@ -138,7 +138,7 @@
           allocate(altarray(n))
           allocate(rho_inarray(n))
           do i = 1, n
-              WRITE(6,*) 'i:   ', i
+           !   WRITE(6,*) 'i:   ', i
 
         !!! Loop thru the file and save as arrays
         read(UNIT=123,FMT="(A12,1x,F11.4,1x,F11.4,1x,F11.4,1x,D17.8)") &
@@ -156,7 +156,7 @@
             WRITE(6,*) '     rho_inarray   ',rho_inarray(1)
       endif
       
-      WRITE(6,*) 'file read and data inputted to arrays:   '
+      !WRITE(6,*) 'file read and data inputted to arrays:   '
 
 !                                                                       &
 !!*********************************************************************

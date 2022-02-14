@@ -1056,7 +1056,207 @@ class PygeodynReader:
 #         print('Density file end: ',elapsed)
         return(DEN_df)
 
+
+
+
+    def read_drag_file(self):
+        '''
+             Read the drag file.  
+             The drag file has a different date format than the other outputs
+                       so it is dealt with here in the method.
+
+        '''
+        start = time.time()
         
+        ##### Unzip the density file:
+     
+        
+        #### The density file is a very simple format
+        #### with this it can be loaded using pd.csv very easily
+        Drag_csv = pd.read_csv(self._drag_filename, 
+                            skiprows = 1, 
+                            names = ['Elapsed Secs',
+                                     'YYMMDD',
+                                     'HHMMSS',
+#                                     'Lat',
+#                                     'Lon',
+#                                     'Height (meters)',
+                                    'TC1',
+                                    'CD',
+                                    'TOTAREA',
+#                                      
+                                    'DXDD_X',
+                                    'DXDD_Y',
+                                    'DXDD_Z',
+                                  ],
+                            sep = '\s+',
+                            )
+
+        drag_df = pd.DataFrame(Drag_csv)
+        #### The below takes the double precision format from Fortran (D) and puts an 
+        #### E in the string to be interpeted as a float by python
+        fix_D_decimal_to_E1 = []
+        fix_D_decimal_to_E2 = []
+        fix_D_decimal_to_E3 = []
+        fix_D_decimal_to_E4 = []
+        fix_D_decimal_to_E5 = []
+        fix_D_decimal_to_E6 = []
+
+        #### TODO: There is definitely a faster and better way to do this...
+        for i,val1 in enumerate(drag_df['TC1']):
+            val2 = drag_df['CD'][i]
+            val3 = drag_df['DXDD_X'][i]
+            val4 = drag_df['DXDD_Y'][i]
+            val5 = drag_df['DXDD_Z'][i]
+            val6 = drag_df['TOTAREA'][i]
+
+            list_val1 = list(val1)
+            list_val2 = list(val2)
+            list_val3 = list(val3)
+            list_val4 = list(val4)
+            list_val5 = list(val5)
+            list_val6 = list(val6)
+
+            indx1 = list(val1).index('D')
+            indx2 = list(val2).index('D')
+            indx3 = list(val3).index('D')
+            indx4 = list(val4).index('D')
+            indx5 = list(val5).index('D')
+            indx6 = list(val6).index('D')
+
+            list_val1[indx1] = 'E'
+            list_val2[indx2] = 'E'
+            list_val3[indx3] = 'E'
+            list_val4[indx4] = 'E'
+            list_val5[indx5] = 'E'
+            list_val6[indx6] = 'E'
+
+            list_val1 = "".join(list_val1)
+            list_val2 = "".join(list_val2)
+            list_val3 = "".join(list_val3)
+            list_val4 = "".join(list_val4)
+            list_val5 = "".join(list_val5)
+            list_val6 = "".join(list_val6)
+            
+            #### If you get an error here, it is likely:
+            ####  due to some values not being floats?
+            ###
+            val_float1 = np.float(list_val1)
+            val_float2 = np.float(list_val2)
+            val_float3 = np.float(list_val3)
+            val_float4 = np.float(list_val4)
+            val_float5 = np.float(list_val5)
+            val_float6 = np.float(list_val6)
+
+            fix_D_decimal_to_E1.append(val_float1)
+            fix_D_decimal_to_E2.append(val_float2)
+            fix_D_decimal_to_E3.append(val_float3)
+            fix_D_decimal_to_E4.append(val_float4)
+            fix_D_decimal_to_E5.append(val_float5)
+            fix_D_decimal_to_E6.append(val_float6)
+
+        drag_df['TC1']      = fix_D_decimal_to_E1
+        drag_df['CD']       = fix_D_decimal_to_E2
+        drag_df['DXDD_X']  = fix_D_decimal_to_E3
+        drag_df['DXDD_Y']  = fix_D_decimal_to_E4
+        drag_df['DXDD_Z']  = fix_D_decimal_to_E5
+        drag_df['TOTAREA']  = fix_D_decimal_to_E6
+
+
+        ####--------------------------------------------------------
+        #### Now we must correct the formatting of the HoursMinutesSeconds column
+        #### The lack of zeros was really messing things up, so I forced them in there...
+        #### It works so I hope everyone is okay with how dumb it is.
+        timeHHMMSS = [] 
+        for i,val in enumerate(drag_df['HHMMSS'].values.astype(int)):
+            # print(len(str(val)))
+            if len(str(val)) == 1:
+                timehhmmss_val = '00000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 2:
+                timehhmmss_val = '0000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 3:
+                timehhmmss_val = '000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 4:
+                timehhmmss_val = '00'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 5:
+                timehhmmss_val = '0'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            else:
+                timeHHMMSS.append(str(val))
+        drag_df['timeHHMMSS'] = timeHHMMSS
+        #--------------------------------------------------------
+        #### Here we split up the years, months, and days.
+        #### we add a '20' in front of the year
+        # TODO:  need to find a workaround on this dumb YR variable being passed in.
+        
+        YR = int(str(self.YR)[-2:])
+        
+        YYMMDD_list = drag_df['YYMMDD'].astype(int).astype(str)
+        timeHHMMSS_list = drag_df['timeHHMMSS'].astype(str)
+
+        if YR < 10:
+            year    = ['200' + x[:1]  for x in YYMMDD_list]
+            month   = [        x[1:3] for x in YYMMDD_list]
+            day     = [        x[3:]  for x in YYMMDD_list]
+            hours   = [        x[:2]  for x in timeHHMMSS_list]
+            minutes = [        x[2:4] for x in timeHHMMSS_list]
+            secs    = [        x[4:]  for x in timeHHMMSS_list]
+        else:
+            year    = ['20' + x[:2]  for x in YYMMDD_list]
+            month   = [       x[2:4] for x in YYMMDD_list]
+            day     = [       x[4:]  for x in YYMMDD_list]
+            hours   = [       x[:2]  for x in timeHHMMSS_list]
+            minutes = [       x[2:4] for x in timeHHMMSS_list]
+            secs    = [       x[4:]  for x in timeHHMMSS_list]
+        #--------------------------------------------------------
+        drag_df['year']  = year
+        drag_df['month'] = month
+        drag_df['day']   = day
+        drag_df['hours']  = hours
+        drag_df['minutes'] = minutes
+        drag_df['secs']  = secs
+        #--------------------------------------------------------
+        year= list(map(int, drag_df['year'].values))
+        month= list(map(int, drag_df['month'].values))
+        day= list(map(int, drag_df['day'].values))
+        hour= list(map(int, drag_df['hours'].values))
+        minute = list(map(int, drag_df['minutes'].values))
+        second = list(map(int, drag_df['secs'].values))
+
+        DATE = list(map(datetime, year,month, day, hour,minute,second ))
+        
+        #self.DEN_df['Date']  = DATE
+        drag_df.insert(0, 'Date', DATE)
+        
+        #### DELETE the superfluous columns in the dataframe now.       
+        del drag_df['year']
+        del drag_df['month']
+        del drag_df['day']
+        del drag_df['hours']
+        del drag_df['minutes']
+        del drag_df['secs']
+        del drag_df['timeHHMMSS']
+        del drag_df['Elapsed Secs']
+        del drag_df['YYMMDD']
+        del drag_df['HHMMSS']
+        
+        #--------------------------------------------------------
+        end = time.time()
+        elapsed = end - start
+#         print('Density file end: ',elapsed)
+        return(drag_df)
+
+
+
+
+
+
+
+
     def read_observed_resids(self):
         '''
         Now find all the instances of the OBSERVATION RESIDUALS 
@@ -1764,6 +1964,10 @@ class PygeodynReader:
     
     def getData_density_denfile(self):
         return(self.read_density_file())
+    #----------------------------------------------
+    
+    def getData_DragFile(self):
+        return(self.read_drag_file())
     
     #----------------------------------------------
 
@@ -1997,6 +2201,7 @@ class PygeodynReader:
         self.Residuals_obs     = {}
         self.Residuals_summary = {}
         self.RunSummary        = {}
+        self.DragFile          = {}
         
         num_arcs = np.size(self.arc_input)
         
@@ -2009,6 +2214,7 @@ class PygeodynReader:
             if os.path.exists(self.path_to_model+'DENSITY/'):
                 os.chdir(self.path_to_model+'DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
+                os.system('bunzip2 -v '+ i +'drag_file.bz2')
 
             if os.path.exists(self.path_to_model+'ORBITS/'):
                 os.chdir(self.path_to_model+'ORBITS/')
@@ -2038,6 +2244,8 @@ class PygeodynReader:
                 elif choice == 'Trajectory_orbfil':
 #                     print('TESTTESTTEST')
                     self.Trajectory_orbfil[arc]      = self.getData_Trajectory_orbfil()
+                elif choice == 'DragFile':
+                    self.DragFile[arc]               = self.getData_DragFile()
                 else:
 #                     print('Error in PygeodynReader.getData()')
 #                     print('The requested output [', choice, '] does not match any inputs')
@@ -2516,11 +2724,306 @@ class PygeodynReader:
 
 
                
+
         
-        
-        
-        
-        
-        
+    def QuickLook_plots(self, plot_num, PLOTTYPE):
+        import plotly.graph_objects as go
+        from plotly.offline import plot, iplot
+        from plotly.subplots import make_subplots
+        import plotly.express as px
+        import pandas as pd
+        import numpy as np
+        config = dict({
+                        'displayModeBar': True,
+                        'responsive': False,
+                        'staticPlot': False,
+                        'displaylogo': False,
+                        'showTips': False,
+                        })
+
+        import os
+
+        def get_color(colorscale_name, loc):
+            from _plotly_utils.basevalidators import ColorscaleValidator
+            # first parameter: Name of the property being validated
+            # second parameter: a string, doesn't really matter in our use case
+            cv = ColorscaleValidator("colorscale", "")
+            # colorscale will be a list of lists: [[loc1, "rgb1"], [loc2, "rgb2"], ...] 
+            colorscale = cv.validate_coerce(colorscale_name)
+
+            if hasattr(loc, "__iter__"):
+                return [get_continuous_color(colorscale, x) for x in loc]
+            return get_continuous_color(colorscale, loc)
+
+
+        import plotly.colors
+        from PIL import ImageColor
+
+        def get_continuous_color(colorscale, intermed):
+            """
+            Plotly continuous colorscales assign colors to the range [0, 1]. This function computes the intermediate
+            color for any value in that range.
+
+            Plotly doesn't make the colorscales directly accessible in a common format.
+            Some are ready to use:
+
+                colorscale = plotly.colors.PLOTLY_SCALES["Greens"]
+
+            Others are just swatches that need to be constructed into a colorscale:
+
+                viridis_colors, scale = plotly.colors.convert_colors_to_same_type(plotly.colors.sequential.Viridis)
+                colorscale = plotly.colors.make_colorscale(viridis_colors, scale=scale)
+
+            :param colorscale: A plotly continuous colorscale defined with RGB string colors.
+            :param intermed: value in the range [0, 1]
+            :return: color in rgb string format
+            :rtype: str
+            """
+            if len(colorscale) < 1:
+                raise ValueError("colorscale must have at least one color")
+
+            hex_to_rgb = lambda c: "rgb" + str(ImageColor.getcolor(c, "RGB"))
+
+            if intermed <= 0 or len(colorscale) == 1:
+                c = colorscale[0][1]
+                return c if c[0] != "#" else hex_to_rgb(c)
+            if intermed >= 1:
+                c = colorscale[-1][1]
+                return c if c[0] != "#" else hex_to_rgb(c)
+
+            for cutoff, color in colorscale:
+                if intermed > cutoff:
+                    low_cutoff, low_color = cutoff, color
+                else:
+                    high_cutoff, high_color = cutoff, color
+                    break
+
+            if (low_color[0] == "#") or (high_color[0] == "#"):
+                # some color scale names (such as cividis) returns:
+                # [[loc1, "hex1"], [loc2, "hex2"], ...]
+                low_color = hex_to_rgb(low_color)
+                high_color = hex_to_rgb(high_color)
+
+            return plotly.colors.find_intermediate_color(
+                lowcolor=low_color,
+                highcolor=high_color,
+                intermed=((intermed - low_cutoff) / (high_cutoff - low_cutoff)),
+                colortype="rgb",
+            )
+
+        cols = get_color("Viridis", np.linspace(0, 1, 5))
+        map_cols = np.linspace(0, 1, 5)
+        colorscale=[]
+        for i,val in enumerate(map_cols):
+            colorscale.append([val, cols[i]])
+
+        # Simplify Plotting Schemes:
+        col1 =  px.colors.qualitative.Plotly[0]
+        col2 =  px.colors.qualitative.Plotly[1]
+        col3 =  px.colors.qualitative.Plotly[2]
+        col4 =  px.colors.qualitative.Plotly[3]
+        col5 =  px.colors.qualitative.Plotly[4]
+        col6 =  px.colors.qualitative.Plotly[5]
+
+        if plot_num == 0:
+            col = col1
+            m_size = 4.5
+        elif plot_num == 1:
+            col = col2
+            m_size = 4
+        elif plot_num == 2:
+            col = col3
+            m_size = 3.5
+        elif plot_num == 3:
+            col = col4
+            m_size = 3
+        elif plot_num == 4:
+            col = col5
+            m_size = 3
+        elif plot_num == 5:
+            col = col6
+            m_size = 3
+
+    ############################################################################
+    
+        if PLOTTYPE =='DEN':
+            fig = make_subplots(
+                rows=1, cols=1,
+                subplot_titles=(['Sampled Orbit Densities']),
+                vertical_spacing = 0.15)
+
+            model_m1 = self.__dict__['global_params']['den_model']
+            print(model_m1)
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input'][:]):
+
+
+                #### INDEX THE DENSITY DF correctly
+                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
+                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+
+                str_run_param = 'run_parameters'+ arc
+                final_iter = self.__dict__[str_run_param]['str_iteration']
+                i_arc = ii+1
+
+                print('----',model_m1,'----')
+                print('     mean:    ',np.mean(self.Density[arc]['rho (kg/m**3)']),'----')
+                print('     variance:',np.std(self.Density[arc]['rho (kg/m**3)']),'----')
+                print()
+
+                if ii==0:
+                    legend_flag = True
+                    name_str    = model_m1+arc
+                else:
+                    legend_flag = False
+                    name_str    = model_m1+arc
+
+
+                fig.add_trace(go.Scattergl(  x=self.Density[arc]['Date'][:index_date][:],
+                                             y=self.Density[arc]['rho (kg/m**3)'][:index_date][:],
+                                             name= name_str,
+                                             mode='markers',
+                                             opacity=1,
+                                             marker=dict(
+                                                color=col, 
+                                                size=m_size,
+                                                        ),
+                                             showlegend=legend_flag,
+                                          ),
+                                              secondary_y=False,
+                                               row=1, col=1,
+                                          )
+
+            fig.update_layout(legend= {'itemsizing': 'constant'})
+            fig.update_yaxes( title="rho (kg/m**3)", type='log', exponentformat= 'power',row=1, col=1)
+            fig.update_xaxes( title="Date", row=1, col=1)       
+            
+            return(fig.show(config=config) )        
+    ############################################################################
+
+        elif PLOTTYPE =='DEN_orbavg':
+
+            def orb_avg(den_df, arc):
+                #### Find the index for the correct date
+                vals  = np.arange(den_df[arc].index[0],den_df[arc].index[-1]+1)
+                df = den_df[arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+                lat = np.asarray(den_df[arc]['Lat'][:index_date])
+                time_pd = pd.to_datetime(den_df[arc]['Date'][:index_date])
+                i = np.nonzero( lat[1:]*lat[0:-1]  <  np.logical_and(0 , lat[1:] > lat[0:-1] )  )
+                i = i[0]
+
+                d_avg = np.zeros(np.size(i))
+                height_avg = np.zeros(np.size(i))
+
+                time_avg = []
+                d_avg_rolling = []
+
+                roll_avg_count = 0
+                for j in range(np.size(i)-1):
+                    d_avg[j]      = np.mean(den_df[arc]['rho (kg/m**3)'  ][i[j] : i[j+1]-1  ]  )
+                    height_avg[j] = np.mean(den_df[arc]['Height (meters)'][i[j] : i[j+1]-1  ]  )
+                    t1 = pd.to_datetime(time_pd[ i[j]    ])
+                    t2 = pd.to_datetime(time_pd[ i[j+1]-1])
+                    datemiddle = pd.Timestamp(t1) + (pd.Timestamp(t2) - pd.Timestamp(t1)) / 2
+
+                    time_avg.append(datemiddle)
+
+                    if roll_avg_count ==1:
+                        d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+                        roll_avg_count =0
+
+                    roll_avg_count+=1 
+                d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+
+                return(time_avg, d_avg, d_avg_rolling )
+            fig = make_subplots(
+                rows=1, cols=1,
+                subplot_titles=(['Orbit Averaged Densities']),
+                vertical_spacing = 0.15)
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
+                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+
+                time_avg,d_avg, d_avg_rolling = orb_avg(self.Density, arc)
+
+
+                fig.add_trace(go.Scattergl(x=time_avg,
+                                         y=d_avg_rolling,
+        #                                  y=d_avg,
+        #                                 name= ' Arc ' +str(i_arc) ,
+                                         mode='markers',
+                                         marker=dict(
+                                         color=col,
+                                         size=7,),
+                                         showlegend=False,
+                                           ),
+                                           row=1, col=1,
+                                           )
+
+
+                fig.update_yaxes(type="log", exponentformat= 'power',row=1, col=1)
+            fig.update_xaxes(title_text="Date", row=1, col=1)
+            fig.update_yaxes(title_text="kg/m^3", row=1, col=1)
+            fig.update_layout(legend= {'itemsizing': 'constant'})
+
+
+            
+            return(fig.show(config=config) )        
+            
+    ############################################################################
+
+        elif PLOTTYPE =='NTW_residuals':
+            
+            coords = ['N','T','W']
+
+            fig = make_subplots(
+                rows=3, cols=1,
+                subplot_titles=(['Normal (N)', 'In-track (T)','Cross-Track (W)']),
+                vertical_spacing = 0.15)
+
+            model_m1 = self.__dict__['global_params']['den_model']
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+                data_resids = self.__dict__['OrbitResids'][arc]['resids']
+
+
+                fig.update_layout(title=''.join(coords)+' Orbit Residuals',
+                                autosize=True,
+                                font=dict(size=14),
+                                legend= {'itemsizing': 'constant'})
+
+                for i,val in enumerate(coords):
+                    fig.add_trace(go.Scattergl(
+                                             x=data_resids['Date'][::10],
+                                             y=data_resids[val][::10],
+                                         name=val+' '+model_m1,
+                                         mode='markers',
+                                         marker=dict(
+                                             color=col,
+                                             size=m_size,
+                                                    ),
+                                         showlegend=False),
+                                         secondary_y=False,
+                                         row=i+1, col=1)
+
+
+
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=1, col=1)
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=2, col=1)
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=3, col=1)
+            fig.update_xaxes( title="Date",  row=3, col=1)
+
+            
+            
+            return(fig.show(config=config) )        
 ### END OF CLASS       
         

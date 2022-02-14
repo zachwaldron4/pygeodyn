@@ -252,7 +252,7 @@
       DATA IKPAP/1/,I324/3/,IDRV/1/
 !     
 !
-      integer, dimension(2) :: optionsin
+      integer, dimension(3) :: optionsin
       CHARACTER(len=200) :: model_path
       CHARACTER(len=200) :: orbitcloud_file
 !
@@ -274,9 +274,9 @@
 ! READ IN THE MSIS OPTIONS but we only want to have to do this once...
       if(kentry.eq.1)then
           open (121,                                                    &
-& file="/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_options.txt",&
+& file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt",&
            &       status='old')
-          do i=1,2
+          do i=1,3
 !             if(kentry.eq.1)then
                 WRITE(6,*) 'CHECK--Count i/o num for geodyn_options.txt'
 !             endif
@@ -289,7 +289,7 @@
       
       !!!!! READ IN THE PATH FOR THE KAMODO MODELS FROM PYGEODYN
           open (122,                                                    &
-& file="/data/geodyn_proj/pygeodyn/pygeodyn_develop/geodyn_modelpaths.txt",&
+& file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt",&
            &       status='old')
             read(122,"(A200)") model_path
             read(122,"(A200)") orbitcloud_file
@@ -522,6 +522,9 @@
                  if(kentry.eq.1)then
                       WRITE(6,*) 'CHECK-- DRAG.f90: Running w/ MSIS2'
                  endif
+                 
+                 
+                 
          
          
             case(3:5)   ! Use Kamodo command line if case is greater than or equal to 3>=5
