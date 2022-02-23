@@ -8,7 +8,7 @@
 ! JB2008_call             2022/02/09                by Zach Waldron
 !
 ! FUNCTION:
-!  THIS ROUTINE SERVES AS A SHELL FOR CALLING THE JB2008 DENSITY MODEL
+!    THIS ROUTINE SERVES AS A SHELL FOR CALLING THE JB2008 DENSITY MODEL
 !
 !
 ! I/O PARAMETERS:
@@ -266,13 +266,13 @@
        GSURF_ZL = GSURF*(RE/(RE + ZL) )**2
        TERM1 = ((-1.66D-24*GSURF_ZL)/RGAS)    
        ! !## convert from 1/m^3 to 1/cm^3
-       TERM_sp = (n_dens_temp(1)**0.0000010D0*N2_amu    &   
-    &           + n_dens_temp(2)**0.0000010D0*O2_amu    &   
-    &           + n_dens_temp(3)**0.0000010D0*O_amu     &   
-    &           + n_dens_temp(4)**0.0000010D0*Ar_amu    &   
-    &           +  n_dens_temp(5)**0.0000010D0*He_amu    &   
-    &           +  n_dens_temp(6)**0.0000010D0*H_amu     &   
-    &           + 0.0D0 )*(1/TEMP_jb2008(2))
+       TERM_sp = (n_dens_temp(1)*0.0000010D0*N2_amu    &   
+    &           + n_dens_temp(2)*0.0000010D0*O2_amu    &   
+    &           + n_dens_temp(3)*0.0000010D0*O_amu     &   
+    &           + n_dens_temp(4)*0.0000010D0*Ar_amu    &   
+    &           +  n_dens_temp(5)*0.0000010D0*He_amu    &   
+    &           +  n_dens_temp(6)*0.0000010D0*H_amu     &   
+    &           + 0.0D0 )*(1.D0/TEMP_jb2008(2))
        TERMnorm1 = 1.D0/(1.D0 + ZL/RE)**2
        TERMnorm2 = ((RE+ZL)/(RE+(ALTM/1000.D0)))**2    
        DRHODZ =TERM1*(TERM_sp)*TERMnorm1*TERMnorm2

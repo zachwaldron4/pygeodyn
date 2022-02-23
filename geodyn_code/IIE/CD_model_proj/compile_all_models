@@ -21,11 +21,10 @@ gfortran -c -O2 alt2gph.F90 msis_constants.F90 msis_init.F90 msis_gfn.F90 msis_t
 gfortran -c -O2 utils_constants.F90 utils_spline.F90 physics_constants.F90 physics_msis.F90>err1 2> err_msis00
 
 
-gfortran -c -std=legacy -fdefault-integer-8 -fcray-pointer -O2 Kamodo_CTIPe.f90>errkamodo 2>err2kamodo
+#gfortran -c -std=legacy -fdefault-integer-8 -fcray-pointer -O2 Kamodo_CTIPe.f90>errkamodo 2>err2kamodo
 
 # Compile jb2008 subroutines:
 gfortran -c -std=legacy -fcray-pointer -O2 *.for>err0_jb2008 2>err1_jb2008
-
 
 
 # Compile ALL other subroutines:

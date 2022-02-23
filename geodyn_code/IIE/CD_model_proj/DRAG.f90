@@ -293,11 +293,10 @@
 !
 !      
       KENTRY = KENTRY + 1
-
-
       FLUSH(6)
+!-------------------------------------------------------------------------------------------------
 !  
-! READ IN THE Options file from pygeodyn but we only want to do this once...
+! Read in the options file from pygeodyn. We only need/want to do this once.
       if(kentry.eq.1)then
           open (121,                                                    &
 & file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt",&
@@ -306,24 +305,30 @@
              read(121,*) optionsin(i)
           end do
           close (121)     
-             !the first  index contains the drhodz option (for use in MSIS.f90 routines)
-             !the second index contains the MSIS   option (for use in DRAG.f90 routines)
-             !the third index contains an optional value 
-             !the fourth index contains the Choice for which CD MODEL to USE
-                 ! optionsin(4) = 1 ---- use the original options in GEODYN
+             !the first  index contains the drhodz option (for use in MSIS routines)
+                 !  (Zach W. later made the DRHODZ update the default)
+             
+             !the second index contains the choose_model option 
+                 !     For each base model type (jaachia71, dtm86, and msis86), the 
+                 !         choose_model selects versions of each of those series of 
+                 !         models to be used in a SELECT CASE Statement.
+             !the third index contains an optional float value that can be used for whatever the user wants
+             
+             !the fourth index contains the choice for which CD MODEL to USE
+                 ! we haven't run across the alternative but the Variable Area Model must be ON (LVAREA==True)
+                 ! optionsin(4) = 1 ---- use the original options in GEODYN (BWDRAG)
                  ! optionsin(4) = 2 ---- use the DRIA model by Visal and Zach
                  
           choose_model=optionsin(2)          
       
-      !!!!! READ IN THE PATH FOR THE KAMODO MODELS FROM PYGEODYN
+      !!!!! Read in the path for the location of the MODEL OUTPUT that was used by Kamodo
+      !                    i.e. location of TIEGCM Secondary History (output) .nc files
           open (122,                                                    &
 & file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt",&
            &       status='old')
             read(122,"(A200)") model_path
             read(122,"(A200)") orbitcloud_file
-            close (122)     
-          
-          
+            close (122)             
           WRITE(6,*) '[DRAG.f90] CHECK--model_path         ', model_path
           WRITE(6,*) '[DRAG.f90] CHECK--orbitcloud_file    ', orbitcloud_file
            
@@ -337,16 +342,7 @@
              !     1) MSIS2.f90 needs to return the consituent densities
            endif
       endif        
-
-
-
-
-
-
-
-
-
-
+!-------------------------------------------------------------------------------------------------
 !
       RATIO2=1.D0
       ITEST=MJDSEC+FSEC
@@ -374,9 +370,6 @@
 !     IDAY0 =  2443846,5 - GEODYN REF.TIME
       IDAY0 = 43846-INT(TMGDN2+0.001)
 !                                                                       &
-
-
-
 
 !
 ! OBTAIN ATMOSPHERIC DENSITY
@@ -500,29 +493,74 @@
 !
       IJDSEC=MJDSEC+FSEC
       CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
+      
+!..DTM Models ...DTM Models ...DTM Models ...DTM Models ...DTM Models ...DTM Models ...DTM Models ...DTM Models 
+!===============================================================================================================      
       IF(IATDN.EQ.4) THEN
-!
-!        ....CALL DTM MODEL
-!
-         CALL DTM(DAY,FLUXIN,FLXAVG,FLUXKP,ALTI,COSHL,SINHL,COSPHI,     &
-     &         SINPHI,RHO,DRHODZ,MJDSEC)
-         C(1)=DRHODZ
-!                                                                       &
-         if(kentry.eq.1)then
-              WRITE(6,*) '[DRAG.f90] CHECK-- DRAG.f90: Running w/ DTM87'
-         endif
-      ENDIF
-!
+       select case (choose_model)
+           ! For IATDN=4 ------ Using DTM87 according to IIS 
+           !    choose_model=0 ---- use dtm87
+           !    choose_model=1 ---- use dtm2020
+           
+           
+         ! DTM87 case
+         case(0)!--------------------------------------------------------------------- case 0 -- DTM87
+            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM87'
+            if(kentry.eq.1) then
+                WRITE(6,*) ' '
+                WRITE(6,*) '      DAY:     ', DAY
+                WRITE(6,*) '      FLUXIN:  ', FLUXIN
+                WRITE(6,*) '      FLXAVG:  ', FLXAVG
+                WRITE(6,*) '      FLUXKP:  ', FLUXKP
+                WRITE(6,*) '      ALTI:    ', ALTI
+                WRITE(6,*) '      COSHL:   ', COSHL
+                WRITE(6,*) '      SINHL:   ', SINHL
+                WRITE(6,*) '      COSPHI:  ', COSPHI
+                WRITE(6,*) '      SINPHI:  ', SINPHI
+                WRITE(6,*) '      RHO:     ', RHO
+                WRITE(6,*) '      DRHODZ:  ', DRHODZ
+                WRITE(6,*) '      MJDSEC:  ', MJDSEC
+                WRITE(6,*) ' '
+            endif
+            CALL DTM(DAY,FLUXIN,FLXAVG,FLUXKP,    &
+               &     ALTI,COSHL,SINHL,COSPHI,     &
+               &     SINPHI,RHO,DRHODZ,MJDSEC)
+            C(1)=DRHODZ
+      
+           
+         ! DTM2020 case
+         case(1)!--------------------------------------------------------------------- case 1 -- DTM2020
+            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM2020'
+            
+            !! Allocate the Number density/temperature array to be used with DRIA
+            if(kentry.eq.1) allocate(n_dens_temp(10))
+
+            CALL DTM2020_call(MJDSEC,FSEC,                &
+              &               FLUXIN,FLXAVG,FLUXKP,        &
+              &               ALTI,PHI,XLAMB,             &
+              &               COSHLN,SINHLN,                &
+              &               RHO,DRHODZ)
+            C(1)=DRHODZ
+
+
+         end select !------------------------------------------------------------------ End dtm model cases
+      ENDIF ! end if for DTM Series of Models [IF(IATDN.EQ.4) THEN]
+
+
+
+
+
+!..MSIS Models ...MSIS Models ...MSIS Models ...MSIS Models ...MSIS Models ...MSIS Models ...MSIS Models ...MSIS
+!===============================================================================================================      
       ! MSIS cases
       ! If IATDEN = 5 we go thru this code, depend on the inputted values 
       !    of choose_model to select which model you want
       !          ADDED A CASE SWITCHING OPTION to for the MSIS models!
 
       IF(IATDN.EQ.5) THEN   !        ....CALL TO MSIS86 option INSTEAD OF DTM
-       select case (choose_model)
+         select case (choose_model)
                    !choose_model=2 ---- msis2
                    !choose_model=6 ---- Kamodo_tiegcm_oc
-                   
                 ! MSIS 86 case
          case(0)!--------------------------------------------------------------------- case 0 -- MSIS86
             IMARK = IND3HR
@@ -540,7 +578,7 @@
             endif
          
          
-                ! MSIS 00 case
+         ! MSIS 00 case
          case(1)!--------------------------------------------------------------------- case 1 -- MSIS00
             IMARK = IND3HR
             COSHLN = -COSHL
@@ -557,7 +595,7 @@
             endif
                  
                  
-                ! MSIS 2 case
+         ! MSIS 2 case
          case(2)!--------------------------------------------------------------------- case 2 -- MSIS2
             IMARK = IND3HR
             COSHLN = -COSHL
@@ -578,7 +616,7 @@
             endif
          
          
-                  ! Kamodo command line (NO LONGER USED-- should return a STOP)
+         ! Kamodo command line (NO LONGER USED-- should return a STOP)
          case(3:5)!--------------------------------------------------------------------- case 3-5 -- Kamodo with Commandline
             ! Use Kamodo command line if case is greater than or equal to 3>=5
             if(choose_model.eq.3) kamodo_model='CTIPe'
@@ -601,7 +639,7 @@
             !   &                   orbitcloud_file )
             !      C(1)=DRHODZ   
             
-                  ! Kamodo ORBIT CLOUD
+         ! Kamodo ORBIT CLOUD
          case(6:) !--------------------------------------------------------------------- case 6 -- Kamodo OC
                   ! Use Kamodo_orbit cloud method if case is greater than 6
 
@@ -639,8 +677,9 @@
       !..JACCHIA 71 case... ...JACCHIA 71 case... ...JACCHIA 71 case... ...JACCHIA 71 case... ...JACCHIA 71 case... 
       IF(IATDN.EQ.2) THEN
        select case (choose_model)
-         case(0) !--------------------------------------------------------------------- case 0 -- Use jacchia71
-            
+         
+         ! jaachia71
+         case(0) !--------------------------------------------------------------------- case 0 -- Use jacchia71  
             if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK model=jaachia71'
             ! Note- In the F.f90 subroutine, the D71 model was initialized 
             !       by firstcalling IF(LSDRG.AND.ICBDGM.EQ.3) CALL D71TM(MJDSEC,FSEC).
@@ -649,14 +688,14 @@
             RHO=D71(RASAT)
             DRHODZ=0.D0
          
-         
+         ! JB2008
          case(1) !--------------------------------------------------------------------- case 1 -- Use JB2008
             if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK model=JB2008'
             
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(9) )
             
-            CALL JB2008_call(MJDSEC, FSEC,                  &
+            CALL JB2008_call(MJDSEC, FSEC,                 &
               &    ALTI, PHI,XLAMB,RHO,DRHODZ,             &
               &    COSPSI, n_dens_temp)
             C(1)=DRHODZ
@@ -1085,6 +1124,45 @@
             !   FRACOX   S      I    FRACTION OF SURFACE COVERED BY ATOMIC OXYGEN
             !   CD       S      O    DRAG-COEFFICIENT
          !===========================================================================================================   
+         !===========================================================================================================
+                  
+         IF(IATDN.EQ.4) THEN  !  DTM case ------------------------------------------------------ BEGIN DTM DRIA
+            select case (choose_model)
+              
+            case(0) !----------------------------------------------------------- dtm87 dria
+                if(kentry.eq.1) WRITE(6,*) '***** ERROR *****'
+                if(kentry.eq.1) WRITE(6,*) 'DRIA not setup to work with DTM87'
+                if(kentry.eq.1) WRITE(6,*) '***** ERROR *****'
+                STOP 16
+                
+                
+            case(1) !-------------------------------------------------------------- DTM2020 dria
+                if(kentry.eq.1) WRITE(6,*) ' =======       WITH DTM2020'
+                
+                ! Atmospheric temperature at satellite altitude
+                TEMP_atm = n_dens_temp(8) !   temperature at altitude
+                ! Number of atomic oxygens in atmosphere
+                NOXA_atm = n_dens_temp(3) !   ! X(3) = n_den atomic oxygen (in #/m^3)
+                ! Calculate the Mean Molecular Mass
+                MEANMOL_atm = ((n_dens_temp(1)*H_amu)  +  & 
+                         &     (n_dens_temp(2)*He_amu) +  &
+                         &     (n_dens_temp(3)*O_amu)  +  & 
+                         &     (n_dens_temp(4)*N2_amu) +  &
+                         &     (n_dens_temp(5)*O2_amu) +  & 
+                         &     (n_dens_temp(6)*N_amu) ) / & 
+                         &           (n_dens_temp(1) +  & 
+                             &        n_dens_temp(2) +  & 
+                             &        n_dens_temp(3) +  & 
+                             &        n_dens_temp(4) +  & 
+                             &        n_dens_temp(5) +  & 
+                             &        n_dens_temp(6) )    
+            end select 
+
+         ENDIF  ! end jb2008 case for DRIA [>> IF(IATDN.EQ.2)---------------------------------------- end JB2008 DRIA 
+         !===========================================================================================================         
+         
+         
+         
          IF(IATDN.EQ.5) THEN  !  MSIS case ---------------------------------------------------------- BEGIN MSIS DRIA 
             select case (choose_model)
               
@@ -1094,10 +1172,10 @@
                   ! Atmospheric temperature at satellite altitude
                   TEMP_atm = n_dens_temp(11)
                   ! Number of atomic oxygens in atmosphere
-                  NOXA_atm = (n_dens_temp(2) + n_dens_temp(9))*0.000001D0 !convert to m  
+                  NOXA_atm = (n_dens_temp(2) + n_dens_temp(9))*0.000001D0 !convert to SI  
 
                   !    Calculate the Mean Molecular Mass of the atmosphere
-                  MEANMOL_atm=((n_dens_temp(1)*He_amu) + & ! He nden (cm-3)
+                  MEANMOL_atm=((n_dens_temp(1)*He_amu) + &  ! He nden (cm-3)
                        &      (n_dens_temp(2)*O_amu)   +  & ! O nden (cm-3)
                        &      (n_dens_temp(3)*N2_amu)  +  & ! N2 nden (cm-3)
                        &      (n_dens_temp(4)*O2_amu)  +  & ! O2 nden (cm-3)
@@ -1193,7 +1271,7 @@
           
 
          if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- TC1     ', TC1
-         if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- CD_drag ', CD_drag
+         if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- CD_CoeffOnly  ', CD_drag
          ! the DXDD, PXDDT, and TC1 were all updated in MODDRIA
             
 
@@ -1213,8 +1291,8 @@
 ! *****  PRINT THE DENSITY FILE ***********************************
       IF(LSTINR) THEN
         WRITE(99,7000) FSSTRT,IYMD,IHMS,               &  !           FSSTRT -- Elapsed seconds since initial epoch  
-        &              XLATD,XLOND,ALTI,               &  !           IYMD -- YYMMDD of current epoch  
-        &              RHO,DRHODZ,                     &  !           IHMS -- HHMMSS of current epoch  
+        &              XLATD,XLOND,ALTI,               &  !           IYMD   -- YYMMDD of current epoch  
+        &              RHO,DRHODZ,                     &  !           IHMS   -- HHMMSS of current epoch  
         &              FLUXIN,FLXAVG,FLUXM(1)             !           XLATD -- Lat of Space craft (degrees)  
         !                                                 !           XLOND -- Lon of Space craft (degrees)  
 7000   FORMAT(  F12.1,1X, 2(I0.6,1X),                  &  !           ALTI -- Hieght of Space station above elipsoid (M)  

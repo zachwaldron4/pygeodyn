@@ -1,69 +1,72 @@
 ---
 ###  Run Settings Test File 
+#
+#### Declare paths and naming conventions:
+user                         : 'Zach Waldron'
+path_to_output_directory     : '/data/zach_work/output_from_runs'
+directory_name_specifier     : ''  
+PASS_INPUT_VALUE_TO_fortran  :  'None'
 
-# Need to figure out how to use this file to overwrite the Setting hardcoded in ICESat2class if they are here.
+arc_length                   : '24hr'
+model_data_path              :  None
 
-### the epoch end time automatically controls the prediction end time
-          ### FORMAT: 'YYMMDD HHMMSS.SSSSSSS'
-epoch_start         : [
-                        '181109 000000.0000000',
-                        '181110 000000.0000000',
-                        ]
-
-epoch_end           : [ 
-                        '181110 000000.0000000',
-                        '181111 000000.0000000',
-                       ]
-
+#### CD MODEL
+cd_model  :   'BWDRAG' # 
+file_string                  : 'bwdrag'
 
 
-### SPECIFY ARC NAMING CONVENTION
-arc_length     : '24hr'
-file_string    : 'EXAMPLE_TEST_NoCD_Arc24'
+#### DRIA CD Model Parameters
+cd_model_params : { 
+                    MS     : None  ,  #!  molar mass for each panel (g/mol)
+                    TW     : None  ,  #!  temperature of panels  (K)
+                    ALPHA  : None  ,  #!  accomodation coefficient
+                    KL     : None  ,  #!  langmuir parameter
+                    FRACOX : None  ,  #!  fraction of surface covered by atomic oxygen
+                   }
+
+##### CHOOSE GEODYN VERSION:
+GEODYN_iie_MOD_version     : 'CD_model_proj'
+recompile_on               :  False
+
+### IDENTIFY ARCS   (YYYY.DDD)
+arc                 : ['2018.313',]
+epoch_start         : ['181109 000000.0000000', ]
+epoch_end           : ['181110 000000.0000000', ]
 
 
-cd_adjustment_boolean  : False
-total_hours_in_run     : None
-hours_between_cd_adj   : None
-
-
-
-### RUN PARAMETERS
-run_params:
-    {arc             : [
-                        '2018.313',
-                        '2018.314',
-                        ],
-                        
-    satellite        : 'icesat2' ,
-    den_model        : 'msis2'  ,
-    SpecialRun_name  : '_valid_ctrlrun',  
-    verbose          :  False,
-    accels           :  False,
-    geodyn_StepSize  : 10.,
-    }
-   
-model_data_path : None
-request_data:  [ #'AdjustedParams',
-                'Trajectory_orbfil',
+satellite    : 'icesat2' 
+den_model    : 'msis2'  
+request_data :  ['Trajectory_orbfil',
                 'Density',
-#                 'Residuals_obs',
-                'Residuals_summary',
-                'RunSummary',
+                'DragFile',
+                'Residuals_summary', 
+                #'RunSummary',
+                # Residuals_obs',
+                # 'AdjustedParams',
                                   ]
-
-
+                                  
+                                 
 ### SETUP FILE OPTIONS 
-cards_to_remove : ['ACCEL9',
-                   'ORBTVU',
-                   'RESID',
-                   'CON9PA',
-                  ]
+geodyn_StepSize           : 10.
+cd_adjustment_boolean     : False
+total_hours_in_run        : None
+hours_between_cd_adj      : None
+accels                    :  False
+empirical_accels          :  False, 
+ACCELS                    : 'acceloff'
+cards_to_remove           : [ 'ACCEL9',
+                              'ORBTVU',
+                              'RESID',
+                              'CON9PA',]
+                  
+#### USER AUXILLIARY OPTIONS
+verbose         :  True
+DRHODZ_update   :  True     #### Do you want to use the updated DRHODZ calculation? (recommended)
 
 
 
 #### ----------------------------------------------------------------------------
-#### Options that are hardcoded defaults by ICESAT2 class
+#### Options that are hardcoded defaults for ICESAT2 class
 #### ----------------------------------------------------------------------------
 #### The name of the satellite
 SATELLITE_dir  : 'icesat2'
@@ -71,10 +74,6 @@ SATELLITE_dir  : 'icesat2'
 SATID          : '1807001'
 #### Datatype being used as tracking data
 DATA_TYPE      : 'PCE'
-#### Naming convention requested for different gravity types
-grav_id        : '' 
-#### Do you want to use the updated DRHODZ calculation? (recommended)
-options_in     : {'DRHODZ_update':True}  
 #### ----------------------------------------------------------------------------
 ####### File Choices:
 #### G2B file name

@@ -1606,20 +1606,20 @@ class PygeodynController():
                 self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
                                        str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
 
-#                 #### Construct the file to be appended to here
-#                 f = open(self.orbitcloud_csv_file, "w")
-#                 f.write("\n")
-#                 f.close()
+                #### Construct the file to be appended to here
+                f = open(self.orbitcloud_csv_file, "w")
+                f.write("\n")
+                f.close()
                 
-#                 from time import perf_counter
-#                 t0=perf_counter()
+                from time import perf_counter
+                t0=perf_counter()
                 
-#                 print(f'|     Constructing the OrbitCloud file: \n|          -{self.orbitcloud_csv_file}')
-#                 print(f'|          - {self.ARC} ',)
-#                 print(f'|          - time 1: {perf_counter()-t0}')
-#                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
-#                 self.make_orbit_cloud_csv()
-#                 print(f'|          - time 2: {perf_counter()-t0}')
+                print(f'|     Constructing the OrbitCloud file: \n|          -{self.orbitcloud_csv_file}')
+                print(f'|          - {self.ARC} ',)
+                print(f'|          - time 1: {perf_counter()-t0}')
+                self.set_file_paths_for_multiple_arcs( arc , iarc)            
+                self.make_orbit_cloud_csv()
+                print(f'|          - time 2: {perf_counter()-t0}')
 
 
             ### Once you have the orbitcloud csv, re-run GEODYN with the TIEGCM and orbit cloud csv

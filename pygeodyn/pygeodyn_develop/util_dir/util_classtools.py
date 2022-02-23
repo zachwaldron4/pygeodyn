@@ -73,10 +73,13 @@ class Util_Tools:
             self.SETUP_DEN_DIR = 'jb2008'
             self.iisset_den = '71'
             
+        elif den_model == 'dtm2020':   
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'dtm2020'
+            self.iisset_den = '87' # Will run GEODYN WITH DTM87 according to IIS, but switch out for DTM2020 in DRAG.f90
             
         else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, tiegcm_oc, jb2008]')   
-            print('Dear Zach, please add the remaining models you have added. --from zach')   
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, tiegcm_oc, jb2008, dtm2020]')   
 
             
         from re import search
@@ -116,56 +119,68 @@ class Util_Tools:
         return
 
     def geodyn_modify_inputs(self, DRHODZ_update, density_model):
+        '''
+        This function overwrites a text file that will be fed into 
+            the GEODYN IIE routine (mainly at and around the DRAG.f90 routine).
+            
+        These options serve effectively as variables for making changes to the GEODYN code after compiling.
+            Options include:
+                DRHODZ_update
+                Choice of Density model
+                Choice of CD Physics model
+                Pass a value into fortran (to be used for anything... i have used it to scale the density)
+                
+        An additional file has been added that includes the various parameters that are inputs to the DRIA physical CD model.
         
+        '''
         if DRHODZ_update== True:
             drhodz_val = '1'
         elif DRHODZ_update== False:
             drhodz_val = '0'
         else:
             sys.exit("DRHODZ option is in incorrect format")
-
-            
+        #
+        ### The following models are run with 86 (msis86) as the input to IIS on the ATMDEN CARD    
         if density_model== 'msis86':
             model_val = '0'
         elif density_model== 'msis00':
             model_val = '1'
         elif density_model== 'msis2':
             model_val = '2'
-#         elif density_model== 'ctipe_cl':
-#             model_val = '3'
-#         elif density_model== 'tiegcm_cl':
-#             model_val = '4'
-#         elif density_model== 'gitm_cl':
-#             model_val = '5'
-        
         elif density_model== 'tiegcm_oc':
             model_val = '6'
         elif density_model== 'hasdm_oc':
             model_val = '6'
-            
+        #
+        ### The following models are run with 71 (jaachia71) as the input to IIS on the ATMDEN CARD    
         elif density_model== 'jaachia71':
             model_val = '0'       
         elif density_model== 'jb2008':
             model_val = '1' 
-            
+        #
+        ### The following models are run with 87 (dtm87) as the input to IIS on the ATMDEN CARD    
         elif density_model== 'dtm87':
             model_val = '0'
+        elif density_model== 'dtm2020':
+            model_val = '1'
+        #        
+        #
         else:
-            sys.exit("Density Model Option (DEN_DIR) is in incorrect format")
-            
+            sys.exit("Density Model Option (den_model) is in an incorrect format")
+        ####
+        ####
+        ####  Save the options to a file (overwrite it) to be read into the GEODYN fortran code
+        ####
         file1 = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt","w+")
         file1.writelines(drhodz_val+'\n') # first value is for DrhoDz
         file1.writelines(model_val +'\n') # 2nd values is for model switching
-        
-        
+        #
         #######  ADD AN OPTIONAL INPUT VALUE TO FORTRAN
         if self.PASS_INPUT_VALUE_TO_fortran  == 'None' :
             file1.writelines('1'+'\n')
         else:
             file1.writelines(self.PASS_INPUT_VALUE_TO_fortran+'\n')
-        
-        
-        
+        #
         #######  Choose CD Model to be used by GEODYN
         if self.cd_model  == 'BWDRAG' :
             file1.writelines('1'+'\n')
@@ -187,7 +202,6 @@ class Util_Tools:
             file_CDparams.writelines(str(self.cd_model_params['ALPHA']) + '\n')
             file_CDparams.writelines(str(self.cd_model_params['KL'])    + '\n')
             file_CDparams.writelines(str(self.cd_model_params['FRACOX'])+ '\n')
-            
             
             file_CDparams.close()
 

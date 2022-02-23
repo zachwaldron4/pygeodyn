@@ -261,12 +261,12 @@
           !if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - CDADS ', CDADS
 
   100 END DO
-      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - TOTARE                ', TOTARE
+      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - TOTARE            ', TOTARE
 
       
       !     TOTAL DRAG-COEFFICIENT
       CD = FRAC*CDADS + (1.0D0-FRAC)*CDS      
-      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - CD                ', CD
+      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - CD*TOTARE         ', CD
       
       
       ! COMPUTE DRAG ACCELERATION ON THIS PLATE IN
