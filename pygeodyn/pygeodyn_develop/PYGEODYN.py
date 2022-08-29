@@ -118,6 +118,11 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlett
         self.PASS_INPUT_VALUE_TO_fortran = self.run_settings['PASS_INPUT_VALUE_TO_fortran']
         self.recompile_on = self.run_settings['recompile_on']
 
+
+        ### User choose if certain files should be saved or not.
+        self.save_drag_file  =  self.run_settings['save_drag_file']
+        self.save_accel_file =  self.run_settings['save_accel_file']
+
         
         
         ###### RELEVANT CD MODEL INPUTS

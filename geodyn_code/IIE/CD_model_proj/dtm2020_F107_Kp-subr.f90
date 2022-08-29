@@ -38,8 +38,8 @@ subroutine dtm3(day,f,fbar,akp,alti,hl,alat,xlon,tz,tinf,ro,d,wmm)
   !.. Formal Arguments .. 
   real, intent(in) :: alat,alti,day,hl,xlon
   real, intent(out) :: ro,tinf,tz,wmm
-  real, dimension(2), intent(in) :: f,fbar
-  real, dimension(4), intent(in) :: akp
+  real, dimension(2), intent(in)  :: f,fbar
+  real, dimension(4), intent(in)  :: akp
   real, dimension(6), intent(out) :: d
   ! 
   !.. Local Scalars .. 

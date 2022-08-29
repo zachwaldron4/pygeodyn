@@ -9,6 +9,8 @@ import os
 import os.path
 import sys
 import subprocess
+import signal
+
 import shutil
 import time
 
@@ -18,6 +20,11 @@ from   datetime import datetime,timedelta, timezone
 
 import copy
 import logging
+
+
+import gc
+
+
 
 
 class PygeodynController():
@@ -365,15 +372,23 @@ class PygeodynController():
         
         longest_line = '|      '+self.run_ID+"    Output directory:  " + self.OUTPUTDIR
         
-        print('+','—'*len(longest_line))
+#         if len(longest_line) > 110:
+
+        print('+','—'*110)
+#         print('+','—'*len(longest_line))
         print('|')
         print('|','---------------------- RUN PARAMETERS  ----------------------')
         print('|')
         print('| ',self.run_ID,"    IISSET Cleaned     " , 'tmp/.../cleaned_setup'+'_' + self.arcdate_for_files)
         print('| ',self.run_ID,"    Density Model:     " , self.DEN_DIR)
-        print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)
-        print('| ',self.run_ID,"    ARC run:           " , self.ARC)
-        print('| ',self.run_ID,"    Output directory:  " , self.OUTPUTDIR)
+        print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)       
+        if len(longest_line) > 110:
+            A=self.OUTPUTDIR
+            len_dir = int(len(A.split('/'))/2)
+            print('| ',self.run_ID,"    /".join(A.split('/')[:len_dir])+'/...')
+            print('| ',' '*len(self.run_ID),'           .../'+"/".join(A.split('/')[len_dir:]) )
+        else:
+            print('| ',self.run_ID,"    Output directory:  " , self.OUTPUTDIR)
         if not self.external_attitude:
             print('| ',self.run_ID,"    EXAT File:         " ,'No external attitude file.')
         else:
@@ -382,8 +397,10 @@ class PygeodynController():
         print('| ',self.run_ID,"    Epoch Start: "  , str(self.epoch_start_dt) )
         print('| ',self.run_ID,"    Epoch End:   "  , str(self.epoch_end_dt)   )
         print('| ',self.run_ID,"    Step Size:   "  , str(self.geodyn_StepSize)                             )
+        print('|')
+        print('| ',self.run_ID,"    ARC run:     " , self.ARC)
 
-        print('+','—'*len(longest_line))
+        print('+','—'*110)
 
 #         if os.path.exists(self._INPUT_filename):
 #             self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
@@ -523,6 +540,11 @@ class PygeodynController():
         #### Before running GEODYN, populate the geodyn_options.txt file with the run options:
         self.geodyn_modify_inputs(self.DRHODZ_update, self.DEN_DIR)
         
+
+        
+#         print("self.save_drag_file", self.save_drag_file)
+
+        
         
         #### RUN THE EXECUTABLE
         print()
@@ -530,7 +552,24 @@ class PygeodynController():
         command_IIS = self.G2SDIR+'/giis2002_gfortran > '+'iisout 2> '+'iiserr'
         logger.info(f" Running IIS: {command_IIS} ")
 
+        
+        ####  because of memory issues when running lots of arcs in a loop, we
+        ###   need to explicitly kill these subprocesses.
+        
         subprocess.run(command_IIS, shell = True)
+        
+#         p = subprocess.Popen(command_IIS ,shell=True  )
+#         while(True):
+#             poll = p.poll()
+# #             print(stdout)
+#             if not (poll == None):
+#                 print('poll',poll)
+#                 print('p',p)
+
+#                 p.terminate()
+#                 p = subprocess.Popen(command_IIS ,shell=True )                
+#                 gc.collect()
+#                 break
         time.sleep(1)
 
         #### Save the Interface files from 2s. 
@@ -597,8 +636,25 @@ class PygeodynController():
         logger.info(f" Running IIE: {command_IIE} ")
 
         subprocess.run(command_IIE, shell = True)
-        time.sleep(0.5)
-        
+#         proc_IIE = subprocess.Popen(command_IIE, stdout=subprocess.PIPE, 
+#                        shell=True, preexec_fn=os.setsid) 
+#         time.sleep(1)
+#         os.killpg(os.getpgid(proc_IIE.pid), signal.SIGTERM)
+#         p = subprocess.Popen(command_IIE ,shell=True  )
+#         while(True):
+#             poll = p.poll()
+# #             print(stdout)
+#             if not (poll == None):
+#                 print('poll',poll)
+#                 print('p',p)
+
+#                 p.terminate()
+#                 p = subprocess.Popen(command_IIE ,shell=True )                
+#                 gc.collect()
+#                 break
+        time.sleep(1)
+
+               
         ### Check if there are any errors from IIE output
         _iieerr_filename = self.TMPDIR_arc+'/iieerr'
             # check if size of file is 0
@@ -709,7 +765,8 @@ class PygeodynController():
                         'fort.98': 'msisin_file_ephem',
                         'fort.101': 'msisin_file_gpiflux',
 #                         'fort.101':'msis_out_file' ,
-                        'fort.103':'msis_SWI_file' ,
+#                         'fort.103':'msis_SWI_file' ,
+                        'fort.105':'accel_file' ,
                         }
         for i,val in enumerate(output_files):
             if not os.path.exists(val):
@@ -724,10 +781,22 @@ class PygeodynController():
 #         os.system('mv fort.10 ascii_kep')         # i dont want these anymore
         os.system('mv fort.131 orbfil')
         os.system('mv fort.99  densityfil')
-        os.system('mv fort.98 msisin_file_ephem')     
+        os.system('mv fort.98  msisin_file_ephem')     
         os.system('mv fort.101 msisin_file_gpiflux')     
 #         os.system('mv fort.101 msis_out_file')    # i dont want these anymore
-        os.system('mv fort.103 drag_file')    # i dont want these anymore
+        
+#         print("self.save_drag_file", self.save_drag_file)
+
+        if self.save_drag_file:
+            print("Saving fort.103 as drag_file")
+            os.system('mv fort.103 drag_file')     
+
+        if self.save_accel_file:
+            os.system('mv fort.105 accel_file')     
+
+        
+        
+        
         os.system('rm -f slvtmp* ftn* fort.*')
 
         print(self.run_ID,'               Finished renaming files')      
@@ -742,6 +811,11 @@ class PygeodynController():
         os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'')
         os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'.Z')
         os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'.gz')
+        #         
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'_orb1')
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'_orb1.bz2')
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'_accel_file')
+        os.system('rm -f '+self.OUTPUTDIR+'/ORBITS/'+ self.ARC+'_accel_file.bz2')
 
         os.system('rm -f  '+self.OUTPUTDIR+'/RESIDS/'+ self.ARC+'')
         os.system('rm -f  '+self.OUTPUTDIR+'/RESIDS/'+ self.ARC+'.Z')
@@ -762,11 +836,13 @@ class PygeodynController():
 #         os.system('bzip2 -v Resid')
         os.system('bzip2 -v orbfil')
         os.system('bzip2 -v densityfil')
-        os.system('bzip2 -v drag_file')
-#         os.system('bzip2 -v ascii_xyz')
-#         os.system('bzip2 -v ascii_kep')
-#         os.system('bzip2 -v punch.gdn')
+        
+        if self.save_drag_file:
+            os.system('bzip2 -v drag_file')
+        if self.save_accel_file:
+            os.system('bzip2 -v accel_file')
 
+        
 #         os.system('cp giis.input.bz2  '+self.OUTPUTDIR+'/IISSET/'+ self.ARC+'.bz2')
 #         os.system('cp Resid.bz2 '      +self.OUTPUTDIR+'/RESIDS/'  +self.ARC+     '.bz2')
 
@@ -776,8 +852,14 @@ class PygeodynController():
 #         print(self.OUTPUTDIR,'/ORBITS/'  ,self.ARC,'_orb1.bz2' )
 
         os.system('cp orbfil.bz2 '     +self.OUTPUTDIR+'/ORBITS/'  +self.ARC+'_orb1.bz2')
+        
+        if self.save_accel_file:
+            os.system('cp accel_file '     +self.OUTPUTDIR+'/ORBITS/'  +self.ARC+'_accel_file')
+        
         os.system('cp densityfil.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     '.bz2')
-        os.system('cp drag_file.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     'drag_file.bz2')
+        
+        if self.save_drag_file:
+            os.system('cp drag_file.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     'drag_file.bz2')
 #         os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
 #         os.system('cp ascii_kep.bz2 '  +self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+     '.bz2')
         os.system('mv IIEOUT.'+ self.ARC+' '+self.OUTPUTDIR+'/IIEOUT/'+ self.ARC+'')
@@ -795,8 +877,8 @@ class PygeodynController():
         #### Go up 3 levels and delete the temporary directories:
         os.chdir('../../')
         
-        print(self.tabtab,'Deleting tmp/: ',self.SERIES)
-        os.system('rm -rf'+' ' +self.SERIES)
+#         print(self.tabtab,'Deleting tmp/: ',self.SERIES)
+#         os.system('rm -rf'+' ' +self.SERIES)
      
     
     
@@ -1100,7 +1182,10 @@ class PygeodynController():
                                          ],
                             sep = '\s+',
                             )
-
+        
+        
+        
+        
         #### Fix the formatting of the dates in the density file
         #####   The following is a bit archaic but it works so I haven't messed with it
         sat_time1 = list(DEN_csv['YYMMDD'])  #"031115" #  
@@ -1175,11 +1260,11 @@ class PygeodynController():
         ##### --------------------------------------------------------------------------------------------
         #### End code block that deals with the INIT_ORBIT and fixing the date formats
         
-        
                
         if kamodo_flag:
             import sys
-            sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
+#             sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
+            sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo_ccmc/flythrough/')
             from SatelliteFlythrough import ModelFlythrough
 
         #### Initialize empty lists for storing the values 
@@ -1198,8 +1283,16 @@ class PygeodynController():
 
         #### Open the file
         #### We will loop thru the DEN CSV and if the file already contains the the date, don't overwrite.
-         
-        for it,val in enumerate(DEN_csv['Date'][:]):
+        
+        ### The below removes any repeated dates in the file.
+        vals  = np.arange(DEN_csv.index[0],DEN_csv.index[-1]+1)
+        df = DEN_csv.set_index('Date',drop=False ) 
+        df['i_vals'] = vals
+        index_date = df.loc[df.index.max()]['i_vals'].min()
+        
+        
+        
+        for it,val in enumerate(DEN_csv['Date'][:index_date]):
             date_index = DEN_csv['YYMMDD'][it] + DEN_csv['HHMMSS'][it]
             unix_time  = DEN_csv['sattime_utctimestamp'][it]
 
@@ -1219,29 +1312,29 @@ class PygeodynController():
 
             ### WRAP THE LONS AROUND -180 to 180
             if lon_plus_delta < -180:
-                lon_plus_delta = np.mod(lon_plus_delta, 180)
+                lon_plus_delta = lon      #np.mod(lon_plus_delta, 180)
             elif lon_plus_delta > 180:
-                lon_plus_delta = np.mod(lon_plus_delta, -180)
+                lon_plus_delta = lon      #np.mod(lon_plus_delta, -180)
             else:        
                 lon_plus_delta = lon_plus_delta
             if lon_mins_delta < -180:
-                lon_mins_delta = np.mod(lon_mins_delta, 180)
+                lon_mins_delta = lon      #np.mod(lon_mins_delta, 180)
             elif lon_mins_delta > 180:
-                lon_mins_delta = np.mod(lon_mins_delta, -180)
+                lon_mins_delta = lon      #np.mod(lon_mins_delta, -180)
             else:
                 lon_mins_delta = lon_mins_delta
             #
             ### WRAP THE LATS AROUND -90 to 90
-            if lat_plus_delta < -90:
-                lat_plus_delta = np.mod(lat_plus_delta, 90)
+            if lat_plus_delta < -90: ##less than
+                lat_plus_delta = lat      #np.mod(lat_plus_delta, 90)
             elif lat_plus_delta > 90:
-                lat_plus_delta = np.mod(lat_plus_delta, -90)
+                lat_plus_delta = lat      # np.mod(lat_plus_delta, -90)
             else:
                 lat_plus_delta = lat_plus_delta
             if lat_mins_delta < -90:
-                lat_mins_delta = np.mod(lat_mins_delta, 90)
+                lat_mins_delta = lat      #np.mod(lat_mins_delta, 90)
             elif lat_mins_delta > 90:
-                lat_mins_delta = np.mod(lat_mins_delta, -90)
+                lat_mins_delta = lat      #np.mod(lat_mins_delta, -90)
             else:
                 lat_mins_delta = lat_mins_delta
 
@@ -1292,23 +1385,66 @@ class PygeodynController():
             #### Import Coordinates to Kamodo
             ##
             #### Kamodo static inputs:
-            model          = 'TIEGCM'
-            file_dir       = self.model_data_path+'/'
-            logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
-            variable_list  = ['rho','psi_O2', 'psi_O', 'psi_He', 'T_n']
-            coord_type     = 'SPH'
-            coord_grid     = 'sph'
-            high_res       = 1.
-            verbose        = False  
-            csv_output     = '' 
-            plot_output    = ''        
+            if self.den_model == 'tiegcm_oc':
+#                 model          = 'TIEGCM'
+#                 file_dir       = self.model_data_path+'/'
+#                 logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
+#                 variable_list  = ['rho','psi_O2', 'psi_O', 'psi_He','psi_N2', 'T_n']
+#                 coord_type     = 'SPH'
+#                 coord_grid     = 'sph'
+#                 high_res       = 1.
+#                 verbose        = False  
+#                 csv_output     = '' 
+#                 plot_output    = ''    
+                temp_var = 'T_n'
+                den_var = 'rho'
 
 
+            elif self.den_model == 'ctipe_oc':
+                #### Kamodo static inputs:
+                model          = 'CTIPe'
+                file_dir       = self.model_data_path+'/'
+                variable_list  = ['rho','N_O', 'N_O2', 'N_N2', 'T']
+                coord_type     = 'GDZ'#'SPH'
+                coord_grid     = 'sph'
+                high_res       = 1.
+                verbose        = False   
+                output_type='csv' 
+                output_name='' 
+                plot_output='' 
+                plot_coord='' 
+                _print_units=False
+                temp_var = 'T'
+                den_var = 'rho'
+            
+            elif self.den_model == 'gitm':
+                #### Kamodo static inputs:
+                model          = 'GITM'
+                file_dir       = self.model_data_path+'/'
+                variable_list  = ['rho_n','T_n']
+                coord_type     = 'GDZ'
+                coord_grid     = 'sph'
+                high_res       = 1.
+                verbose        = False   
+                output_type='csv' 
+                output_name='' 
+                plot_output='' 
+                plot_coord='' 
+                _print_units=False
+                temp_var = 'T_n'
+                den_var = 'rho_n'
+
+                
             print(f'|     Running data cube thru Kamodo... please hold.')
-            results = ModelFlythrough(model, file_dir, variable_list, unixtimes_list, lons_list, lats_list, alts_list,
-                                      coord_type, coord_grid, high_res=20., verbose=False,csv_output='', plot_output='')
+#             results = ModelFlythrough(model, file_dir, variable_list, unixtimes_list, lons_list, lats_list, alts_list,
+#                                       coord_type, coord_grid, high_res=20., verbose=False,csv_output='', plot_output='')
+            results  =  ModelFlythrough(model, file_dir, variable_list, 
+                                        unixtimes_list, lons_list, lats_list, alts_list, 
+                                        coord_type, coord_grid, high_res, 
+                                        verbose, output_type, output_name, plot_output, 
+                                        plot_coord, _print_units)
 
-            #### Zach modified ModelFlythrough() to include a top boundary extrapolation as well as retun N2
+            #### Zach modified ModelFlythrough() to include a top boundary extrapolation as well as retun N2 
             print(results.keys())
             end = time.time()
             elapsed = end - start
@@ -1321,15 +1457,42 @@ class PygeodynController():
             mp_cgs = 1.6726e-24    # [g] mass of proton
 
             with open(self.orbitcloud_csv_file, 'r+') as file:
-                for ii, valrho in enumerate(results['rho']):
-                    nden_O =  (results['psi_O'][ii]  * results['rho'][ii])/(mp_cgs*16)
-                    nden_O2 = (results['psi_O2'][ii] * results['rho'][ii])/(mp_cgs*32)
-                    nden_He = (results['psi_He'][ii] * results['rho'][ii])/(mp_cgs*4)
-                    nden_N2 = (results['psi_N2'][ii] * results['rho'][ii])/(mp_cgs*28)
-
-                    file.write(f"{datetime.strftime(datetime.fromtimestamp(results['utc_time'][ii]), '%y%m%d%H%M%S')}  {results['c1'][ii]:9.4f}  {results['c2'][ii]:9.4f}  {results['c3'][ii]:9.4f}  {valrho:15.6e}  {nden_O:12.5e}  {nden_O2:12.5e}  {nden_He:12.5e}  {nden_N2:12.5e}   {results['T_n'][ii]:8.4e}\n")
+                for ii, valrho in enumerate(results[den_var]):
+                    
+                    #### For tiegcm, we convert mmrs to number densities and put into cgs units
+                    if self.den_model == 'tiegcm_oc':
+                        nden_O =  (results['psi_O'][ii]  * results['rho'][ii])/(mp_cgs*16)
+                        nden_O2 = (results['psi_O2'][ii] * results['rho'][ii])/(mp_cgs*32)
+                        nden_He = (results['psi_He'][ii] * results['rho'][ii])/(mp_cgs*4)
+                        nden_N2 = (results['psi_N2'][ii] * results['rho'][ii])/(mp_cgs*28)
+                    
+                    #### For ctipe, we convert from SI to CGS 
+                    ##              ctipe only has O1, O2, and N2
+                    elif self.den_model == 'ctipe_oc':
+                        nden_O =  (results['N_O'][ii]  / 1000.)
+                        nden_O2 = (results['N_O2'][ii] / 1000.)
+                        nden_N2 = (results['N_N2'][ii] / 1000.)
+                            # fill the Helium values with zeros so as to not cause fortran formatting problems in the file read...
+                        nden_He = 0.
+                        valrho = valrho / 1000.
+                         
+                    #### For GITM, we convert from SI to CGS 
+                    ##              gitm output can be upgraded to have more than 
+                    ##                                        rho and temp
+                    elif self.den_model == 'gitm':
+                        nden_O  = 0.
+                        nden_O2  = 0.
+                        nden_N2  = 0.
+                            # fill the Helium values with zeros so as to not cause fortran formatting problems in the file read...
+                        nden_He = 0.
+                        valrho = valrho / 1000.
+                                   
+                        
+                    file.write(f"{datetime.strftime(datetime.fromtimestamp(results['utc_time'][ii]), '%y%m%d%H%M%S')}  {results['c1'][ii]:9.4f}  {results['c2'][ii]:9.4f}  {results['c3'][ii]:9.4f}  {valrho:15.6e}  {nden_O:12.5e}  {nden_O2:12.5e}  {nden_He:12.5e}  {nden_N2:12.5e}   {results[temp_var][ii]:8.4e}\n")
                         ###!!!!!   NOTE THERE IS AN EXTRA SPACE B4 TEMPERATURE BECAUSE FORTRAN SUCKS
     
+            results = 0
+            del results
             end = time.time()
             elapsed = end - start
             print(f'|     Save OrbitCloud file run rime:', elapsed,       'seconds' )
@@ -1516,27 +1679,32 @@ class PygeodynController():
                 
         '''
         
-                
+        self.unique_arc_count = 0
+       
+    
+    
         from os.path import exists
-
-        if self.den_model == 'tiegcm_oc':
-                ####   If we are using one of the models that require Kamodo, we will want to
-                ####   do a pre-run initialization to get the orbit output along the satellite using MSISe2
+        
+        ####   If we are using one of the models that require Kamodo, we will want to
+        ####   do a pre-run initialization to get the orbit output along the satellite using MSISe2
+        if  self.den_model == 'tiegcm_oc'  or \
+            self.den_model == 'ctipe_oc'   or \
+            self.den_model == 'gitm'       :
                      
             
             ### Make an execution log file
-            iarc =0
+            iarc = 0
             arc=self.arc_input[0]
             self.arcnumber = iarc
 
             self.set_file_paths_for_multiple_arcs( arc , iarc)            
-            self.set_density_model_setup_params('tiegcm_oc' )
+            self.set_density_model_setup_params(self.den_model)
             self.setup_directories_and_geodyn_input()
             self.make_output_directories()
             
-            print(f'+=======================================================================')
-            print(f'|     Running GEODYN with TIEGCM Orbit Cloud Method     ',)
-            print(f'|                                                       ',)
+            print(f'+==================================================')
+            print(f'|     Running GEODYN with Orbit Cloud Method     ',)
+            print(f'|                                                ',)
             logger = logging.getLogger(self.execlog_filename)
             logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
 
@@ -1553,11 +1721,14 @@ class PygeodynController():
                                        str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
                 self.msis2_file_path = OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin'
 
+#                 self.arcdate_for_files = str(iarc+1)+'.'+ self.YR + doy 
+#                 print('msis2_file_path',self.msis2_file_path)
+                
                 #### Check if the MSIS2 density file exists
                 file_exists = exists(self.msis2_file_path)
                 if file_exists:
                     print(f'|     MSIS2 Density file already exists.               ',)
-                    print(f'|          - {self.ARC} ',)
+                    print(f'|          - {self.ARC}_msisin ',)
                     #                     os.system('bunzip2 -v '+self.msis2_file_path)
                     #                     self.msis2_file_path =  OUTPUTDIR+'/DENSITY/'+self.ARC
                     logging.info('A similar MSIS2 output has been made. Check to see if its stepsize is consistent.')
@@ -1592,7 +1763,7 @@ class PygeodynController():
                     self.post_geodynrun_savefiles_and_cleanup()
                 
                                 
-                logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud tiegcm data. ')
+                logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud  data. ')
 
                 ### Construct the orbit cloud CSV
                 logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
@@ -1606,30 +1777,50 @@ class PygeodynController():
                 self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
                                        str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
 
-                #### Construct the file to be appended to here
-                f = open(self.orbitcloud_csv_file, "w")
-                f.write("\n")
-                f.close()
-                
-                from time import perf_counter
-                t0=perf_counter()
-                
-                print(f'|     Constructing the OrbitCloud file: \n|          -{self.orbitcloud_csv_file}')
-                print(f'|          - {self.ARC} ',)
-                print(f'|          - time 1: {perf_counter()-t0}')
-                self.set_file_paths_for_multiple_arcs( arc , iarc)            
-                self.make_orbit_cloud_csv()
-                print(f'|          - time 2: {perf_counter()-t0}')
+                #### ONLY RERUN ORBITCLOUD if PATH NOT EXIST or if file is super small (i.e. empty)
+                file_exists = exists(self.orbitcloud_csv_file)                           
+                try:
+                    orbit_cloud_csv_size = os.path.getsize(self.orbitcloud_csv_file)
+                except:
+                    orbit_cloud_csv_size = 1   
 
+                if not file_exists or orbit_cloud_csv_size < 1000: # run if file has less than 1 kilobytes  
+                    if orbit_cloud_csv_size < 1000:
+                        print(f"|     File is too small or empty: {self.orbitcloud_csv_file.split('/')[-1]}" )
+    
+                    #### Construct the file to be appended to here
+                    f = open(self.orbitcloud_csv_file, "w")
+                    f.write("\n")
+                    f.close()
+
+                    from time import perf_counter
+                    t0=perf_counter()
+
+                    print(f'|     Constructing the OrbitCloud file: \n|          -{self.orbitcloud_csv_file}')
+#                     print(f'|          - {self.ARC} ')
+#                     print(f'|          - time 1: {perf_counter()-t0}')
+                    ###########################################################
+                    self.set_file_paths_for_multiple_arcs( arc , iarc)          #  ORBIT CLOUD CALL!    
+#                     print(f'|          - {self.ARC} ')
+                    self.make_orbit_cloud_csv()                                 # 
+
+                    gc.collect()
+
+                    ###########################################################
+                    print(f'|          - time 2: {perf_counter()-t0}')
+
+                else:
+                    print(f'|     Already have OrbitCloud file for this arc: \n|          -{self.orbitcloud_csv_file}')
+                    print(f'|          - {self.ARC} ',)
 
             ### Once you have the orbitcloud csv, re-run GEODYN with the TIEGCM and orbit cloud csv
             #### RUN 2nd TIME WITH TIEGCM_oc (inputting the CSV orbitcloud) 
-            self.set_density_model_setup_params( 'tiegcm_oc' )
+            self.set_density_model_setup_params( self.den_model )
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
                 if self.satellite == 'icesat2':
                 
-                    print(f'|     Running GEODYN with TIEGCM orbit cloud')
+                    print(f'|     Running GEODYN with orbit cloud')
                     self.set_file_paths_for_multiple_arcs( arc , iarc)            
                     self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
                                    str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
@@ -1653,18 +1844,28 @@ class PygeodynController():
                 self.prepare_tmpdir_for_geodyn_run()
                 self.run_geodyn_in_tmpdir()
                 self.post_geodynrun_savefiles_and_cleanup()
-                
+                gc.collect()
         
-        elif self.den_model == 'hasdm_oc':  # regular run of GEODYN not using tiegcm Orbit Cloud
+        ### Case for the HASDM model that uses the orbit cloud
+        elif self.den_model == 'hasdm_oc':  
              
             self.set_density_model_setup_params( 'hasdm_oc' )
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
                 if self.satellite == 'icesat2':
-                    print('5 running GEODYN with HASDM textfile', arc)
-                    self.set_file_paths_for_multiple_arcs( arc , iarc)            
-                    self.orbitcloud_csv_file =(self.model_data_path+'/HASDM_OrbitCloud2018313.csv')
+#                     print('5 running GEODYN with HASDM textfile', arc)
+                    self.set_file_paths_for_multiple_arcs( arc , iarc)  
+    
                     self.model_data_path = self.run_settings['model_data_path']
+
+                    print('CHOSEN ARC:  '          , self.arcdate_for_files)
+                    print('self.model_data_path:  ', self.model_data_path)
+    
+                    self.orbitcloud_csv_file = ( self.model_data_path    +
+                                                 '/HASDM_OrbitCloud_'    +
+                                                 self.arcdate_for_files  +
+                                                 '.csv' )
+        
 
                     logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
                     
@@ -1684,12 +1885,28 @@ class PygeodynController():
                 self.run_geodyn_in_tmpdir()
                 self.post_geodynrun_savefiles_and_cleanup()
                 
-    
+                gc.collect()
+
 
         
         
         
         else:  # regular run of GEODYN not using tiegcm Orbit Cloud
+            
+#             import psutil
+#             from psutil._common import bytes2human
+#             def pprint_ntuple(nt):
+#                 for name in nt._fields:
+#                     value = getattr(nt, name)
+#                     if name != 'percent':
+#                         value = bytes2human(value)
+#                     print('%-10s : %7s' % (name.capitalize(), value))
+#             def main_memory():
+#                 print('MEMORY\n------')
+#                 pprint_ntuple(psutil.virtual_memory())
+# #                 print('\nSWAP\n----')
+# #                 pprint_ntuple(psutil.swap_memory())
+            
             
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
@@ -1701,6 +1918,15 @@ class PygeodynController():
                 self.prepare_tmpdir_for_geodyn_run()
                 self.run_geodyn_in_tmpdir()
                 self.post_geodynrun_savefiles_and_cleanup()
+                
+                gc.collect()
+
+#                 main_memory()
+
+
+# if __name__ == '__main__':
+#     main_memory()                
+
         
 
 

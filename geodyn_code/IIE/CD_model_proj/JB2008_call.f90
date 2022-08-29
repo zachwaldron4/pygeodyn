@@ -149,7 +149,15 @@
       CALL DTCVAL (D1950,IDTCVAL)
       DSTDTC = IDTCVAL
       
-
+      
+      !!!! if COSPSI is greater than one by any amount (like even in the 12th decimal point)
+      !!! it will return a nan and result in cascading errors
+      if (COSPSI.GE.1) then
+          WRITE(6,*) 'COSPSI too large: ', COSPSI
+          WRITE(6,*) '    setting equal to 1.D0 '
+          COSPSI=1.D0
+      endif 
+       
       ! Convert GEODETIC Lat to GEOCENTRIC
       XLAT_geodetic = PHI     !  GEODETIC in rads
       XLON_geodetic = XLAMB   !  GEODETIC in rads
@@ -262,6 +270,51 @@
        RHO = RHO_jb2008
 
 
+
+    !!!!  CHECK IF RHO is a NAN.  Nan will never equal itself so this method checks for nan
+       if (RHO.NE.RHO) then
+           WRITE(6,*) '*****   ERROR in JB2008_call.f90   *****'
+           WRITE(6,*) '        JB2008 returned RHO as NAN      '
+           WRITE(6,*) '           RHO = ', RHO_jb2008
+           
+           
+           WRITE(6,*) 'INPUTS to CALL JB2008()     '
+           WRITE(6,*) '   AMJD      ', AMJD
+           WRITE(6,*) '   SUN       ', SUN
+           WRITE(6,*) '   SAT       ', SAT
+           WRITE(6,*) '   COSPSI (sat(2))  ', COSPSI
+           WRITE(6,*) '   ACOS(COSPSI)     ',  ACOS(COSPSI)
+           WRITE(6,*) '   F10       ', F10
+           WRITE(6,*) '   F10B      ', F10B
+           WRITE(6,*) '   S10       ', S10
+           WRITE(6,*) '   S10B      ', S10B
+           WRITE(6,*) '   XM10      ', XM10
+           WRITE(6,*) '   XM10B     ', XM10B
+           WRITE(6,*) '   Y10       ', Y10
+           WRITE(6,*) '   Y10B      ', Y10B
+           WRITE(6,*) '   DSTDTC    ', DSTDTC
+           WRITE(6,*) '   TEMP_jb2008      ', TEMP_jb2008
+           WRITE(6,*) '   RHO_jb2008       ', RHO_jb2008
+           WRITE(6,*) 'OUTPUTS ------'
+           WRITE(6,*) '   N2      ', n_dens_temp(1)
+           WRITE(6,*) '   O2      ', n_dens_temp(2)
+           WRITE(6,*) '   O       ', n_dens_temp(3)
+           WRITE(6,*) '   Ar      ', n_dens_temp(4)
+           WRITE(6,*) '   He      ', n_dens_temp(5)
+           WRITE(6,*) '   H       ', n_dens_temp(6)
+           WRITE(6,*) ' '
+           WRITE(6,*) '   RHO_jb2008    ', n_dens_temp(7)
+           WRITE(6,*) '   Exosph. Temp. ', n_dens_temp(8)
+           WRITE(6,*) '   Ambient Temp  ', n_dens_temp(9)
+           WRITE(6,*) '*********************************************'
+       endif
+           
+           
+           
+
+           
+           
+           
        !!!!   CALCUALTE DRHODZ
        GSURF_ZL = GSURF*(RE/(RE + ZL) )**2
        TERM1 = ((-1.66D-24*GSURF_ZL)/RGAS)    

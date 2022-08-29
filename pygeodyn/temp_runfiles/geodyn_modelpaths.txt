@@ -1,2 +1,2 @@
-/data/data_geodyn/atmos_models_data/tiegcm/2018/Nov2018_ccmcRoR
+/data/data_geodyn/atmos_models_data/gitm/icesat2_oct2018_jan2019/data
 none

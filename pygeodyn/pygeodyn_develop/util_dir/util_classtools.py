@@ -67,42 +67,67 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'hasdm_oc'
             self.iisset_den = '86'
+        elif den_model == 'ctipe_oc':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'ctipe_oc'
+            self.iisset_den = '86'
 
         elif den_model == 'jb2008':
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jb2008'
             self.iisset_den = '71'
             
-        elif den_model == 'dtm2020':   
+        elif den_model == 'dtm2020_o':   
             self.DEN_DIR       = den_model
-            self.SETUP_DEN_DIR = 'dtm2020'
+            self.SETUP_DEN_DIR = 'dtm2020_o'
             self.iisset_den = '87' # Will run GEODYN WITH DTM87 according to IIS, but switch out for DTM2020 in DRAG.f90
-            
-        else:
-            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, tiegcm_oc, jb2008, dtm2020]')   
+        
+        elif den_model == 'dtm2020_r':   ### use the research vers. of dtm2020
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'dtm2020_r'
+            self.iisset_den = '87' # Will run GEODYN WITH DTM87 according to IIS, but switch out for DTM2020 in DRAG.f90        else:
+            print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, tiegcm_oc, jb2008, dtm2020_o]')   
 
-            
+        elif den_model == 'gitm':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'gitm'
+            self.iisset_den = '86'
+
+        #### -------------------------------------------------------    
+        #### For the Physics models that are connected via Kamodo,
+        ####  Write the data path to a file to be read by fortran.
+        ####
         from re import search
-
         if search('tiegcm', self.DEN_DIR):
             if self.satellite == 'icesat2':
-                
                 self.model_data_path = self.run_settings['model_data_path']
-                
                 filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
         elif search('hasdm', self.DEN_DIR):
             if self.satellite == 'icesat2':
-                
                 self.model_data_path = self.run_settings['model_data_path']
+                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels.writelines(self.model_data_path+'\n')
+                filemodels.writelines('none'+'\n')
+                filemodels.close()
                 
+        elif search('ctipe', self.DEN_DIR):
+            if self.satellite == 'icesat2':
+                self.model_data_path = self.run_settings['model_data_path']
                 filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
 
+        if search('gitm', self.DEN_DIR):
+            if self.satellite == 'icesat2':
+                self.model_data_path = self.run_settings['model_data_path']
+                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels.writelines(self.model_data_path+'\n')
+                filemodels.writelines('none'+'\n')
+                filemodels.close()                
             
     def make_directory_check_exist(self, directory, verbose=False):
         if verbose:
@@ -150,8 +175,12 @@ class Util_Tools:
         elif density_model== 'tiegcm_oc':
             model_val = '6'
         elif density_model== 'hasdm_oc':
-            model_val = '6'
-        #
+            model_val = '7'
+        elif density_model== 'ctipe_oc':
+            model_val = '8'
+        elif density_model== 'gitm':
+            model_val = '9'        
+
         ### The following models are run with 71 (jaachia71) as the input to IIS on the ATMDEN CARD    
         elif density_model== 'jaachia71':
             model_val = '0'       
@@ -161,8 +190,10 @@ class Util_Tools:
         ### The following models are run with 87 (dtm87) as the input to IIS on the ATMDEN CARD    
         elif density_model== 'dtm87':
             model_val = '0'
-        elif density_model== 'dtm2020':
+        elif density_model== 'dtm2020_o':
             model_val = '1'
+        elif density_model== 'dtm2020_r':
+            model_val = '2'
         #        
         #
         else:
@@ -718,7 +749,7 @@ class Util_Tools:
                     'gravfield_file',
                     'arc_length',
                     'path_to_model',
-                      ]
+                    'arcdate_v2']
         
         data_keys.append('run_parameters'+arc)
         data_keys.append('global_params')
@@ -763,7 +794,12 @@ class Util_Tools:
 
             for i_del in to_move_and_delete:         
                 del self.__dict__[i_del]
-            
+                
+                
+            ### Delete the extra stuff in to runparams##arc## and globalparams
+            del self.__dict__['global_params']['run_settings']['request_data']
+#             for i_del in to_move_and_delete:         
+
         return(self)
             
         

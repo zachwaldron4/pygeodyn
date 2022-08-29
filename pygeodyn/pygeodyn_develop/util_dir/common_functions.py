@@ -180,7 +180,7 @@ def Convert_cartesian_to_RSW(state_vector):
 #     w = r_vec_RSW[2]
     return r
 
-def Convert_cartesian_to_RSW_returnall(state_vector):
+def Convert_cartesian_to_RSW_returnall(state_vector, Tmat_input, PCE_bool = True):
     '''
     ###### The Satellite Coordinate System: RSW
     ### often used to describe orbital errors, relative positions, and displacements of satellite orbits. 
@@ -197,7 +197,6 @@ def Convert_cartesian_to_RSW_returnall(state_vector):
     ##### Radial component:
     ###    Radial positions and displacements are parallel
     ###    to the position vector (along the R axis).
-
 
     ##### Along track or Transverse
     ###   normal to the position vector (along the S axis)
@@ -225,7 +224,16 @@ def Convert_cartesian_to_RSW_returnall(state_vector):
     ###    so...
     ###
     ###        R_vec_rsw =   R_vec_ijk * T^-1
-    transmat_RSW =  np.transpose(np.array([R_hat, S_hat, W_hat ]))
+    
+    if PCE_bool == True:
+        transmat_RSW  =  [[ R_hat[0] , S_hat[0] , W_hat[0] ],
+                          [ R_hat[1] , S_hat[1] , W_hat[1] ],
+                          [ R_hat[2] , S_hat[2] , W_hat[2] ] ]
+    else:
+        transmat_RSW = Tmat_input
+
+    
+#     transmat_RSW =  np.transpose(np.array([R_hat, S_hat, W_hat ]))
     inverse_transmat_RSW = np.linalg.inv(transmat_RSW)
 
 
@@ -233,7 +241,7 @@ def Convert_cartesian_to_RSW_returnall(state_vector):
     r = r_vec_RSW[0]
     s = r_vec_RSW[1]
     w = r_vec_RSW[2]
-    return r,s,w
+    return r_vec_RSW, transmat_RSW #r,s,w
 
 
 

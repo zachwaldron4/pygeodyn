@@ -313,16 +313,14 @@
 
        end do   !!!! CHANGE HERE
 
-          
-    !!!! Interpolate the various FIELDS stored in the "data cube"
-    call trilinear_interp(GLON,GLAT,ALTKM,rhos,     n_dens_temp(1))
-    call trilinear_interp(GLON,GLAT,ALTKM,ndens_O1, n_dens_temp(2))
-    call trilinear_interp(GLON,GLAT,ALTKM,ndens_O2, n_dens_temp(3))
-    call trilinear_interp(GLON,GLAT,ALTKM,ndens_HE, n_dens_temp(4))
-    call trilinear_interp(GLON,GLAT,ALTKM,ndens_N2, n_dens_temp(5))
-    call trilinear_interp(GLON,GLAT,ALTKM,Temps,    n_dens_temp(6))
-
-   
+    if(kamodo_model=='TIEGCM') then  
+        !!!! Interpolate the various FIELDS stored in the "data cube"
+        call trilinear_interp(GLON,GLAT,ALTKM,rhos,     n_dens_temp(1))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_O1, n_dens_temp(2))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_O2, n_dens_temp(3))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_HE, n_dens_temp(4))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_N2, n_dens_temp(5))
+        call trilinear_interp(GLON,GLAT,ALTKM,Temps,    n_dens_temp(6))
       if(ICNT.eq.1)then
           WRITE(6,*) 'rho_interpd      ',  n_dens_temp(1) ! g/cm^3
           WRITE(6,*) 'ndenO1_interpd   ',  n_dens_temp(2)  ! #/cm^3
@@ -331,36 +329,91 @@
           WRITE(6,*) 'ndenN2_interpd   ',  n_dens_temp(5)  ! #/cm^3
           WRITE(6,*) 'Temp_interpd     ',  n_dens_temp(6)  ! Kelvin
       endif
-
+    endif
+     
+    if(kamodo_model=='CTIPe') then  
+        !!!! Interpolate the various FIELDS stored in the "data cube"
+        call trilinear_interp(GLON,GLAT,ALTKM,rhos,     n_dens_temp(1))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_O1, n_dens_temp(2))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_O2, n_dens_temp(3))
+        call trilinear_interp(GLON,GLAT,ALTKM,ndens_N2, n_dens_temp(5))
+        call trilinear_interp(GLON,GLAT,ALTKM,Temps,    n_dens_temp(6))
+        if(ICNT.eq.1)then
+          WRITE(6,*) 'rho_interpd      ',  n_dens_temp(1) ! g/cm^3
+          WRITE(6,*) 'ndenO1_interpd   ',  n_dens_temp(2)  ! #/cm^3
+          WRITE(6,*) 'ndenO2_interpd   ',  n_dens_temp(3)  ! #/cm^3
+          WRITE(6,*) 'ndenN2_interpd   ',  n_dens_temp(5)  ! #/cm^3
+          WRITE(6,*) 'Temp_interpd     ',  n_dens_temp(6)  ! Kelvin
+        endif
+    endif
+   
+   
+   
+    if(kamodo_model=='GITM') then  
+        !!!! Interpolate the various FIELDS stored in the "data cube"
+        call trilinear_interp(GLON,GLAT,ALTKM,rhos,     n_dens_temp(1))
+        !call trilinear_interp(GLON,GLAT,ALTKM,ndens_O1, n_dens_temp(2))
+        !call trilinear_interp(GLON,GLAT,ALTKM,ndens_O2, n_dens_temp(3))
+        !call trilinear_interp(GLON,GLAT,ALTKM,ndens_N2, n_dens_temp(5))
+        call trilinear_interp(GLON,GLAT,ALTKM,Temps,    n_dens_temp(6))
+        if(ICNT.eq.1)then
+          WRITE(6,*) 'rho_interpd      ',  n_dens_temp(1) ! g/cm^3
+        !  WRITE(6,*) 'ndenO1_interpd   ',  n_dens_temp(2)  ! #/cm^3
+        !  WRITE(6,*) 'ndenO2_interpd   ',  n_dens_temp(3)  ! #/cm^3
+        !  WRITE(6,*) 'ndenN2_interpd   ',  n_dens_temp(5)  ! #/cm^3
+          WRITE(6,*) 'Temp_interpd     ',  n_dens_temp(6)  ! Kelvin
+        endif
+    endif   
+   
+    if ( kamodo_model == "HASDM" ) then
+        call trilinear_interp(GLON,GLAT,ALTKM,rhos,  n_dens_temp(1))
+        RHO = n_dens_temp(1)
+        DRHODZ = 0.D0 
+        n_dens_temp(2)   = 0.D0
+        n_dens_temp(3)   = 0.D0
+        n_dens_temp(4)   = 0.D0
+        n_dens_temp(5)   = 0.D0
+        n_dens_temp(6)   = 0.D0
+                  
+        if(ICNT.eq.1)then
+          WRITE(6,*) 'Using hasdm   ', kamodo_model
+          WRITE(6,*) '---------------------------'
+          WRITE(6,*) 'rho_interpd      ',  n_dens_temp(1) ! g/cm^3
+          WRITE(6,*) '   hasdm only provides rho, no constituents'
+        endif
+      end if
+   
    
     RHO = n_dens_temp(1)*1000.D0
     !DRHODZ = 0
 
 
-!  UPDATED
-!  DRHO/DZ CALCULATION.
-! Zach-- added O2 
-! Zach-- Made the GSURF consistent with ZL
-! Zach-- Added separate term for the AnomO scale height
-!           to account for the anomolous temperature (4000 K)
-! Zach-- Added a flag to for easier version call for comparison runs.
+!  ZACH WALDRON UPDATED THE DRHO/DZ CALCULATION.
+        ! Zach-- added O2 
+        ! Zach-- Made the GSURF consistent with ZL
+        ! Zach-- Added separate term for the AnomO scale height
+        !           to account for the anomolous temperature (4000 K)
+        ! Zach-- Added a flag to for easier version call for comparison runs.
 !
 !
-!
-!    ndenO1_interpd   ',  n_dens_temp(2)
-!    ndenO2_interpd   ',  n_dens_temp(3)
-!    ndenHE_interpd   ',  n_dens_temp(4)
-!    ndenN2_interpd   ',  n_dens_temp(5)
-!    Temp_interpd     ',  n_dens_temp(6)
-         
+!         
       GSURF_ZL = GSURF*(RE/(RE + ZL) )**2
 !
       TERM1 = ((-1.66D-24*GSURF_ZL)/RGAS) 
-      TERM_species = (  16.D0  * n_dens_temp(4)   +   &  ! n_HE
+      
+    if(kamodo_model=='TIEGCM') then  
+        TERM_species = (16.D0  * n_dens_temp(4)   +   &  ! n_HE
            &            256.D0 * n_dens_temp(2)   +   &  ! n_O1
            &            784.D0 * n_dens_temp(5)   +   &  ! n_N2
            &            1024.D0* n_dens_temp(3)       &  ! n_O2
-           &                     )*(1/n_dens_temp(6))
+           &                     )*(1/n_dens_temp(6))    
+    endif
+    if(kamodo_model=='CTIPe') then  
+        TERM_species = (256.D0 * n_dens_temp(2)   +   &  ! n_O1
+           &            784.D0 * n_dens_temp(5)   +   &  ! n_N2
+           &            1024.D0* n_dens_temp(3)       &  ! n_O2
+           &                     )*(1/n_dens_temp(6))    
+    endif
 !           
       TERMnorm1 = 1.D0/(1.D0 + ZL/RE)**2
       TERMnorm2 = ((RE+ZL)/(RE+ALTKM))**2    
@@ -373,8 +426,28 @@
       endif
 
 
+      
+      
+      
 
+      
+          
 !                                                                       &
 
    99 RETURN
       END
+
+
+
+
+
+!    ndenO1_interpd   ',  n_dens_temp(2)
+!    ndenO2_interpd   ',  n_dens_temp(3)
+!    ndenHE_interpd   ',  n_dens_temp(4)
+!    ndenN2_interpd   ',  n_dens_temp(5)
+!    Temp_interpd     ',  n_dens_temp(6)
+
+
+
+
+

@@ -1,3 +1,9 @@
+# About this repo
+
+This repo includes kamodo-core as a submodule, which includes core functionality and default plotting options. This CCMC repository contains model and data output readers as well as extra functionality such as satellite flythrough.
+
+See the file Kamodo_CCMC_InstallationInstructions.md for detailed setup steps.
+
 # Kamodo
 
 [![codecov](https://codecov.io/gh/asherp/Kamodo/branch/master/graph/badge.svg?token=W1B3L19REF)](https://codecov.io/gh/asherp/Kamodo)
@@ -77,9 +83,9 @@ import plotly.io as pio
 fig = kamodo.plot('fvec')
 pio.write_image(fig, 'images/fig2d-usage.svg')
 ```
-![usage](docs/notebooks/images/fig2d-usage.svg)
+![usage](notebooks/images/fig2d-usage.svg)
 
-Head over to the [Introduction](docs/notebooks/Kamodo.ipynb) page for more details.
+Head over to the [Introduction](notebooks/Kamodo.ipynb) page for more details.
 
 
 ## Getting started

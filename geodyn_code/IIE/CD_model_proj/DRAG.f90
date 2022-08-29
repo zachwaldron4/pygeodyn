@@ -259,6 +259,7 @@
       integer :: choose_model
       integer :: i  
       CHARACTER(len = 20) kamodo_model
+      CHARACTER(len = 1)  dtmversion_model
 
 
      
@@ -293,7 +294,7 @@
 !
 !      
       KENTRY = KENTRY + 1
-      FLUSH(6)
+!      FLUSH(6)
 !-------------------------------------------------------------------------------------------------
 !  
 ! Read in the options file from pygeodyn. We only need/want to do this once.
@@ -396,7 +397,7 @@
 ! IF IATDEN=41,42,43  USE FRENCH DENSITY MODEL;
 ! IF IATDEN=31,32,33  USE JACCHIA MODEL
 ! IF IATDEN=51,52,53  USE MSIS86 MODEL
-! IF IATDEN=61,62,63  USE MSIS2 MODEL 
+
 ! IATDEN MUST BE DIVIDED BY 10 BECAUSE IT IS NOW A TWO DIGIT NUMBER
 ! ONE OF THE FOLLOWING: 10,20,30,41,42,43 ... 51,52,52 ...61,62,63
 !
@@ -528,20 +529,44 @@
             C(1)=DRHODZ
       
            
-         ! DTM2020 case
-         case(1)!--------------------------------------------------------------------- case 1 -- DTM2020
-            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM2020'
+         ! DTM2020 Operational case
+         case(1)!--------------------------------------------------------------------- case 1 -- DTM2020 Operational
+            dtmversion_model='o'
+            IMARK = IND3HR
+            IKPAP = 1 ! tells FLUXM(1) to contain Kp values
+            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM2020_oper'
+           
+            !! Allocate the Number density/temperature array to be used with DRIA
+            if(kentry.eq.1) allocate(n_dens_temp(10))
+
+
+
+            CALL DTM2020_call(MJDSEC,FSEC,                  &
+              &               FLUXIN,FLXAVG,FLUXKP,         &
+              &               ALTI,PHI,XLAMB,               &
+              &               COSHLN,SINHLN,                &
+              &               RHO,DRHODZ, dtmversion_model, &
+              &               FLUXM(1),IMARK,IKPAP,I324)
+            C(1)=DRHODZ
+
+         ! DTM2020 Research case
+         case(2)!--------------------------------------------------------------------- case 1 -- DTM2020 Research
+            dtmversion_model='r'
+            IMARK = IND3HR
+            IKPAP = -1  ! tells FLUXM(1) to contain Ap values
+
+            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM2020_res'
             
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(10))
 
-            CALL DTM2020_call(MJDSEC,FSEC,                &
-              &               FLUXIN,FLXAVG,FLUXKP,        &
-              &               ALTI,PHI,XLAMB,             &
+            CALL DTM2020_call(MJDSEC,FSEC,                  &
+              &               FLUXIN,FLXAVG,FLUXKP,         &
+              &               ALTI,PHI,XLAMB,               &
               &               COSHLN,SINHLN,                &
-              &               RHO,DRHODZ)
+              &               RHO,DRHODZ, dtmversion_model, &
+              &               FLUXM(1),IMARK,IKPAP,I324)
             C(1)=DRHODZ
-
 
          end select !------------------------------------------------------------------ End dtm model cases
       ENDIF ! end if for DTM Series of Models [IF(IATDN.EQ.4) THEN]
@@ -570,7 +595,7 @@
             CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
             IYR=(IYMD/10000.D0)+0.5D0
             CALL MSIS86(DAY,IYR,ALTI,PHI,XLAMB,COSHLN,SINHLN,   &
-             &       FLUXIN,FLXAVG,FLUXM(1),IMARK,IKPAP,        &
+             &       FLUXIN,FLXAVG,FLUXM(1),IMARK,IKPAP,        & !XKP,INDEX,IKPAP,I324
              &       I324,IDRV,RHO,DRHODZ,IERR)
             C(1)=DRHODZ
             if(kentry.eq.1)then
@@ -603,7 +628,6 @@
             IJDSEC=MJDSEC+FSEC
             CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
             IYR=(IYMD/10000.D0)+0.5D0
-                 
             if(kentry.eq.1) allocate(n_dens_temp(11) )
 
             CALL MSIS2(DAY,IYR,ALTI,PHI,XLAMB,COSHLN,SINHLN,           &
@@ -621,7 +645,7 @@
             ! Use Kamodo command line if case is greater than or equal to 3>=5
             if(choose_model.eq.3) kamodo_model='CTIPe'
             if(choose_model.eq.4) kamodo_model='TIEGCM'
-            if(choose_model.eq.5) kamodo_model='GITM'
+            !if(choose_model.eq.5) kamodo_model='GITM'
                  
             if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 ------- '
             if(kentry.eq.1) WRITE(6,*) '|                                 '
@@ -644,6 +668,9 @@
                   ! Use Kamodo_orbit cloud method if case is greater than 6
 
             if(choose_model.eq.6) kamodo_model='TIEGCM'  
+            if(choose_model.eq.7) kamodo_model='HASDM'  
+            if(choose_model.eq.8) kamodo_model='CTIPe'  
+            if(choose_model.eq.9) kamodo_model='GITM'  
 
             if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 -----------------'
             if(kentry.eq.1) WRITE(6,*) '|  Using the Orbit Cloud method.           '
@@ -666,6 +693,8 @@
                               &  kamodo_model,model_path,               &
                               &  orbitcloud_file,n_dens_temp )
             C(1)=DRHODZ
+            
+            
 
 
        end select !------------------------------------------------------------------ End MSIS/Kamodo cases
@@ -708,10 +737,49 @@
 
 
   160 CONTINUE 
+  
+!#############################################################################
+!     
+!                      END DENSITY MODEL SAMPLING
+!
+!#############################################################################
+
 
       !!! CHECK THE VALUES OF THE DENSITY and DRHODZ
       if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] rho    =', RHO
       if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] drhodz =', DRHODZ
+      
+      ! If rho is a nan, stop the program and tell the user
+      if (RHO.NE.RHO) then
+        WRITE(6,*) '*****   ERROR in DRAG.f90   *****'
+        WRITE(6,*) '           RHO is NAN            '
+        WRITE(6,*) ' '
+        WRITE(6,*) '           RHO    = ', RHO
+        WRITE(6,*) '           DRHODZ = ', DRHODZ
+        WRITE(6,*) '           KENTRY = ', KENTRY
+        WRITE(6,*) '**********************************'          
+      endif
+      if (RHO.LT.1.0D-30) then
+        WRITE(6,*) '*****   ERROR in DRAG.f90   *****'
+        WRITE(6,*) '           RHO is way too small  '
+        WRITE(6,*) ' '
+        WRITE(6,*) '           RHO    = ', RHO
+        WRITE(6,*) '           DRHODZ = ', DRHODZ
+        WRITE(6,*) '           KENTRY = ', KENTRY
+        WRITE(6,*) '**********************************'          
+      endif
+      if (RHO.GT.1.D0) then
+        WRITE(6,*) '*****   ERROR in DRAG.f90   *****'
+        WRITE(6,*) '           RHO is way too big  '
+        WRITE(6,*) ' '
+        WRITE(6,*) '           RHO    = ', RHO
+        WRITE(6,*) '           DRHODZ = ', DRHODZ
+        WRITE(6,*) '           KENTRY = ', KENTRY
+        WRITE(6,*) '**********************************'          
+      endif
+
+
+      
       
       !!! Calculate the Relative velocity vector
       XDOTR=XDOT+THDOT*HTSCAL*Y
@@ -1262,6 +1330,8 @@
          
          if(kentry.eq.1) WRITE(6,*) ' [DRAG_b4_DRIA] - TC1   ', TC1
          CD_drag=0.0D0
+         
+         !!!! In this case, TC1 is overwritten as the CLL-GSI drag coefficient
          CALL MODDRIA(AA(JTDNRM),AA(JTDNR2),AA(JTDNR3),         &
                &      NFACE, VEL, XDOTR, YDOTR, ZDOT,           &
                &      AA(JBWARE),MEANMOL_atm,TEMP_atm,NOXA_atm, &
@@ -1269,7 +1339,8 @@
                &      ISHFLG,AA(KSDIND),B0,B,SCAREA,RHO,        &
                &      TC1,TOTARE)
           
-
+         
+         
          if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- TC1     ', TC1
          if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- CD_CoeffOnly  ', CD_drag
          ! the DXDD, PXDDT, and TC1 were all updated in MODDRIA
@@ -1285,8 +1356,14 @@
       ENDIF                                                         
       IF(LORBIT) RETURN
       
-      
-      
+    ! just an example for ref.  
+    ! IJDSEC=MJDSEC+FSEC
+    ! CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
+
+
+    ! DEBUG PRINT THE DATE
+    ! WRITE(6,*) ' [Date]  YYMMDD HHMMSS FSSTRT  ', IYMD, IHMS, FSSTRT
+    ! WRITE(6,*) '         rho drhodz  ', RHO, DRHODZ
 
 ! *****  PRINT THE DENSITY FILE ***********************************
       IF(LSTINR) THEN

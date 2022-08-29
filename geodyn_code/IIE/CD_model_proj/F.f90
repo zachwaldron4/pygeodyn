@@ -697,12 +697,6 @@
 !       if( kentry .gt. 10 ) stop
 !
 !                                                                       &
-      if(kentry.eq.1)then
-          WRITE(6,*) ' '
-          WRITE(6,*) '================================================='
-          WRITE(6,*) '        F.f90 (1st entry only)                   '
-          WRITE(6,*) '-------------------------------------------------'
-      endif
 
       FSSTRT=MJDSEC+FSEC-ESSTRT
       TIME  =MJDSEC+FSEC
@@ -948,7 +942,16 @@
            ENDIF
 
 
-      if(kentry.eq.1)then
+        if( .not.LALL .or. kentry.eq.2) then
+        write(6,*) '[f.f90] ************************************************************ '
+        write(6,*) '[f.f90]    Forces in this run: '
+        write(6,*) '   ##   FORCE                                LCALL, LFHIRT, LFILLREG '
+        do iforce=1,Ntotforces                                
+          write(6,'(1x,i5,3x,A, 3x, L1,3x,L1,3x,L1)')          &
+     &              iforce, highrate_label(iforce),                  &
+     &              LCALL(iforce), LFHIRT( iforce), LFILLREG(iforce) 
+        enddo
+        
         write(6,*) '[f.f90]:  Ntotforces ', Ntotforces
         write(6,*) '[f.f90]:  LFHIRT     ', LFHIRT
         write(6,*) '[f.f90]:  LCALL      ', LCALL
@@ -956,17 +959,9 @@
         write(6,*) '[f.f90]:  LFILLHR    ', LFILLHR
         write(6,*) '[f.f90]:  LDYNHR     ', LDYNHR
         write(6,*) '[f.f90]:  LDYNREG    ', LDYNREG
-      endif
-!                                                                       &
-        if( .not.LALL .or. kentry.eq.1) then
-        write(6,*) '[f.f90]    Forces in this run: '
-        write(6,*) '   ##   FORCE               LCALL, LFHIRT, LFILLREG '
-        do iforce=1,Ntotforces                                
-          write(6,'(1x,i5,3x,A, 3x, L1,3x,L1,3x,L1)')          &
-     &              iforce, highrate_label(iforce),                  &
-     &              LCALL(iforce), LFHIRT( iforce), LFILLREG(iforce) 
-        enddo
-        write(6,*) '[f.f90] ------------------------------------------ '
+        write(6,*) '[f.f90]:  LALL       ', LALL
+
+        write(6,*) '[f.f90] ************************************************************ '
 
         endif
 
@@ -1160,6 +1155,21 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
          IF(LFILLREG(8)) XDDOT(1:3,ISAT) = tmp_acc(1:3)
+         
+         if(kentry.eq.2 .and. LFILLREG(8))then
+            write(6,*) '[f.f90]:  EARTH GEOPOTENTIAL ACCELERATION IN TRUE OF REF '
+            write(6,*) '[f.f90]:        LCALL(8)   '
+            write(6,*) '[f.f90]:        tmp_acc(1) ', tmp_acc(1)
+            write(6,*) '[f.f90]:        tmp_acc(2) ', tmp_acc(2)
+            write(6,*) '[f.f90]:        tmp_acc(3) ', tmp_acc(3)
+            write(6,*) '  '
+         endif
+
+         geopot_acc_mag = ( SQRT(tmp_acc(1)**2.D0 +  &
+                           &     tmp_acc(2)**2.D0 +  &
+                           &     tmp_acc(3)**2.D0)       )
+
+
 
 !   LFILLHR = FILL THE HIGH RATE ARRAY
          IF(LFILLHR(8)) XDDTHR(1:3,ISAT)  = tmp_acc(1:3)
@@ -1240,6 +1250,18 @@
       XDDOT(1,ISAT)=XDDOT(1,ISAT)+tmp_acc(1)-XPSA(1)*GM/RSA3
       XDDOT(2,ISAT)=XDDOT(2,ISAT)+tmp_acc(2)-XPSA(2)*GM/RSA3
       XDDOT(3,ISAT)=XDDOT(3,ISAT)+tmp_acc(3)-XPSA(3)*GM/RSA3
+      
+      
+      if(kentry.eq.2 .and. LCALL(8))then
+        write(6,*) '[f.f90]:  GRAV. ATTR. FROM SECONARY ASTEROID TRUE OF REF '
+        write(6,*) '[f.f90]:        LCALL(8)   '
+        write(6,*) '[f.f90]:        (1) ', tmp_acc(1)-XPSA(1)*GM/RSA3
+        write(6,*) '[f.f90]:        (2) ', tmp_acc(2)-XPSA(2)*GM/RSA3
+        write(6,*) '[f.f90]:        (3) ', tmp_acc(3)-XPSA(3)*GM/RSA3
+        write(6,*) '  '
+      endif
+
+      
       IF(LSTINR.AND.NPVAL0(IX2GM).GT.0) THEN
         IPGM=NEQN
         PXDDEX(IPGM,1,ISAT)=(tmp_acc(1)-XPSA(1)*GM/RSA3)/GM
@@ -1481,6 +1503,20 @@
 !   LFILLREG = FILL THE REGULAR XDDOT
           IF(LFILLREG(12))  DXDD(1:3) = tmp_acc(1:3)
 
+           if(kentry.eq.2 .and. LFILLREG(12))then
+              write(6,*) '[f.f90]:  3rd BODY ACCEL & IND.OBLATION ACCEL. '
+              write(6,*) '[f.f90]:        LCALL(12)   '
+              write(6,*) '[f.f90]:        tmp_acc(1) ', tmp_acc(1)
+              write(6,*) '[f.f90]:        tmp_acc(2) ', tmp_acc(2)
+              write(6,*) '[f.f90]:        tmp_acc(3) ', tmp_acc(3)
+              write(6,*) '  '
+           endif
+
+           thirdBod_acc_mag = ( SQRT(tmp_acc(1)**2.D0 +  &
+                               &     tmp_acc(2)**2.D0 +  &
+                               &     tmp_acc(3)**2.D0)       )
+
+
 !   LFILLHR = FILL THE HIGH RATE ARRAY
           IF(LFILLHR(12)) DDTHR_TOD(1:3)  = tmp_acc(1:3)
 
@@ -1499,6 +1535,15 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
          IF(LFILLREG(12))  DXDD(1:3)=DXDD(1:3)+XDDTMP(1:3)
+           if(kentry.eq.2 .and. LFILLREG(12))then
+              write(6,*) '[f.f90]:  LMOON: EARTH J2 PERTURBATIONS AND '
+              write(6,*) '[f.f90]:  MOON INDIRECT J2 PERT. O A LUNAR ORBITER '
+              write(6,*) '[f.f90]:     LMOON, LCALL(12)   '
+              write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+              write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+              write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+              write(6,*) '  '
+           endif
 
 !   LFILLHR = FILL THE HIGH RATE ARRAY
          IF(LFILLHR(12)) DDTHR_TOD = DDTHR_TOD + XDDTMP(1:3)
@@ -1570,6 +1615,10 @@
       ntide1 = MAX( ntide, 1)
       net1 = MAX( net, 1)
       IF(.NOT.LRAY) THEN
+       if(kentry.eq.2)then
+         write(6,*) '[f.f90]:  calling TIDCON'
+       endif
+
       CALL TIDCON(ntide1,net1,                                          &
      &           MJDSEC,FSEC,XTEMP,AA(INDVR+3),ISAT,AA(KAORN+INDNMX),   &
      &           AA(KTHG+NCARG),AA(KTIDE),AA(KFI),AA(KGE),II(KMM),      &
@@ -1586,6 +1635,9 @@
       ELSE
       NTDDOO=NTIDE
       IF(NDOODN.GT.NTIDE) NTDDOO=NDOODN
+       if(kentry.eq.2)then
+         write(6,*) '[f.f90]:  calling TDCONR'
+       endif
       CALL TDCONR(MJDSEC,FSEC,AA(KCONAM),AA(KANGT),AA(KTWRK1),          &
      &            AA(KGRDAN),AA(KUANG),AA(KFAMP),II(KPTDN),II(KOTFLG),  &
      &            AA(KTIDE),AA(KOFACT),AA(KXPRFL+INDEXP),II(KPRESP),    &
@@ -1599,6 +1651,24 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(9)) THEN
+
+
+
+
+             if(kentry.eq.2)then
+                write(6,*) '[f.f90]:  TIDAL ACCELERATIONS - TOD -------'
+                write(6,*) '[f.f90]:        LCALL(9)  '
+                write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+                write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+                write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+                write(6,*) '  '
+             endif
+              
+             tidal_acc_mag =  ( SQRT(XDDTMP(1)**2.D0 +  &
+                               &     XDDTMP(2)**2.D0 +  &
+                               &     XDDTMP(3)**2.D0)       )
+
+             
               DXDD(1)=DXDD(1)+XDDTMP(1)
               DXDD(2)=DXDD(2)+XDDTMP(2)
               DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -1673,6 +1743,15 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
                IF(LFILLREG(3)) THEN
+               
+                if(kentry.eq.2)then
+                  write(6,*) '[f.f90]:  GENERAL ACCELERATION - TOD ------'
+                  write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+                  write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+                  write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+                  write(6,*) '  '
+                endif
+
                  DXDD(1)=DXDD(1)+XDDTMP(1)
                  DXDD(2)=DXDD(2)+XDDTMP(2)
                  DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -1856,6 +1935,9 @@
 !    &  AA(KCSTHT),NFACE,NMOVE,.TRUE.,IDSATS,II(KIDATB),AA(KSABIA),     &
 !    &  AA(KSBTM1),AA(KSBTM2),AA(KVLOUV),II(KNSTLV),II(KSLVID),         &
 !    &  AA(KTSLOV), AA,ISATID,ROT,ATROT)
+         
+         !debug
+!         WRITE(6,*) ' calling iceatt: LVCL', LVCL
 
         CALL ICEATT(MJDSEC,FSEC,XTEMP(1),XTEMP(4),AA(JBFNRM),           &
         AA(JBFNR2),AA(JBFNR3),AA(JTDNRM),AA(JTDNR2),AA(JTDNR3),         &
@@ -2004,6 +2086,21 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(1)) THEN
+          
+              if(kentry.eq.2)then
+                write(6,*) '[f.f90]:  DRAG ACCELERATION - TOD -------'
+                write(6,*) '[f.f90]:        LCALL(1)  '
+                write(6,*) '[f.f90]:        LCALL', LCALL
+                write(6,*) '[f.f90]:        DRGACC(1) ', DRGACC(1)
+                write(6,*) '[f.f90]:        DRGACC(2) ', DRGACC(2)
+                write(6,*) '[f.f90]:        DRGACC(3) ', DRGACC(3)
+                write(6,*) '  '
+               endif
+        drag_acc_mag = (   SQRT(DRGACC(1)**2.D0 +  &
+                          &     DRGACC(2)**2.D0 +  &
+                          &     DRGACC(3)**2.D0)      )
+
+
               DXDD(1)=DXDD(1)+DRGACC(1)
               DXDD(2)=DXDD(2)+DRGACC(2)
               DXDD(3)=DXDD(3)+DRGACC(3)
@@ -2023,14 +2120,14 @@
            ENDIF
       
       !#### ZACH ADD
-      if(kentry.eq.1)then
-          WRITE(6,*) ' '
-          WRITE(6,*) '[f.f90] -----'
-          WRITE(6,*) '  Regular xddot     ' , LFILLREG(1)
-          WRITE(6,*) '  HIGH RATE ARRAY   ' , LFILLHR(1)
-          WRITE(6,*) '       '  , LFILLCAC(1)
-
-      endif
+!      if(kentry.eq.2)then
+!          WRITE(6,*) ' '
+!          WRITE(6,*) '[f.f90] -----'
+!          WRITE(6,*) '  flag - Regular XDDOT     ' , LFILLREG(1)
+!          WRITE(6,*) '  flag - HIGH RATE ARRAY   ' , LFILLHR(1)
+!          WRITE(6,*) '  flag - LFILLCAC          '  ,LFILLCAC(1)
+!          WRITE(6,*) '  '  
+!      endif
 
 
 !     write(6,*)'dbg DRAG FLAGS ',LFILLREG(1),LFILLHR(1),
@@ -2083,6 +2180,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(10)) THEN
+           
+             !if(kentry.eq.2)then
+              write(6,*) '[f.f90]:  LOCAL GRAVITY ANOMALY ACCELERATION - TOD '
+              write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+              write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+              write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+              write(6,*) '  '
+             !endif
+
+           
               DXDD(1)=DXDD(1)+XDDTMP(1)
               DXDD(2)=DXDD(2)+XDDTMP(2)
               DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2131,6 +2238,15 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(17)) THEN
+
+             if(kentry.eq.2)then
+              write(6,*) '[f.f90]:  YRKVSK ACCEL - TOD ------- '
+              write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+              write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+              write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+              write(6,*) '  '
+             endif
+
              DXDD(1)=DXDD(1)+XDDTMP(1)
              DXDD(2)=DXDD(2)+XDDTMP(2)
              DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2162,6 +2278,21 @@
       BRNTOD(3)=RMI(3)*XDDBRN(1)+RMI(6)*XDDBRN(2)+RMI(9)*XDDBRN(3)
 !
       IF( LFILLREG(18)) THEN
+      
+             if(kentry.eq.2)then
+              write(6,*) '[f.f90]:  FBURN - TOD ------------- '
+              write(6,*) '[f.f90]:        LCALL(18)  '
+              write(6,*) '[f.f90]:        BRNTOD(1) ', BRNTOD(1)
+              write(6,*) '[f.f90]:        BRNTOD(2) ', BRNTOD(2)
+              write(6,*) '[f.f90]:        BRNTOD(3) ', BRNTOD(3)
+              write(6,*) '  '
+             endif
+             
+             fburn_acc_mag = ( SQRT(BRNTOD(1)**2.D0 +  &
+                              &     BRNTOD(2)**2.D0 +  &
+                              &     BRNTOD(3)**2.D0)       )
+ 
+
         DXDD(1)=DXDD(1)+BRNTOD(1)
         DXDD(2)=DXDD(2)+BRNTOD(2)
         DXDD(3)=DXDD(3)+BRNTOD(3)
@@ -2196,6 +2327,21 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(14)) THEN
+           
+            if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  GEN. RLTIVISTIC PNT MASS (PLANET FRAME) --'
+             write(6,*) '[f.f90]:        LCALL(14)  '
+             write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+             write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+             write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+             write(6,*) '  '
+            endif
+ 
+            genrel_acc_mag = ( SQRT(XDDTMP(1)**2.D0 +  &
+                              &     XDDTMP(2)**2.D0 +  &
+                              &     XDDTMP(3)**2.D0)       )
+
+           
              DXDD(1)=DXDD(1)+XDDTMP(1)
              DXDD(2)=DXDD(2)+XDDTMP(2)
              DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2229,6 +2375,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(15)) THEN
+           
+            !if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  NEW YUKAWA TYPE FORCE --'
+             write(6,*) '[f.f90]:        LCALL(15)  '
+             write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+             write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+             write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+             write(6,*) '  '
+            !endif
+
              DXDD(1)=DXDD(1)+XDDTMP(1)
              DXDD(2)=DXDD(2)+XDDTMP(2)
              DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2267,6 +2423,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(16)) THEN
+           
+           if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  GRAVITY EFFECTS OF PLANETARY MOONS --'
+             write(6,*) '[f.f90]:        LCALL(16)  '
+             write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+             write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+             write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+             write(6,*) '  '
+            endif
+
              DXDD(1)=DXDD(1)+XDDTMP(1)
              DXDD(2)=DXDD(2)+XDDTMP(2)
              DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2319,6 +2485,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF( LFILLREG(13)) THEN
+           
+            if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  Phobos (Deimos) accel.  --'
+             write(6,*) '[f.f90]:        LCALL(13)  '
+             write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+             write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+             write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+             write(6,*) '  '
+            endif
+
               DXDD(1)=DXDD(1)+XDDTMP(1)
               DXDD(2)=DXDD(2)+XDDTMP(2)
               DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2340,8 +2516,12 @@
   350 CONTINUE
 !
 !*********************************************************************
-!
+!!*********************************************************************!*********************************************************************!*********************************************************************!*********************************************************************!*********************************************************************
 !   GET SOLAR RADIATION ACCELERATION
+
+!      if(kentry.eq.2) WRITE(106,*) "DEBUG THE SOLAR RADIATION MODEL" 
+
+
 
       IF(.NOT.LSSRD) GO TO 400
 
@@ -2353,14 +2533,33 @@
       enddo
 
 ! *** CHECK WHICH SOLAR RADIATION MODEL TO USE
-      IF(LROCK4.OR.LTUMSOL) GO TO 51515
+      IF(LROCK4.OR.LTUMSOL) THEN
+          if(kentry.eq.2)then
+           write(6,*) '[f.f90]: SOL.RAD.LOGIC'
+           write(6,*) '[f.f90]:      LROCK4.OR.LTUMSOL', LROCK4, LTUMSOL
+          endif
+!          IF(LSTINR) write(106,*) '[f.f90]: SOL.RAD.LOGIC'
+!          IF(LSTINR) write(106,*) '[f.f90]:      LROCK4.OR.LTUMSOL', LROCK4, LTUMSOL
+
+          GO TO 51515
+      ENDIF
 !
+
+
          CALL SOLRD(MJDSEC,FSEC,XTEMP,XP(1,ISAT,1),                     &
      &           AA(INDVR+3),AA(INDVR+4),AA(KTHG),                      &
      &           AA(IAPLM),AA(IAPGM),LSORB,NEQN,SOLACC,VMAT,            &
      &           PXDDEX(1,1,ISAT),AA(ISTSRD),LL(ILSTSN),II(INSTRN),     &
      &           II(INDARK),LL(ILAJSP),AA,II,ISATID(ISAT),ALAPGM,       &
      &           RATIOP)
+     
+         if(kentry.eq.2)then
+           write(6,*) '[f.f90]: SOL.RAD.LOGIC'
+           write(6,*) '[f.f90]:      Using SOLRD'
+          endif
+!      IF(LSTINR) write(106,*) '[f.f90]:   Using SOLRD', SOLACC(1),SOLACC(2), SOLACC(3)
+          
+
 !     INDSH=1
 !     if(SOLACC(1).eq.0.d0) INDSH=0
       sev1=SOLACC(1)
@@ -2432,6 +2631,19 @@
 
 !    JASON RADIATION PRESSURE AND THERMAL RE-RADIATION MODELS
        IF(LJASON1.OR.LGFO1.OR.LENV1)THEN
+       
+          if(kentry.eq.2)then
+           write(6,*) '[f.f90]: SOL.RAD.LOGIC'
+           write(6,*) '[f.f90]:      Using JASON1'
+           write(6,*) '[f.f90]:        LJASON1 ', LJASON1 
+           write(6,*) '[f.f90]:        LGFO1   ', LGFO1
+           write(6,*) '[f.f90]:        LENV1   ', LENV1
+          endif
+!          IF(LSTINR) write(106,*) '[f.f90]:        LJASON1 ', LJASON1 
+!          IF(LSTINR) write(106,*) '[f.f90]:        LGFO1   ', LGFO1
+!          IF(LSTINR) write(106,*) '[f.f90]:        LENV1   ', LENV1
+
+
       do jj=1,3
       do kk=1,6
       vmat(jj,kk)=tempv(jj,kk)
@@ -2610,6 +2822,14 @@
 
 
       IF(LJASON1)THEN
+      
+        if(kentry.eq.2)then
+           write(6,*) '[f.f90]: SOL.RAD.LOGIC' 
+           write(6,*) '[f.f90]:      Using JASON1'
+           write(6,*) '[f.f90]:        LJASON1 ', LJASON1 
+          endif
+!        IF(LSTINR) write(106,*) '[f.f90]:        LJASON1 ', LJASON1 
+
             IF(ABS(theta)<PI/2.0)THEN
 !       write(6,*)' dbg calling jason panel all ',XBUS,YBUS,ZBUS
       CALL UCL_JASON_all(XBUS,YBUS,ZBUS,                                &
@@ -2654,6 +2874,13 @@
        ENDIF
 !
        IF(LGFO1) THEN
+         if(kentry.eq.2)then
+           write(6,*) '[f.f90]: SOL.RAD.LOGIC' 
+           write(6,*) '[f.f90]:      Using  UCL_GFO_all'
+           write(6,*) '[f.f90]:        LGFO1   ', LGFO1
+         endif
+!         IF(LSTINR) write(106,*) '[f.f90]:        LGFO1   ', LGFO1
+
 !       write(6,*)' dbg calling gfo all ',SCALU,JSASRD(1)
        CALL UCL_GFO_all(XBUS,YBUS,ZBUS,RATIOP,DISTANCE,SOLACC,        &
      &                 PXDDEX(1,1,ISAT),ROT,JSASRD(1),NEQN,           &
@@ -2674,6 +2901,15 @@
 !
 ! UCL MODEL FOR ENVISAT
       IF(LENV1) THEN
+      
+          if(kentry.eq.2)then
+           write(6,*) '[f.f90]: SOL.RAD.LOGIC' 
+           write(6,*) '[f.f90]:      Using  UCL MODEL FOR ENVISAT'
+           write(6,*) '[f.f90]:        LENV1   ', LENV1
+          endif
+!        IF(LSTINR) write(106,*) '[f.f90]:        LENV1   ', LENV1
+
+          
         SUN_PROBE(1) = S1
         SUN_PROBE(2) = S2
         SUN_PROBE(3) = S3
@@ -2689,6 +2925,22 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
             IF( LFILLREG(2)) THEN
+            
+
+              if(kentry.eq.2)then
+               write(6,*) '[f.f90]:  SOLAR RADIATION ACCELERATION --'
+               write(6,*) '[f.f90]:        LCALL(2)  '
+               write(6,*) '[f.f90]:        SOLACC(1) ', SOLACC(1)
+               write(6,*) '[f.f90]:        SOLACC(2) ', SOLACC(2)
+               write(6,*) '[f.f90]:        SOLACC(3) ', SOLACC(3)
+               write(6,*) '  '
+              endif
+            
+              solrad_acc_mag = ( SQRT(SOLACC(1)**2.D0 +  &
+                                &     SOLACC(2)**2.D0 +  &
+                                &     SOLACC(3)**2.D0)       )
+             
+            
              DXDD(1)=DXDD(1)+SOLACC(1)
              DXDD(2)=DXDD(2)+SOLACC(2)
              DXDD(3)=DXDD(3)+SOLACC(3)
@@ -2743,6 +2995,21 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
              IF( LFILLREG(6)) THEN
+             
+               if(kentry.eq.2)then
+                write(6,*) '[f.f90]:  ALBEDO ACCELERATION --'
+                write(6,*) '[f.f90]:        LCALL(6)'
+                write(6,*) '[f.f90]:        ALBACC(1) ', ALBACC(1)
+                write(6,*) '[f.f90]:        ALBACC(2) ', ALBACC(2)
+                write(6,*) '[f.f90]:        ALBACC(3) ', ALBACC(3)
+                write(6,*) '  '
+               endif
+
+               albedo_acc_mag = ( SQRT(ALBACC(1)**2.D0 +  &
+                                 &     ALBACC(2)**2.D0 +  &
+                                 &     ALBACC(3)**2.D0)       )
+
+
                DXDD(1)=DXDD(1)+ALBACC(1)
                DXDD(2)=DXDD(2)+ALBACC(2)
                DXDD(3)=DXDD(3)+ALBACC(3)
@@ -2776,6 +3043,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF(LFILLREG(4)) THEN
+           
+            if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  Thermal Rad.      --'
+             write(6,*) '[f.f90]:        LCALL(4)  '
+             write(6,*) '[f.f90]:        THMACC(1) ', THMACC(1)
+             write(6,*) '[f.f90]:        THMACC(2) ', THMACC(2)
+             write(6,*) '[f.f90]:        THMACC(3) ', THMACC(3)
+             write(6,*) '  '
+            endif
+
             DXDD(1)=DXDD(1)+THMACC(1)
             DXDD(2)=DXDD(2)+THMACC(2)
             DXDD(3)=DXDD(3)+THMACC(3)
@@ -2812,6 +3089,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF(LFILLREG(4)) THEN
+           
+            if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  TOPEX Thermal Rad.(THERM. IMBALANCE MODEL)'
+             write(6,*) '[f.f90]:        LCALL(4)  '
+             write(6,*) '[f.f90]:        THMACC(1) ', THMACC(1)
+             write(6,*) '[f.f90]:        THMACC(2) ', THMACC(2)
+             write(6,*) '[f.f90]:        THMACC(3) ', THMACC(3)
+             write(6,*) '  '
+            endif
+
             DXDD(1)=DXDD(1)+THMACC(1)
             DXDD(2)=DXDD(2)+THMACC(2)
             DXDD(3)=DXDD(3)+THMACC(3)
@@ -2842,6 +3129,17 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
            IF(LFILLREG(4)) THEN
+           
+            if(kentry.eq.2)then
+             write(6,*) '[f.f90]:  Thermal Rad.'
+             write(6,*) '[f.f90]:  LEXTHC -----------------', LEXTHC
+             write(6,*) '[f.f90]:        LCALL(4)  '
+             write(6,*) '[f.f90]:        THMACC(1) ', THMACC(1)
+             write(6,*) '[f.f90]:        THMACC(2) ', THMACC(2)
+             write(6,*) '[f.f90]:        THMACC(3) ', THMACC(3)
+             write(6,*) '  '
+            endif
+
             DXDD(1)=DXDD(1)+THMACC(1)
             DXDD(2)=DXDD(2)+THMACC(2)
             DXDD(3)=DXDD(3)+THMACC(3)
@@ -2915,6 +3213,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
                IF( LFILLREG(5))THEN
+               
+                if(kentry.eq.2)then
+                 write(6,*) '[f.f90]:  THERMAL ACCEL. EMITTED FROM LOUVERS -'
+                 write(6,*) '[f.f90]:        LCALL(5)  '
+                 write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+                 write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+                 write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+                 write(6,*) '  '
+                endif
+               
                   DXDD(1)=DXDD(1)+XDDTMP(1)
                   DXDD(2)=DXDD(2)+XDDTMP(2)
                   DXDD(3)=DXDD(3)+XDDTMP(3)
@@ -2944,9 +3252,45 @@
 !
 600   CONTINUE
 
+
+
+! ********************  PRINT THE ACCEL. FILE ***********************************
+
+      IF(LSTINR) THEN
+        IJDSEC=MJDSEC+FSEC                                                 
+        CALL MJDYMD(IJDSEC,IYMD,IHMS,4)  !  IYMD   -- YYMMDD of current epoch
+                                         !  IHMS   -- HHMMSS of current epoch     
+        WRITE(105,7105) IYMD,IHMS,                       &  
+        &               drag_acc_mag,                    &  
+        &               solrad_acc_mag,                  &  
+        &               albedo_acc_mag,                  &  
+       ! &               geopot_acc_mag,                  &  
+       ! &               thirdBod_acc_mag,                &  
+        &               tidal_acc_mag,                   &  
+        &               genrel_acc_mag,                  &  
+        &               fburn_acc_mag
+
+7105  FORMAT(       2(I0.6,1X),           &   !D25.16
+            &        D19.12,1X,        &   
+            &        D19.12,1X,        &   
+            &        D19.12,1X,        &   
+            !&        D21.12,1X,        &   
+            !&        D21.12,1X,        &   
+            &        D19.12,1X,        &   
+            &        D19.12,1X,        &   
+            &        D19.12,1X       ) 
+       
+      ENDIF                                                           
+!********************************************************************************
+
+
        IF(LTXPRT.AND.LVAREA .AND. .NOT. LSTART) THEN
 
 
+
+
+
+        
 ! ROTATE ACCELS INTO RCL FRAME (ASSUME ALONGTRACK = VELOCITY)
 ! USE XDDTMP AND XPV FOR TEMPORARY STORAGE
          RMAG = SQRT(XTEMP(1)**2+XTEMP(2)**2+XTEMP(3)**2)
@@ -3074,6 +3418,16 @@
 
 !   LFILLREG = FILL THE REGULAR XDDOT
               IF(  LFILLREG(7)) THEN
+              
+                !if(kentry.eq.1)then
+                 write(6,*) '[f.f90]:  THERMAL DRAG COMPUTATION FOR LAGEOS -'
+                 write(6,*) '[f.f90]:        LCALL(7)  '
+                 write(6,*) '[f.f90]:        XDDTMP(1) ', XDDTMP(1)
+                 write(6,*) '[f.f90]:        XDDTMP(2) ', XDDTMP(2)
+                 write(6,*) '[f.f90]:        XDDTMP(3) ', XDDTMP(3)
+                 write(6,*) '  '
+                !endif
+              
                    DXDD(1)=DXDD(1)+XDDTMP(1)
                    DXDD(2)=DXDD(2)+XDDTMP(2)
                    DXDD(3)=DXDD(3)+XDDTMP(3)
