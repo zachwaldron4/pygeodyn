@@ -1,22 +1,42 @@
 import sys
 sys.path.insert(0, '/data/geodyn_proj/pygeodyn/pygeodyn_develop/')
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_preprocessing/')
-
-from PYGEODYN_Starlette import Satellite_Starlette
-from PYGEODYN_ICESat2   import  Satellite_ICESat2
+sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 from util_classtools import Util_Tools
+
+from PYGEODYN_Starlette import  Satellite_Starlette
+from PYGEODYN_ICESat2   import  Satellite_ICESat2
+from PYGEODYN_Spire     import  Satellite_Spire
+
 
 
 class Inherit_Icesat2(Satellite_ICESat2):
     def __init__(self):
         Satellite_ICESat2.__init__(self)
         pass
-        
+    
 class Inherit_Starlette(Satellite_Starlette):
     def __init__(self):
         Satellite_Starlette.__init__(self)
         pass
+    
+class Inherit_Spire(Satellite_Spire):
+    def __init__(self):
+        Satellite_Spire.__init__(self)
+        pass
 
+    
+# # class SatelliteHandler(Satellite_ICESat2,Satellite_Starlette,Satellite_Spire):
+# #     def __init__(self, whichSatellite):
+# #         
+
+#         if whichSatellite == sat1:
+#             Satellite_ICESat2.__init__(self)
+#         elif whichSatellit == sat2:
+            
+# #         pass  
+    
+    
     
 """
 ## README
@@ -73,7 +93,7 @@ Pygeodyn is split up into a few distinct parts:
 """
     
     
-class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlette 
+class Pygeodyn(Util_Tools, Inherit_Spire): #Inherit_Icesat2): Inherit_Starlette 
     
     ####  Initialize a Pygeodyn Object with the YAML file containing the run settings as an input.
     def __init__(self, run_settings_yaml):  
@@ -130,7 +150,8 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlett
         if self.cd_model == 'DRIA': 
             self.cd_model_params = self.run_settings['cd_model_params']
 
-        
+        self.scaling_factor        = self.run_settings['scaling_factor']
+
         
         ### Populate the GEODYN user input files with control options
         self.set_density_model_setup_params( self.den_model )     
@@ -149,6 +170,13 @@ class Pygeodyn(Util_Tools, Inherit_Icesat2): #Inherit_Icesat2): Inherit_Starlett
         self.G2EDIR       =  '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
 
 
+        
+              
+        
+        
+        
+        
+        
         #### Do some book-keeping:    
         self.tab = '  '
         self.tabtab = '       '

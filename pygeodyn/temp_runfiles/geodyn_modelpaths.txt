@@ -1,2 +1,2 @@
-/data/data_geodyn/atmos_models_data/gitm/icesat2_oct2018_jan2019/data
+/data/data_geodyn/atmos_models_data/hasdm/twoweekNov2018
 none

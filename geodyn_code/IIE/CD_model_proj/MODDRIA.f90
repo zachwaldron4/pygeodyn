@@ -3,7 +3,8 @@
      &                   NFACE,VEL, XDOT, YDOT, ZDOT,                   &
      &                   BWAREA,MEANMOL,TEMP,NOXA, CD,                  &
      &                   DXDD,PXDDT,JARADJ,IMAPAR,NEQN,                 &
-     &                   ISHFLG,SPLADG,B0,B,SCAREA,RHO,TC1,TOTARE)
+     &                   ISHFLG,SPLADG,B0,B,SCAREA,RHO,TC1,TOTARE,kin_2,&
+     &                   CDprime, Ldrag_ScalingFactor, SPEED_RATIO)
 !                                                                       &
 !      - note from zach, fortran wants the dyn.arrays (TDNRM1,TDNRM2,TDNRM3)
 !                       to be first and on their own lines.  It not, they get
@@ -18,6 +19,7 @@
 !             3) Output Cd considers the varying cross-sectional area. No need to multiply.
 !             4) Ref : Drag Coefficient Model Using the 
 !                      Cercignani–Lampis–Lord Gas–Surface Interaction Model, 10.2514/1.A32677
+                    ! SENTMAN MODEL
 !
 !  I/O PARAMETERS:
 !
@@ -55,13 +57,23 @@
 !   B0       I      S    .5*AREA/MASS
 !   B        I      S    B0*CD    (**note** this is the CD as input on DRAG CARD or determined by GEODYN)
 !   CD      I/O     O    DRAG-COEFFICIENT   (only the drag coefficent **note** this is the physically calc. CD)
-!   TC1     I/O     S    TC1=(SCAREA/SCMASS)/(2*VEL*CD) -- (**note** replace the GEODYN CD with Physically calculated CD
+!   TC1     I/O     S    TC1=(SCAREA/SCMASS)/(2*VEL*CD) -- (**note** replace the GEODYN CD with Physically calculated CD)
 !   TOTARE  I/O     S    TOTAL SPACRAFT AREA AS CALCUALTED BY THE VARIABLE AREA (FROM PANELS)                             
-
 
 ! *************************************************************************
 !
 !
+
+!
+!    To check that this was all implemented correctly we need to visualize the following:
+!                         
+!                       - CD*Area of satellite (force contribution-- density at the highest CD*Area are weighted highest)
+!                       - angle of attack/sideslip
+!                       - Relative velocity
+!                       - Speed Ratio
+
+
+
       IMPLICIT DOUBLE PRECISION (A-H,O-Z),LOGICAL(L)
       SAVE
       
@@ -103,7 +115,7 @@
       real(8) :: FRAC
       real(8) :: CTHETA
       real(8) :: MRPAN
-      real(8) :: ALPHAS
+      real(8) :: ALPHA_S
       real(8) :: CDS
       real(8) :: VR
       real(8) :: CDADS
@@ -125,7 +137,9 @@
       TOTARE = ZERO
       JCOUNT = JARADJ-1
       ICNT = ICNT+1
-      MS   = 26.0D0
+      MS   = 26.980D0   ! aluminum atomic weight
+      MS(13) = 60.08D0
+      MS(14) = 60.08D0
 !      !!!!   SET THE CD OPTIONS FROM INPUTS:
       if(ICNT.eq.1) then
           WRITE(6,*) ' [MODDRIA.f90] - Reading Parameters from file'
@@ -143,24 +157,33 @@
           ALPHA  = array_params(3)
           KL     = array_params(4)
           FRACOX = array_params(5)
+          MS(13) = 60.08D0
+          MS(14) = 60.08D0
+
           
+          WRITE(6,*) ' [MODDRIA.f90] - ALPHA  ',  ALPHA
+
           WRITE(6,*) ' [MODDRIA.f90] - MS     ',  MS
           WRITE(6,*) ' [MODDRIA.f90] - TW     ',  TW
-          WRITE(6,*) ' [MODDRIA.f90] - ALPHA  ',  ALPHA
           WRITE(6,*) ' [MODDRIA.f90] - KL     ',  KL
           WRITE(6,*) ' [MODDRIA.f90] - FRACOX ',  FRACOX
-!
-          WRITE(6,*) ' [MODDRIA.f90] - array_params ',  array_params
 
+!          WRITE(6,*) ' [MODDRIA.f90] - array_params ',  array_params
+    
       endif
+
+      if(kin_2.eq.1) WRITE(6,*) ' [MODDRIA.f90] - MS     ',  MS
 
 
     ! REMOVE SPACECRAFT AREA AS DEFINED ON THE SATPAR CARD FROM APGMR
       b_coeff = B0/SCAREA
-      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - B/B0                ', B/B0
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90] - B/B0 = CD = ', B/B0
+      !WRITE(6,*) '     [MODDRIA.f90] - B/B0 = CD = ', B/B0
 
       TC1 = TC1/(SCAREA*(B/B0))
 
+      !CDprime =  (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )!  B/B0! TC1
+      !WRITE(6,*) '     [MODDRIA.f90] - CDprime = ', CDprime
 
       ! FORM THE UNIT VELOCITY VECTOR
       XVEL(1) = XDOT/VEL
@@ -173,12 +196,14 @@
       
     ! COMPUTE FRACTION OF SURFACE COVERED BY ATOMIC OXYGEN
     !     IF NON-PHYSICAL VALUE SPECIFIED BY USER, CALCULATE HERE
+    !     SESAM
       IF (FRACOX.LT.0) THEN
          PO   = NOXA*KB*TEMP             !% partial pressure of oxygen (n*kb*T)
          FRAC = (KL*PO)/(1.0D0+KL*PO)
       ELSE
          FRAC = FRACOX
       ENDIF
+      
       
          
     ! CALCULATE DRAG-COEFFICIENT
@@ -195,11 +220,19 @@
         ! INITIALIZE PARTIAL POINTERS
         IF(IMAPAR(I).GT.0) JCOUNT=JCOUNT+1
 
+
+
+           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
+           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
+           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
+           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] BWAREA(I)', BWAREA(I)
+
+
           ! FOR EACH PLATE, 
           !     FORM THE DOT PRODUCT OF PLATE NORMAL VECTOR 
           !     AND SATELLITE VELOCITY VECTOR
-          CTHETA=(TDNRM1(I) * XVEL(1)   +  &      ! dot product of panel normal 
-              &   TDNRM2(I) * XVEL(2)   +  &      !  and relative velocity vector
+          CTHETA=(TDNRM1(I) * XVEL(1)   +  &      !  dot product of panel normal 
+              &   TDNRM2(I) * XVEL(2)   +  &      !    and relative velocity vector
               &   TDNRM3(I) * XVEL(3)   )       
               
           ! MASS FRACTION OF PANELS
@@ -213,11 +246,25 @@
           
 
           ! ACCOMMODATION COEFFICIENT USING GOODMAN'S FORMULA
-          ALPHAS = (3.60D0*MRPAN*CTHETA)/(1.0D0+MRPAN)**2       ! % Goodman's formula for flat plate
+              !       According to Goodman’s model(Goodman, 1977), the value 
+              !       of alpha in the absence of atomic oxygen should be 
+              !       dictated by the surface properties of the satellite. 
+              !
+              ! MRPAN  :  Ratio of mass of free stream particle
+              !           to that of surface material,
+              ! Ks     :  (3.60D0) can lie between 2.4 and 3.6 
+              !           depending on the shape of the satellite 
+              !           with the choice generally left to the user.
+              ! CTHETA :  Fractional coverage ofatomic oxygen (theta)
+              !           as a function of partial pressure of atomic oxygen
+          ALPHA_S    = (3.60D0*MRPAN*CTHETA)/(1.0D0+MRPAN)**2   
+          !ALPHA_eff =  (1- 0)
+          
+          !(3.60D0*MRPAN*CTHETA)/(1.0D0+MRPAN)**2   
 
           ! INCOMPLETE ACCOMMODATION DRAG-COEFFICIENT
           VR_term1=(4.0D0*RI*TW/(VEL**2)) - 1.0D0
-          VR_term2=0.50D0*(1+ALPHAS*(VR_term1))
+          VR_term2=0.50D0*(1+ALPHA_S*(VR_term1))
           VR = VEL*SQRT(VR_term2)
 
           CDS = CDS + (  P/SQRT(PI) +                             &
@@ -261,21 +308,27 @@
           !if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - CDADS ', CDADS
 
   100 END DO
-      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - TOTARE            ', TOTARE
 
       
       !     TOTAL DRAG-COEFFICIENT
       CD = FRAC*CDADS + (1.0D0-FRAC)*CDS      
-      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - CD*TOTARE         ', CD
       
       
       ! COMPUTE DRAG ACCELERATION ON THIS PLATE IN
       ! X,Y,AND Z DIRECTION OF THE TRUE OF DATE SYSTEM
         TERM1 = -CD                !  CD contains the physical_CD*total area (in flow dir)
         TERM2 = b_coeff*VEL*RHO    ! complete the drag equation
-        ACCEL(1) = TERM1*XDOT*TERM2
-        ACCEL(2) = TERM1*YDOT*TERM2
-        ACCEL(3) = TERM1*ZDOT*TERM2
+          
+        ! Needs to also include the Scaling factor for CD 
+        if(Ldrag_ScalingFactor) then
+            TERM3 = CDprime
+        else
+            TERM3=1.D0
+        endif
+        
+        ACCEL(1) = TERM1*XDOT*TERM2*TERM3
+        ACCEL(2) = TERM1*YDOT*TERM2*TERM3
+        ACCEL(3) = TERM1*ZDOT*TERM2*TERM3
       !
       ! ADD ACCELERATIONS TO TOTAL
         DXDD(1) = DXDD(1)+ACCEL(1)
@@ -286,6 +339,7 @@
       ! AND ADD THE PARTIALS TO THOSE
       ! PREVIOUSLY COMPUTED FOR THE OTHER NON-CONSERVATIVE FORCES
             IF(IMAPAR(I).GT.0) THEN
+               if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90] - PARTIALS in MODDRIA '
                PART(1) = ACCEL(1)/BWAREA(I)
                PART(2) = ACCEL(2)/BWAREA(I)
                PART(3) = ACCEL(3)/BWAREA(I)
@@ -295,9 +349,20 @@
             ENDIF
 
       TC1 = TC1*CD
-      
       CD = CD/TOTARE
       
+      SPEED_RATIO = S_ratio
+      
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90] ACCELERATION DUE TO DRAG UPDATED USING DRIA'
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(1)  ', DXDD(1)
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(2)  ', DXDD(2)
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(3)  ', DXDD(3)
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - TOTARE   ', TOTARE
+      if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - CD       ', CD
+
+            
+
+
       RETURN
       END
       

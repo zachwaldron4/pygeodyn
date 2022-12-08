@@ -9,19 +9,15 @@ import os
 import os.path
 import sys
 import subprocess
-import signal
-
+# import signal
 import shutil
 import time
 
 #### modules for reading and converting data
 import linecache
 from   datetime import datetime,timedelta, timezone
-
 import copy
 import logging
-
-
 import gc
 
 
@@ -90,7 +86,7 @@ class PygeodynController():
         #### ---- DIRECTORY PATHS----
         path_run_inputs  = '/data/data_geodyn/inputs/'+self.SATELLITE_dir
 #         path_run_outputs =  self.run_settings['path_to_output_directory'] 
-        path_extra_dirs  = '/data/data_geodyn/extra_dirs'
+#         path_extra_dirs  = '/data/data_geodyn/extra_dirs'
        
         #### Set up path for OUTPUT (i.e. results)
                 #### SERIES NAME (output directory identifier)
@@ -117,11 +113,20 @@ class PygeodynController():
 
         ## Input file directories (ftn 05)
         self.INPUTDIR  = path_run_inputs + '/setups'
-        DIRGRAV   = path_run_inputs     + '/gravity'
-        G2BDIR    = path_run_inputs     + '/g2b'
-        ATGRAVDIR = path_run_inputs     + '/atgrav'
-        EPHEMDIR  = path_run_inputs     + '/ephem'
         self.EXATDIR = path_run_inputs  + '/external_attitude'
+        G2BDIR    = path_run_inputs     + '/g2b'
+        
+        
+        #### Add temporary fix for spire
+        if self.satellite  == 'spire83':
+            DIRGRAV   = '/data/data_geodyn/inputs/common_2018'+''
+            ATGRAVDIR = '/data/data_geodyn/inputs/common_2018'+''
+            EPHEMDIR  = '/data/data_geodyn/inputs/common_2018'+''
+        else:
+            DIRGRAV   = path_run_inputs     + '/gravity'
+            ATGRAVDIR = path_run_inputs     + '/atgrav'
+            EPHEMDIR  = path_run_inputs     + '/ephem'
+
 
         
         #---- Planetary Ephemeris
@@ -133,7 +138,9 @@ class PygeodynController():
         #---- GDYN specific binary observation data 
         self._G2B_filename        = G2BDIR    +'/'+ self.g2b_file        
         #---- GDN-table - Solar flux,Ap,Kp,PolarMotion,A1-UTC,A1-UT1
-        self._gdntable_filename   = '/data/data_geodyn/inputs/common/gdntable.data'
+#         self._gdntable_filename   = '/data/data_geodyn/inputs/common/gdntable.data'
+        self._gdntable_filename   = '/data/data_geodyn/inputs/common_2018/gdntable.data'
+        
         #----- Solar Radiation file. #### I dont have one  ####
         #        SOLRAD_filename = ARCFIL+'.'+self.GRAVITY
         #----- External Attitude File
@@ -153,7 +160,10 @@ class PygeodynController():
         
         ### Construct the setup file for the Arc of Choice
         #---- Input iisset file (fort.05)
-        self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +'.bz2'
+        if self.satellite  == 'spire83':
+            self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +''
+        else:
+            self._INPUT_filename      = self.INPUTDIR  +'/' +self.setup_file_arc +'.bz2'
         
 
             
@@ -335,8 +345,27 @@ class PygeodynController():
                             datefmt='%Y-%m-%d %H:%M:%S')
 
         
-
-        self.clean_iisset_file()
+        if self.satellite  == 'spire83':
+            #### Initialize our variables from user input
+            (path_to_setupfiles, 
+             setup_file_arc, 
+             SAT_ID, 
+             den_model_setupval) = ( self.INPUTDIR,  
+                                    self.setup_file_arc, 
+                                    self.SATID, 
+                                    self.iisset_den)
+            ORIG_iisset_file = self._INPUT_filename 
+            iisset_file      = 'cleaned_setup'+'_'  + self.arcdate_for_files
+            ####  COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
+            ####    We copy to a temporary file "cleaned_setup_file"
+            shutil.copyfile(ORIG_iisset_file, self.TMPDIR_arc +'/'+iisset_file+'')
+            os.chdir(self.TMPDIR_arc)
+#             os.system('bunzip2 -v '+ '*.bz2')
+            os.chdir('/data/geodyn_proj/pygeodyn')
+            iisset_file = self.TMPDIR_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
+            print('iisset_file',iisset_file)
+        else:
+            self.clean_iisset_file()
         self._INPUT_filename      = self.TMPDIR_arc  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
 
 
@@ -371,6 +400,32 @@ class PygeodynController():
 #                     print('+','—'*len(longest_line))
         
         longest_line = '|      '+self.run_ID+"    Output directory:  " + self.OUTPUTDIR
+        
+        if self.satellite  == 'spire83':
+            if  self.run_settings['epoch_start'] == None :  # if no options given 
+                pass  ## use the defaults from the setup file (parsed above)
+            else:
+                epoch_start            = self.run_settings['epoch_start'][0]
+                epoch_start_YYMMDD     = epoch_start[:6].strip() 
+                epoch_start_HHMM       = epoch_start[7:11].strip()
+                epoch_start_SS_SSSSSSS = epoch_start[11:21].strip()
+                epoch_start            = epoch_start_YYMMDD+epoch_start_HHMM+epoch_start_SS_SSSSSSS
+            if  self.run_settings['epoch_end'] == None :
+                pass
+            else:
+                epoch_end            = self.run_settings['epoch_end'][0]
+                epoch_end_YYMMDD     = epoch_end[:6].strip() 
+                epoch_end_HHMM       = epoch_end[7:11].strip()
+                epoch_end_SS_SSSSSSS = epoch_end[11:21].strip()
+                epoch_end            = epoch_end_YYMMDD+epoch_end_HHMM+epoch_end_SS_SSSSSSS
+
+            epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+            epoch_end_dt   = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')      
+            #### RE-SAVE THE DATE in datetime format for easy printing
+            self.epoch_start_dt = epoch_start_dt
+            self.epoch_end_dt   = epoch_end_dt        
+
+        
         
 #         if len(longest_line) > 110:
 
@@ -631,11 +686,33 @@ class PygeodynController():
         start = time.time()
         #### RUN THE EXECUTABLE
        
-        command_IIE = self.G2EDIR+'/giie2002_gfortran > '+'iieout 2> '+'iieerr'
+    
+        print(' ------ Current DIR: ', os.getcwd())
+    
+#         os.system("touch gmon.out")
+
+        command_IIE = self.G2EDIR+'/giie2002_gfortran > '+'iieout 2> '+'iieerr' 
+        
         time.sleep(0.5)
         logger.info(f" Running IIE: {command_IIE} ")
 
         subprocess.run(command_IIE, shell = True)
+               
+            
+############################  IIE PROFILER  ############################  
+#
+#         time.sleep(0.5)
+#         print()
+#         print(self.run_ID,"         Running IIE with profiler" )
+#         command_IIE_prof = 'gprof ' + self.G2EDIR+'/giie2002_gfortran > iierun.stats'
+#         subprocess.run(command_IIE_prof, shell = True)
+#
+########################################################################
+
+
+
+
+
 #         proc_IIE = subprocess.Popen(command_IIE, stdout=subprocess.PIPE, 
 #                        shell=True, preexec_fn=os.setsid) 
 #         time.sleep(1)
@@ -789,7 +866,9 @@ class PygeodynController():
 
         if self.save_drag_file:
             print("Saving fort.103 as drag_file")
+            print("Saving fort.104 as SatGeometry_file")
             os.system('mv fort.103 drag_file')     
+            os.system('mv fort.104 SatGeometry_file')     
 
         if self.save_accel_file:
             os.system('mv fort.105 accel_file')     
@@ -839,6 +918,7 @@ class PygeodynController():
         
         if self.save_drag_file:
             os.system('bzip2 -v drag_file')
+#             os.system('bzip2 -v SatGeometry_file')
         if self.save_accel_file:
             os.system('bzip2 -v accel_file')
 
@@ -860,6 +940,7 @@ class PygeodynController():
         
         if self.save_drag_file:
             os.system('cp drag_file.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     'drag_file.bz2')
+            os.system('cp drag_file.bz2 ' +self.OUTPUTDIR+'/DENSITY/' +self.ARC+     'SatGeometry_file')
 #         os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
 #         os.system('cp ascii_kep.bz2 '  +self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+     '.bz2')
         os.system('mv IIEOUT.'+ self.ARC+' '+self.OUTPUTDIR+'/IIEOUT/'+ self.ARC+'')
@@ -1506,27 +1587,18 @@ class PygeodynController():
                 print('***** Constructing the File with requested format to be made input for HASDM ***** ')
                 
                 with open(self.orbitcloud_csv_file, 'r+') as file:
-                    for ii, valval in enumerate(date_list):
-                        print('whoops gotta fix this lol')
-#                         IYR
-#                         IYDAY
-#                         IHR
-#                         IMIN
-#                         SEC
-#                         D1950
-#                         HTM
-#                         XLT
-#                         XLAT
-#                         XLON
-#                         RHO
+                    
+                    for ii, valval in enumerate(unixtimes_list):
+#                         print('whoops gotta fix this lol')
                         
-#                         file.write(f"{IYR}   {IYDAY}   {IHR}   {IMIN}  {} \n")
+                        file.write(f"{datetime.strftime(datetime.fromtimestamp(valval), '%y%m%d%H%M%S')}  {lons_list[ii]:9.4f}  {lats_list[ii]:9.4f}  {alts_list[ii]:9.4f}  \n")                        
 
             
             else:#### REGULAR GEODYN requestied format without the density from Kamodo 
                 with open(self.orbitcloud_csv_file, 'r+') as file:
                     for ii, valval in enumerate(date_list):
-                        file.write(f"{datetime.strftime(datetime.fromtimestamp(unixtimes_list[ii]), '%y%m%d%H%M%S')}   {lons_list[ii]:8.4f}   {lats_list[ii]:8.4f}   {alts_list[ii]:8.4f}   \n")
+#                         file.write(f"{datetime.strftime(datetime.fromtimestamp(unixtimes_list[ii]), '%y%m%d%H%M%S')}   {lons_list[ii]:8.4f}   {lats_list[ii]:8.4f}   {alts_list[ii]:8.4f}   \n")
+                        file.write(f"{datetime.strftime(datetime.fromtimestamp(valval), '%y%m%d%H%M%S')}  {lons_list[ii]:9.4f}  {lats_list[ii]:9.4f}  {alts_list[ii]:9.4f}  \n")                        
 
             
             
@@ -1542,6 +1614,7 @@ class PygeodynController():
         
         The steps are as follows:
             1. Do an initial run of GEODYN with MSIS2 to get an initialized orbit of the satellite for this arc.
+            2. Construct a fixed width file with the Coordinates 
         '''
                 
         from os.path import exists
@@ -1565,9 +1638,11 @@ class PygeodynController():
             print('****** Run GEODYN once with MSIS2 to make INIT_ORBIT \n', arc)
             
             
-            self.orbitcloud_csv_file =(self.OUTPUTDIR+'/OrbitCloud_Step'+
-                                   str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+#             self.orbitcloud_csv_file =(self.OUTPUTDIR+'/OrbitCloud_Step'+
+#                                    str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
 
+            self.orbitcloud_csv_file = ('/data/data_geodyn/atmos_models_data/OrbitCloud_Arcs/ICESat2_FixedCD_2.5/' +
+                                          '/OrbitCloud_Step'+str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
 
 
             self.msis2_file_path = self.OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin'
@@ -1624,15 +1699,16 @@ class PygeodynController():
 
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
                 SERIES = self.DEN_DIR + '_' + self.cd_model + self.directory_name_specifier
-                OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.DEN_DIR+'/'+SERIES
+#                 OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.DEN_DIR+'/'+SERIES
+                OUTPUTDIR   = self.run_settings['path_to_output_directory'] + '/'+self.DEN_DIR+'/'+self.SERIES
 
 
-                logging.info(f'Orbit Cloud exists:  {self.orbitcloud_csv_file }')
+#                 logging.info(f'Orbit Cloud exists:  {self.orbitcloud_csv_file }')
                 self.make_orbit_cloud_csv(kamodo_flag=False, HASDM_format_flag=True)
 
             else:
                 ## Construct the orbit cloud CSV
-                logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
+#                 logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
                 ## Use the msis2 file to identify the density file that will be use to index the satellite ephemeris within kamodo
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
                 print('****** 3.5- construct orbit cloud', arc)
@@ -1849,17 +1925,17 @@ class PygeodynController():
         ### Case for the HASDM model that uses the orbit cloud
         elif self.den_model == 'hasdm_oc':  
              
-            self.set_density_model_setup_params( 'hasdm_oc' )
+            #### setup the hasdm case
+            self.set_density_model_setup_params(  'hasdm_oc'  )
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
                 if self.satellite == 'icesat2':
-#                     print('5 running GEODYN with HASDM textfile', arc)
+
                     self.set_file_paths_for_multiple_arcs( arc , iarc)  
-    
                     self.model_data_path = self.run_settings['model_data_path']
 
-                    print('CHOSEN ARC:  '          , self.arcdate_for_files)
                     print('self.model_data_path:  ', self.model_data_path)
+    
     
                     self.orbitcloud_csv_file = ( self.model_data_path    +
                                                  '/HASDM_OrbitCloud_'    +
@@ -1893,21 +1969,6 @@ class PygeodynController():
         
         else:  # regular run of GEODYN not using tiegcm Orbit Cloud
             
-#             import psutil
-#             from psutil._common import bytes2human
-#             def pprint_ntuple(nt):
-#                 for name in nt._fields:
-#                     value = getattr(nt, name)
-#                     if name != 'percent':
-#                         value = bytes2human(value)
-#                     print('%-10s : %7s' % (name.capitalize(), value))
-#             def main_memory():
-#                 print('MEMORY\n------')
-#                 pprint_ntuple(psutil.virtual_memory())
-# #                 print('\nSWAP\n----')
-# #                 pprint_ntuple(psutil.swap_memory())
-            
-            
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
@@ -1921,14 +1982,25 @@ class PygeodynController():
                 
                 gc.collect()
 
-#                 main_memory()
-
-
+                
+                
+                
+                
+                
 # if __name__ == '__main__':
 #     main_memory()                
-
-        
-
-
+#             import psutil
+#             from psutil._common import bytes2human
+#             def pprint_ntuple(nt):
+#                 for name in nt._fields:
+#                     value = getattr(nt, name)
+#                     if name != 'percent':
+#                         value = bytes2human(value)
+#                     print('%-10s : %7s' % (name.capitalize(), value))
+#             def main_memory():
+#                 print('MEMORY\n------')
+#                 pprint_ntuple(psutil.virtual_memory())
+# #                 print('\nSWAP\n----')
+# #                 pprint_ntuple(psutil.swap_memory())
 
         

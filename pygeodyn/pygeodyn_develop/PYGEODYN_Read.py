@@ -21,8 +21,12 @@ sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 
 ### Import the Classes from the Tools
 # from util_classtools import Util_Tools
-from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
-from common_functions   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
+# from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
+from time_systems import mjds_to_ymdhms
+from time_systems import time_tdt_to_utc
+
+# from common_functions   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
+from coordinate_systems   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
 
 
 class PygeodynReader:
@@ -296,10 +300,10 @@ class PygeodynReader:
         orbfil_dict['data_record'] = data_record_df
 
         ##### Convert from Terrestrial time to UTC:
-        MJDS_UTC = [Convert_ET_TDT_to_UTC(float(x), 37) for x in orbfil_dict['data_record']['MJDSEC ET'] ]
+        MJDS_UTC = [time_tdt_to_utc(float(x), 37) for x in orbfil_dict['data_record']['MJDSEC ET'] ]
 
         ##### Calculate the Gregorian Calendar date:
-        yymmdd_str = [MJDS_to_YYMMDDHHMMSS(x) for x in MJDS_UTC]
+        yymmdd_str = [mjds_to_ymdhms(x) for x in MJDS_UTC]
 
         ##### Compute date as Datetime object:
         dates_dt_UTC = [pd.to_datetime( x, format='%y%m%d-%H%M%S') for x in yymmdd_str]
@@ -1047,18 +1051,48 @@ class PygeodynReader:
         del DEN_df['YYMMDD']
         del DEN_df['HHMMSS']
         
-        ### DELETE THE duplicated dataset
-        #### Find the index for the correct date and 
+        #------------------------------------------------------------------------------------------
+        #### DELETE THE duplicated dataset
+        #------------------------------------------------------------------------------------------
+
+#         ### Find the index for the correct date  
+#         vals  = np.arange(DEN_df.index[0],DEN_df.index[-1]+1)
+#         df = DEN_df.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min() 
+#         for name in DEN_df.columns:
+#             DEN_df[name] = DEN_df[name][:index_date]
+        
+#         #### Drop the NaNs
+#         DEN_df = DEN_df.dropna()
+        
+#         epoch_end = self.run_settings['epoch_start'][self.arcnumber]
+#         epoch_end_YYMMDD     = epoch_end[:6].strip() 
+#         epoch_end_HHMM       = epoch_end[7:11].strip()
+#         epoch_end_dt = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')
+        def nearest(items, pivot):
+            return min(items, key=lambda x: abs(x - pivot))
+        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        epoch_start_HHMM       = epoch_start[7:11].strip()
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+        
         vals  = np.arange(DEN_df.index[0],DEN_df.index[-1]+1)
         df = DEN_df.set_index('Date',drop=False ) 
         df['i_vals'] = vals
-        index_date = df.loc[df.index.max()]['i_vals'].min() 
+
+#         date_nearend = nearest(pd.to_datetime(df['i_vals'].index), epoch_end_dt)
+        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
+#         df['i_vals'][date_nearend]
+        
+        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
         for name in DEN_df.columns:
-            DEN_df[name] = DEN_df[name][:index_date]
-        
-        #### Drop the NaNs
+            DEN_df[name] = DEN_df[name][index_date:]
+
         DEN_df = DEN_df.dropna()
-        
+
+        #------------------------------------------------------------------------------------------
+
         #--------------------------------------------------------
         end = time.time()
         elapsed = end - start
@@ -1085,17 +1119,15 @@ class PygeodynReader:
         #### The density file is a very simple format
         #### with this it can be loaded using pd.csv very easily
         Drag_csv = pd.read_csv(self._drag_filename, 
-                            skiprows = 1, 
-                            names = ['Elapsed Secs',
-                                     'YYMMDD',
+#                             skiprows = 1, 
+                            names = ['YYMMDD',
                                      'HHMMSS',
-#                                     'Lat',
-#                                     'Lon',
-#                                     'Height (meters)',
-                                    'TC1',
-                                    'CD',
-                                    'TOTAREA',
-#                                      
+                                    #                                      
+                                     'CD',
+                                     'TOTAREA',
+                                     'VELREL',
+                                     'SpeedRatio',
+                                    #                                      
                                     'DXDD_X',
                                     'DXDD_Y',
                                     'DXDD_Z',
@@ -1112,14 +1144,16 @@ class PygeodynReader:
         fix_D_decimal_to_E4 = []
         fix_D_decimal_to_E5 = []
         fix_D_decimal_to_E6 = []
+        fix_D_decimal_to_E7 = []
 
         #### TODO: There is definitely a faster and better way to do this...
-        for i,val1 in enumerate(drag_df['TC1']):
-            val2 = drag_df['CD'][i]
+        for i,val1 in enumerate(drag_df['CD']):
+            val2 = drag_df['VELREL'][i]
             val3 = drag_df['DXDD_X'][i]
             val4 = drag_df['DXDD_Y'][i]
             val5 = drag_df['DXDD_Z'][i]
             val6 = drag_df['TOTAREA'][i]
+            val7 = drag_df['SpeedRatio'][i]
 
             list_val1 = list(val1)
             list_val2 = list(val2)
@@ -1127,6 +1161,7 @@ class PygeodynReader:
             list_val4 = list(val4)
             list_val5 = list(val5)
             list_val6 = list(val6)
+            list_val7 = list(val7)
 
             indx1 = list(val1).index('D')
             indx2 = list(val2).index('D')
@@ -1134,6 +1169,7 @@ class PygeodynReader:
             indx4 = list(val4).index('D')
             indx5 = list(val5).index('D')
             indx6 = list(val6).index('D')
+            indx7 = list(val7).index('D')
 
             list_val1[indx1] = 'E'
             list_val2[indx2] = 'E'
@@ -1141,6 +1177,7 @@ class PygeodynReader:
             list_val4[indx4] = 'E'
             list_val5[indx5] = 'E'
             list_val6[indx6] = 'E'
+            list_val7[indx7] = 'E'
 
             list_val1 = "".join(list_val1)
             list_val2 = "".join(list_val2)
@@ -1148,6 +1185,7 @@ class PygeodynReader:
             list_val4 = "".join(list_val4)
             list_val5 = "".join(list_val5)
             list_val6 = "".join(list_val6)
+            list_val7 = "".join(list_val7)
             
             #### If you get an error here, it is likely:
             ####  due to some values not being floats?
@@ -1158,6 +1196,7 @@ class PygeodynReader:
             val_float4 = np.float(list_val4)
             val_float5 = np.float(list_val5)
             val_float6 = np.float(list_val6)
+            val_float7 = np.float(list_val7)
 
             fix_D_decimal_to_E1.append(val_float1)
             fix_D_decimal_to_E2.append(val_float2)
@@ -1165,13 +1204,15 @@ class PygeodynReader:
             fix_D_decimal_to_E4.append(val_float4)
             fix_D_decimal_to_E5.append(val_float5)
             fix_D_decimal_to_E6.append(val_float6)
+            fix_D_decimal_to_E7.append(val_float7)
 
-        drag_df['TC1']      = fix_D_decimal_to_E1
-        drag_df['CD']       = fix_D_decimal_to_E2
-        drag_df['DXDD_X']  = fix_D_decimal_to_E3
-        drag_df['DXDD_Y']  = fix_D_decimal_to_E4
-        drag_df['DXDD_Z']  = fix_D_decimal_to_E5
-        drag_df['TOTAREA']  = fix_D_decimal_to_E6
+        drag_df['CD']         = fix_D_decimal_to_E1
+        drag_df['VELREL']     = fix_D_decimal_to_E2
+        drag_df['DXDD_X']     = fix_D_decimal_to_E3
+        drag_df['DXDD_Y']     = fix_D_decimal_to_E4
+        drag_df['DXDD_Z']     = fix_D_decimal_to_E5
+        drag_df['TOTAREA']    = fix_D_decimal_to_E6
+        drag_df['SpeedRatio'] = fix_D_decimal_to_E7
 
 
         ####--------------------------------------------------------
@@ -1251,20 +1292,35 @@ class PygeodynReader:
         del drag_df['minutes']
         del drag_df['secs']
         del drag_df['timeHHMMSS']
-        del drag_df['Elapsed Secs']
         del drag_df['YYMMDD']
         del drag_df['HHMMSS']
         
         ### DELETE the duplicated dataset
         #### Find the index for the correct date and 
+#         vals  = np.arange(drag_df.index[0],drag_df.index[-1]+1)
+#         df = drag_df.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min() 
+#         for name in drag_df.columns:
+#             drag_df[name] = drag_df[name][:index_date]
+        
+#         #### Drop the NaNs
+#         drag_df = drag_df.dropna()
+        def nearest(items, pivot):
+            return min(items, key=lambda x: abs(x - pivot))
+        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        epoch_start_HHMM       = epoch_start[7:11].strip()
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
         vals  = np.arange(drag_df.index[0],drag_df.index[-1]+1)
         df = drag_df.set_index('Date',drop=False ) 
         df['i_vals'] = vals
-        index_date = df.loc[df.index.max()]['i_vals'].min() 
-        for name in drag_df.columns:
-            drag_df[name] = drag_df[name][:index_date]
+        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
         
-        #### Drop the NaNs
+        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
+        for name in drag_df.columns:
+            drag_df[name] = drag_df[name][index_date:]
+
         drag_df = drag_df.dropna()
         #--------------------------------------------------------
         end = time.time()
@@ -1454,16 +1510,31 @@ class PygeodynReader:
         
         ### DELETE THE duplicated dataset
         #### Find the index for the correct date and 
+#         vals  = np.arange(accel_df.index[0],accel_df.index[-1]+1)
+#         df = accel_df.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min() 
+#         for name in accel_df.columns:
+#             accel_df[name] = accel_df[name][:index_date]
+        
+#         #### Drop the NaNs
+#         accel_df = accel_df.dropna()
+        def nearest(items, pivot):
+            return min(items, key=lambda x: abs(x - pivot))
+        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        epoch_start_HHMM       = epoch_start[7:11].strip()
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
         vals  = np.arange(accel_df.index[0],accel_df.index[-1]+1)
         df = accel_df.set_index('Date',drop=False ) 
         df['i_vals'] = vals
-        index_date = df.loc[df.index.max()]['i_vals'].min() 
+        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
+        
+        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
         for name in accel_df.columns:
-            accel_df[name] = accel_df[name][:index_date]
-        
-        #### Drop the NaNs
+            accel_df[name] = accel_df[name][index_date:]
         accel_df = accel_df.dropna()
-        
+
         #--------------------------------------------------------
         end = time.time()
         elapsed = end - start
@@ -3311,7 +3382,7 @@ class PygeodynReader:
         
         #### Construct and save the relevent run information and stats for each arc
         for iarc, arc in enumerate(self.arc_input):
-            
+
 #             print('Arc: ', arc,'.', iarc ,sep='')
 
             
@@ -3320,6 +3391,8 @@ class PygeodynReader:
 
             print('Arc: ',self.arcdate_v2)
             
+            self.arcnumber = iarc
+
             for choice in data_keys:                
                 if choice == 'AdjustedParams':
                     self.AdjustedParams[self.arcdate_v2]    = self.getData_adjustedparams_iieout()
@@ -3336,6 +3409,7 @@ class PygeodynReader:
                 elif choice == 'Trajectory_orbfil':
 #                     print('TESTTESTTEST')
                     self.Trajectory_orbfil[self.arcdate_v2] = self.getData_Trajectory_orbfil()
+                
                 elif choice == 'DragFile':
                     self.DragFile[self.arcdate_v2]          = self.getData_DragFile()
                 

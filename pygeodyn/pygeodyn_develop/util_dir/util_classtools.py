@@ -23,7 +23,6 @@ class Util_Tools:
     def __init__(self):  
         pass
 
-
     def set_density_model_setup_params(self, den_model):
         
 #         print('UTIL ---- set_density_model_setup_params ')
@@ -92,6 +91,11 @@ class Util_Tools:
             self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'gitm'
             self.iisset_den = '86'
+            
+        elif den_model == 'orbit_cloud':
+            self.DEN_DIR       = den_model
+            self.SETUP_DEN_DIR = 'orbit_cloud'
+            self.iisset_den = '00'
 
         #### -------------------------------------------------------    
         #### For the Physics models that are connected via Kamodo,
@@ -105,6 +109,7 @@ class Util_Tools:
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
+        
         elif search('hasdm', self.DEN_DIR):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
@@ -198,6 +203,8 @@ class Util_Tools:
         #
         else:
             sys.exit("Density Model Option (den_model) is in an incorrect format")
+        
+        
         ####
         ####
         ####  Save the options to a file (overwrite it) to be read into the GEODYN fortran code
@@ -220,6 +227,12 @@ class Util_Tools:
             file1.writelines('2' +'\n')
         else:
             file1.writelines('0' +'\n')
+
+        
+        if self.scaling_factor == True:
+            file1.writelines('1'+'\n')
+        else:
+            file1.writelines('0'+'\n')
 
         file1.close()
         
@@ -845,7 +858,6 @@ class Util_Tools:
 
                                        
 
-                        
                         
                         
 

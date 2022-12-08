@@ -53,6 +53,9 @@ col_ctipe_oc  =  "#9467bd"  # 'tab:purple'
 col_gitm      =  '#e377c2'  # 'tab:pink'
 
 x_annot_val = 1.1
+font_dict=dict(family='Arial',size=14,color='black')
+font_annot=dict(family='Arial',size=11,color='black')
+
 
 def get_plot_params(plot_num, model_name_string):
     '''
@@ -95,14 +98,17 @@ def orb_avg(den_df, arc):
     
     
     #### Find the index for the correct date
-    vals  = np.arange(den_df[arc].index[0],den_df[arc].index[-1]+1)
-    df = den_df[arc].set_index('Date',drop=False ) 
-    df['i_vals'] = vals
-    index_date = df.loc[df.index.max()]['i_vals'].min()
-    
+#     vals  = np.arange(den_df[arc].index[0],den_df[arc].index[-1]+1)
+#     df = den_df[arc].set_index('Date',drop=False ) 
+#     df['i_vals'] = vals
+#     index_date = df.loc[df.index.max()]['i_vals'].min()
 #     print('index_date', index_date)
-    lat = np.asarray(den_df[arc]['Lat'][:index_date])
-    time_pd = pd.to_datetime(den_df[arc]['Date'][:index_date])
+  
+    den_df[arc] = den_df[arc].reset_index(drop=True)  
+
+    
+    lat = np.asarray(den_df[arc]['Lat'][:])
+    time_pd = pd.to_datetime(den_df[arc]['Date'][:])
     i = np.nonzero( lat[1:]*lat[0:-1]  <  np.logical_and(0 , lat[1:] > lat[0:-1] )  )
     i = i[0]
 
@@ -134,6 +140,45 @@ def orb_avg(den_df, arc):
         
     return(time_avg, d_avg, d_avg_rolling )
     
+def orb_avg_param(DFin, arc, param_str):
+    
+    
+    DFin[arc] = DFin[arc].reset_index(drop=True)  
+
+    
+    lat = np.asarray(DFin[arc]['Lat'][:])
+    time_pd = pd.to_datetime(DFin[arc]['Date'][:])
+    i = np.nonzero( lat[1:]*lat[0:-1]  <  np.logical_and(0 , lat[1:] > lat[0:-1] )  )
+    i = i[0]
+
+    d_avg = np.zeros(np.size(i))
+    height_avg = np.zeros(np.size(i))
+    
+#     print('time_pd',time_pd)
+
+    time_avg = []
+    d_avg_rolling = []
+    
+    roll_avg_count = 0
+    for j in range(np.size(i)-1):
+        d_avg[j]      = np.mean(DFin[arc][param_str][i[j] : i[j+1]-1  ]  )
+#         height_avg[j] = np.mean(DFin[arc]['Height (meters)'][i[j] : i[j+1]-1  ]  )
+#         mean_time      = np.mean(time_pd[   i[j] : i[j+1]-1  ])
+        t1 = pd.to_datetime(time_pd[ i[j]    ])
+        t2 = pd.to_datetime(time_pd[ i[j+1]-1])
+        datemiddle = pd.Timestamp(t1) + (pd.Timestamp(t2) - pd.Timestamp(t1)) / 2
+
+        time_avg.append(datemiddle)
+
+        if roll_avg_count ==1:
+            d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+            roll_avg_count =0
+            
+        roll_avg_count+=1 
+    d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+    param_avg          = d_avg
+    param_avg_rolling  = d_avg_rolling  
+    return(time_avg, param_avg, param_avg_rolling )
 
 def plot_density_orbit_avg(fig, obj_m1, plot_num ):
     
@@ -339,7 +384,7 @@ def add_fancy_legend(fig, run_dict, rms_total_return):
             modelnames.append("MSISe2 | RMS="+str(np.round(rms_total_return['msis2'],2)))
             modelcolors.append(col_msis2)
 
-        elif model == 'dtm2020':
+        elif model == 'dtm2020_o':
             modelnames.append("DTM2020")
             modelcolors.append(col_dtm2020)
 
@@ -381,6 +426,66 @@ def add_fancy_legend(fig, run_dict, rms_total_return):
         xanchor="center",
         x=1,
     #     x=1.015,
+            font=dict(family='Arial',size=13,color='black')      ,
+            bgcolor="white",
+            bordercolor="darkgrey",
+            borderwidth=0.8,
+        )  )
+    
+    return fig
+
+def add_fancy_legend_noRMS(fig, run_dict):
+    
+    modelnames=[]
+    modelcolors = []
+    #### LEGEND ####
+    for model in run_dict.keys():
+        if model == 'msis2':
+            modelnames.append("MSISe2")# | RMS="+str(np.round(rms_total_return['msis2'],2)))
+            modelcolors.append(col_msis2)
+
+        elif model == 'dtm2020_o':
+            modelnames.append("DTM2020")
+            modelcolors.append(col_dtm2020)
+
+        elif model == 'jb2008':
+            modelnames.append("JB2008")
+            modelcolors.append(col_jb2008)
+
+        elif model == 'tiegcm_oc':
+            modelnames.append("TIEGCM")
+            modelcolors.append(col_tiegcm_oc)
+
+        elif model == 'hasdm_oc':
+            modelnames.append("HASDM")
+            modelcolors.append(col_hasdm_oc)
+
+        elif model == 'ctipe_oc':
+            modelnames.append("CTIPe")
+            modelcolors.append(col_ctipe_oc)
+
+        elif model == 'gitm':
+            modelnames.append("GITM")
+            modelcolors.append(col_gitm)
+
+
+
+    df = pd.DataFrame({"starts_colors": modelcolors})
+
+    fig.update_traces(showlegend=False).add_traces(
+        [   go.Scattergl(name=modelnames[i], 
+                   x=[pd.to_datetime( "181110-000000", format='%y%m%d-%H%M%S')],
+                   mode='lines',
+                   line = dict(shape = 'hv',  width=10),
+                   marker_color=c, 
+                   showlegend=True)
+            for i,c in enumerate((df.loc[:,["starts_colors"]].values.ravel()))])
+    fig.update_layout(legend=dict(
+        yanchor="middle",
+        y=0.5,
+        xanchor="center",
+#         x=1,
+        x=1.015,
             font=dict(family='Arial',size=13,color='black')      ,
             bgcolor="white",
             bordercolor="darkgrey",

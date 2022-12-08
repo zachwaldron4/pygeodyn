@@ -108,6 +108,10 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         '''
         Handles the Arc naming conventions
         Construct a way to read in the satellite specific filenames.
+        
+        :param: arc_val aslkjdkldsj definintinonasldkfjsaldkj
+        :output: slkdfjlksdjf
+        
         '''
         
         self.run_ID = 'Run # '+ str(iarc+1)
@@ -490,8 +494,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
 
         elif int_arc_length < 24:
-            dt_end_minusmins = (epoch_end_dt - pd.Series(pd.to_timedelta(5,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
-            dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(5,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
+            dt_end_minusmins = (epoch_end_dt - pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
+            dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
 
 
         card_strings['SELECT         01']  =  'SELECT         01                       '+dt_start_plusmins+dt_end_minusmins   
@@ -504,9 +508,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                                       + str(dt_end_minusmins)[:15]  +'        ' \
                                       + '120'   # time interval between successive outputs
         
+        print('     SELECT data data from:       ',str(dt_start_plusmins),str(dt_end_minusmins))
+        print('     ORBFIL will print data from: ',str(dt_start_plusmins)[:-6],str(dt_end_minusmins)[:15])
 #         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(dt_start_plusmins)[:-6]+'  '+str(dt_end_minusmins)[:15]+'         60'
         
-        card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
+#         card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
+        card_strings['OBSVU']  =  'OBSVU 5'  # NO residuals requested for any arc
 
         ##### --------------------------------------------------------------------
             ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
@@ -621,7 +628,11 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         #####  If we are NOT using CD adjustment, remove DRAG times from the file
         ####   INPUT THE DRAG OPTIONS  for time dependent drag
         card_drag_strings={}
-        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
+        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '                   \
+                                                + str(epoch_start[:-5])+str(epoch_end[:-5])  \
+                                                + '         0.50000  28800.'
+                                             #     '         0.50000  28800.'
+
         
         CD_VALUE = str(self.run_settings['cd_value'])
         print('   Using a CD value of ', CD_VALUE)
@@ -629,10 +640,10 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         if self.run_settings['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
            
             hours_between_cd_adj = self.run_settings['hours_between_cd_adj']
-            if self.run_settings['total_hours_in_run']==hours_between_cd_adj:
+            if self.run_settings['total_hours_in_run']==hours_between_cd_adj:   # The 24 hour case
                 num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj'])
             else:    
-                num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj']) - 1
+                num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj']) #- 1
             add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
             
             drag_dates = []
@@ -644,7 +655,10 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 i_cd = int(i_cd)
                 print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
 
-                card_drag_strings[i_cd] =  'DRAG             '+SAT_ID+' '+CD_VALUE+'0000000D+00'+drag_dates[i_cd][:10]+' 0.00    0.100D+02'
+                card_drag_strings[i_cd] =  'DRAG             '+ SAT_ID+' '            \
+                                                              + CD_VALUE+'0000000D+00'\
+                                                              + '     '+drag_dates[i_cd][:10] \
+                                                              + ' 0.00    0.100D+02'
 #                 card_drag_strings[i_cd] =  'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_dates[i_cd][:10]+' 0.00    0.100D+02'
 
         else:
@@ -673,6 +687,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                             f.write(card_drag_strings[i_cd] + ' \n')                 
                     else:
                         f.write(line)
+                        
         elif self.run_settings['cd_adjustment_boolean'] == False: ### DONT allow CD to ADJUST, i.e. only 1 DRAG card, no time dep.
             print('   Running without DRAG time dependence')
             with open(iisset_file, "r") as f:

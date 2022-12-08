@@ -8,7 +8,7 @@
 ! FUNCTION:    (1)  CALCULATE ACCELERATION DUE TO DRAG
 !              (2)  IF AN ADJUSTMENT IS BEING DONE, CALCULATE THE
 !                   CONTRIBUTION FROM DRAG TO THE V-MATRIX
-!                (3)  IF DRAG COEFFCIENTS ARE BEING ADJUSTED, CALCULATE
+!              (3)  IF DRAG COEFFCIENTS ARE BEING ADJUSTED, CALCULATE
 !                   THEIR EXPLICIT PARTIALS.
 !
 ! I/O PARAMETERS:
@@ -252,7 +252,7 @@
       DATA IKPAP/1/,I324/3/,IDRV/1/
 !     
 !
-      integer, dimension(4) :: optionsin
+      integer, dimension(5) :: optionsin
       CHARACTER(len=200) :: model_path
       CHARACTER(len=200) :: orbitcloud_file
 !
@@ -280,7 +280,9 @@
       REAL(8) :: NOXA_atm
       REAL(8) :: MEANMOL_atm
       REAL(8) :: SCMASS
+      REAL(8) :: SPEED_RATIO
       
+      integer :: intFACE
 
       
       
@@ -293,8 +295,40 @@
 !
 !
 !      
+
+
+
       KENTRY = KENTRY + 1
-!      FLUSH(6)
+        IF(LSTINR) THEN !-----------------------------------
+         !IF(IPDDRG.EQ.1) THEN
+            kin_2 = kin_2 + 1
+            if(kin_2.eq.1) WRITE(6,*) "=============================="
+            if(kin_2.eq.1)  WRITE(6,*)  '     Last inner iteration     '
+            if(kin_2.eq.1) WRITE(6,*)  '                   search'
+         !ENDIF
+         !IF(IPDDRG.EQ.2) THEN
+         !   IF(kin_2.GT.0).AND.IF(Log_Kin2) kin_2 = 0
+         !   kin_2 = kin_2 + 1
+         !ENDIF
+         !IF(IPDDRG.EQ.3) THEN
+         !   kin_2 = kin_2 + 1
+         !ENDIF
+         !IF(IPDDRG.EQ.4) THEN
+         !   kin_2 = kin_2 + 1
+         !ENDIF
+        ENDIF           !-----------------------------------
+      FLUSH(6)
+      
+    if(kin_2.eq.1) WRITE(6,*) 'IPDDRG   ',IPDDRG
+    if(kin_2.eq.1) WRITE(6,*) 'LSADRG   ',LSADRG   ! adjust drag coeff
+    if(kin_2.eq.1) WRITE(6,*) 'LAJDP    ',LAJDP    !LOGICAL TELLING WHETHER A PARTICULAR PERIOD HAS BEEN ADJUSTED
+    if(kin_2.eq.1) WRITE(6,*) 'LORBIT   ',LORBIT
+    if(kin_2.eq.1) WRITE(6,*) 'STDRG    ',STDRG
+    
+!LORBIT
+!STDRG
+!LAJDP
+
 !-------------------------------------------------------------------------------------------------
 !  
 ! Read in the options file from pygeodyn. We only need/want to do this once.
@@ -302,7 +336,7 @@
           open (121,                                                    &
 & file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt",&
            &       status='old')
-          do i=1,4   !#### Loop through the options file and save the values to an array.
+          do i=1,5   !#### Loop through the options file and save the values to an array.
              read(121,*) optionsin(i)
           end do
           close (121)     
@@ -342,6 +376,13 @@
              !!!!  IF WE ARE USING DRIA, there are a few things we need:
              !     1) MSIS2.f90 needs to return the consituent densities
            endif
+           
+           if(optionsin(5).eq.1)then
+             WRITE(6,*) '       Using a Scaling Factor'
+             Ldrag_ScalingFactor = .TRUE.
+           endif
+
+           
       endif        
 !-------------------------------------------------------------------------------------------------
 !
@@ -349,7 +390,7 @@
       ITEST=MJDSEC+FSEC
       IF(NCGMAS.GT.0) THEN
         DO I=1,NCGMAS
-           IF(ISATID.EQ.II(KISATC-1+I).AND.                          &
+           IF(ISATID.EQ.II(KISATC-1+I).AND.                          &  
      &      ITEST.GE.II(KMJDCG-1+I)) RATIO2=1.D0/AA(KSCMRA-1+I)
         ENDDO
       ENDIF
@@ -647,7 +688,7 @@
             if(choose_model.eq.4) kamodo_model='TIEGCM'
             !if(choose_model.eq.5) kamodo_model='GITM'
                  
-            if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 ------- '
+            if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 -------'
             if(kentry.eq.1) WRITE(6,*) '|                                 '
             if(kentry.eq.1) WRITE(6,*) '|  Using the Command Line method. '
             if(kentry.eq.1) WRITE(6,*) '|     model=', kamodo_model 
@@ -1080,9 +1121,16 @@
 !
 !  not earth not earth not earth not earth not earth not earth not earth 
 !
-  200 CONTINUE
 !
-      VEL2 = XDOTR**2+YDOTR**2+ZDOT**2     !!! Calculate the s/c vel relative to atmosphere
+!========================   CONTINUE THE MAIN DRAG ROUTINE   ========================!
+!                                 by calcualating CD      
+  200 CONTINUE
+    if(kin_2.eq.1) WRITE(6,*) ' '
+    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] PREPARE TERMS FOR COMPUTING DRAG CONTRINUTION'
+    if(kin_2.eq.1) WRITE(6,*) '            ---------------------------------------------'
+
+    !!!! Calculate the s/c vel relative to atmosphere
+      VEL2 = XDOTR**2+YDOTR**2+ZDOT**2     
       VEL = SQRT(VEL2)
       C3=VEL*RHO
       IF(IORDRG.GT.1) TM(2)=FSSTRT
@@ -1091,18 +1139,27 @@
       IUP=IORDRG-1
       IF(IUP.LE.0) GO TO 311
       DO 310 I=1,IUP
-       !if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] - 310      '
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - 310     ???     '
       C1=C1+C3*B(I)*TM(I)
   310 END DO
-  311 IF(IPDDRG.GT.0) GO TO 312
-       !if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] - 311      '
+  311 IF(IPDDRG.GT.0) GO TO 312                  ! 311 is the no adjustment option
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -311- no drag adjust. option' 
       C1=C1+C3*B(IORDRG)*TM(IORDRG)
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- C1=C1+C3*B(IORDRG)*TM(IORDRG)'
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- C1       ' , C1
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- C3       ' , C3
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- IORDRG   ' , IORDRG
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- B(IORDRG)' , B(IORDRG)
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- TM(IORDRG)' , TM(IORDRG)
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- TM', TM 
+
+
       GO TO 350
   312 CONTINUE
 !
 !  FIGURE WHICH PERIOD APPLIES
 !
-      DO 315 I=1,IPDDRG
+      DO 315 I=1,IPDDRG    !  IPPDRG is the time dep drag periods i think
       IF(TTEST.LT.STDRG(I)) GO TO 316
   315 END DO
       IPDN=IPDDRG
@@ -1117,19 +1174,30 @@
       DO 330 I=1,IPDN
       TD=STDRG(I)-T0
       CALL POWER(IORDRG,TD,TDN,.FALSE.)
-       !if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] - 320      '
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - 320      '
       C1=C1+C3*B(IORDRG+I)*TDN
       T0=STDRG(I)
   330 END DO
   340 CONTINUE
       TD=TTEST-T0
       CALL POWER(IORDRG,TD,TDN,.TRUE.)
-       !if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] - 340      '
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- DRAG IS BEING ADJUSTED'
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- C1=C1+C3*B(IORDRG+IPD)*TDN'
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- C1            ', C1
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- B(IORDRG+IPD) ',B(IORDRG+IPD)
+                               !####    Need to hunt down where B is calculated
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- IORDRG        ',IORDRG
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- IPD           ',IPD
+       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- TDN           ', TDN
+       !if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340---------------------------'
       C1=C1+C3*B(IORDRG+IPD)*TDN
   350 CONTINUE
 ! 400 CONTINUE
       RTAREA=1.D0
-
+    
+    if(kin_2.eq.1) WRITE(6,*) ' '
+    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] CALCULATE ACCELERATION DUE TO DRAG'
+    if(kin_2.eq.1) WRITE(6,*) '            ----------------------------------'
 
 ! CALCULATE ACCELERATION DUE TO DRAG
       !
@@ -1138,6 +1206,11 @@
       ! REFLECT THE ACTUAL PROJECTED AREA COMPUTED IN THE VARIABLE AREA MODEL
       ! THEREFORE, TEMPORARILY STORE C1 IN TC1.
       TC1 = C1*RATIO2
+ 
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]- TC1     ', TC1
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]- C1      ', C1
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]- RATIO2  ', RATIO2
+
  
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
       !  VARIABLE AREA MODEL (LVAREA=flag for if used)
@@ -1154,6 +1227,14 @@
             IF(ISHFLG.EQ.1 .AND. IATYSH(IRET).EQ.0)      ISHFLG=2     
       ENDIF ! end shadow indicator [IF(LSLFSH) THEN]                                                     
        
+       
+      ! remove the other values stored in CD and leave only the drag coeff.
+      CD_check = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )   
+      CDprime = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )   
+      if(kin_2.eq.1) WRITE(6,*) '  '
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-pre-check- TC1     ', TC1
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-pre-check- CD_check ', CD_check
+
       IF(optionsin(4).ne.2 ) THEN  ! BWDRAG-------------------------------------- Pygeodyn options indicate to use BWDRAG
             
             ! AA(KSDIND) is the interpolated cross-section or ratio which is calculated in EXTATT.f
@@ -1162,16 +1243,16 @@
                   &     AA(JBWARE),DXDD,PXDDT,JARADJ,II(JARUA),  &
                   &     NFACE,NEQN,TOTARE,ISHFLG,AA(KSDIND))
                   
-            if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90]- TC1    ', TC1
-            if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90]- SCMASS ', SCMASS
-            if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90]- TOTARE ', TOTARE
-            if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90]- C3     ', C3
+            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- TC1        ', TC1
+            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- SCMASS     ', SCMASS
+            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- TOTARE     ', TOTARE
+            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- C3=VEL*RHO ', C3
             
             ! remove the other values stored in CD and leave only the drag coeff.
             CD_drag = (TC1*(2.0D0*SCMASS)/(TOTARE*C3)  )   
 
-            if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90]- TC1     ', TC1
-            if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90]- CD_drag ', CD_drag
+            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- TC1     ', TC1
+            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- CD_drag ', CD_drag
 
 
 
@@ -1327,22 +1408,26 @@
 
          ENDIF  ! end jb2008 case for DRIA [>> IF(IATDN.EQ.2)---------------------------------------- end JB2008 DRIA 
          !===========================================================================================================
-         
-         if(kentry.eq.1) WRITE(6,*) ' [DRAG_b4_DRIA] - TC1   ', TC1
+         if(kin_2.eq.1) WRITE(6,*) ' '
+         if(kin_2.eq.1) WRITE(6,*) ' [DRAG_b4_DRIA] - TC1   ', TC1
          CD_drag=0.0D0
          
+         if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] CALL MODDRIA'
+         if(kin_2.eq.1) WRITE(6,*) '            ------------'
+
          !!!! In this case, TC1 is overwritten as the CLL-GSI drag coefficient
          CALL MODDRIA(AA(JTDNRM),AA(JTDNR2),AA(JTDNR3),         &
                &      NFACE, VEL, XDOTR, YDOTR, ZDOT,           &
                &      AA(JBWARE),MEANMOL_atm,TEMP_atm,NOXA_atm, &
                &      CD_drag,DXDD,PXDDT,JARADJ,II(JARUA),NEQN, &
                &      ISHFLG,AA(KSDIND),B0,B,SCAREA,RHO,        &
-               &      TC1,TOTARE)
+               &      TC1,TOTARE, kin_2, CDprime,               &
+               &      Ldrag_ScalingFactor, SPEED_RATIO)
           
          
          
-         if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- TC1     ', TC1
-         if(kentry.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- CD_CoeffOnly  ', CD_drag
+         if(kin_2.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- TC1           ', TC1
+         if(kin_2.eq.1) WRITE(6,*) ' [DRAG aft DRIA]- CD updated  ', CD_drag
          ! the DXDD, PXDDT, and TC1 were all updated in MODDRIA
             
 
@@ -1360,13 +1445,18 @@
     ! IJDSEC=MJDSEC+FSEC
     ! CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
 
-
     ! DEBUG PRINT THE DATE
     ! WRITE(6,*) ' [Date]  YYMMDD HHMMSS FSSTRT  ', IYMD, IHMS, FSSTRT
     ! WRITE(6,*) '         rho drhodz  ', RHO, DRHODZ
 
+    if(kin_2.eq.1) WRITE(6,*) '  '
+    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] PRINT TO DENSITY/DRAG FILES'
+    if(kin_2.eq.1) WRITE(6,*) '            ---------------------------'
+
 ! *****  PRINT THE DENSITY FILE ***********************************
       IF(LSTINR) THEN
+
+
         WRITE(99,7000) FSSTRT,IYMD,IHMS,               &  !           FSSTRT -- Elapsed seconds since initial epoch  
         &              XLATD,XLOND,ALTI,               &  !           IYMD   -- YYMMDD of current epoch  
         &              RHO,DRHODZ,                     &  !           IHMS   -- HHMMSS of current epoch  
@@ -1381,26 +1471,67 @@
 
 
 
-! ****   PRINT THE CD/DRAG FILE ******
+!! ****   PRINT THE CD/DRAG FILE ******       # This still has the dates/data saved out at least twice,
+!      IF(LSTINR) THEN
+!        WRITE(103,7001) FSSTRT,IYMD,IHMS,              & 
+!        !&              XLATD,XLOND,ALTI,               &  
+!        &              TC1,CD_drag, TOTARE,             &  
+!        &              DXDD(1),DXDD(2),DXDD(3)             
+!        !                                                 
+!7001   FORMAT(  F12.1,1X, 2(I0.6,1X),                  &  
+!       !&        2(F12.4,1X),F12.3,1X,                 &  
+!       &        3(D20.11,1X),                          &  
+!       &        3(D20.11,1X)     ) 
+!      ENDIF           
+!
+!--------------------------------------------------------------------------------------------------------
+! ****   PRINT THE DRAG FILE and Spacecraft obervatory file
       IF(LSTINR) THEN
-        WRITE(103,7001) FSSTRT,IYMD,IHMS,              & 
-        !&              XLATD,XLOND,ALTI,               &  
-        &              TC1,CD_drag, TOTARE,             &  
+        WRITE(103,7003) IYMD,IHMS,                           & 
+        &              CD_drag,TOTARE,VEL, SPEED_RATIO,      &  
         &              DXDD(1),DXDD(2),DXDD(3)             
         !                                                 
-7001   FORMAT(  F12.1,1X, 2(I0.6,1X),                  &  
-       !&        2(F12.4,1X),F12.3,1X,                 &  
-       &        3(D20.11,1X),                          &  
+7003   FORMAT(  2(I0.6,1X),      &  
+       &        4(D20.11,1X),    & 
        &        3(D20.11,1X)     ) 
-      ENDIF                                                           
+       
+       
+       intFACE = int( NFACE )
+       
+       
+       if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] AA(JTDNRM)',AA(JTDNRM)
+       if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] AA(JTDNR2)',AA(JTDNR2)
+       if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] AA(JTDNR3)',AA(JTDNR3)
+       if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] AA(JBWARE)',AA(JBWARE)
 
+       
+       WRITE(104,7004) IYMD,IHMS,       &   !2 integers
+                        !! Arrays with length NFACE containing [XYZ] components of panel Normal vectors in True of Date
+        &               AA(JTDNRM),      &   
+        &               AA(JTDNR2),      &
+        &               AA(JTDNR3),      &  
+        &               AA(JBWARE)         ! Flat plate areas
+        !
+        !                                                 
+7004   FORMAT(  2(I0.6,1X),          &  
+       &        14(D20.11,1X),    &              
+       &        14(D20.11,1X),    &              
+       &        14(D20.11,1X),    &              
+       &        14(D20.11,1X)    )
+       !
+      ENDIF 
 !***************************************************************************
 
 
 !
 ! CALCULATE V-MATRIX IN TRUE OF DATE TIME
 !
+    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] CALCULATE V-MATRIX IN TRUE OF DATE TIME'
+    if(kin_2.eq.1) WRITE(6,*) '            ---------------------------------------'
       C1P=-TC1/VEL2
+       if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - C1P=-TC1/VEL2         ', C1P
+       if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - TC1                   ', TC1
+
 !
 ! CALCULATE VELOCITY PART OF V-MATRIX
 !
@@ -1441,7 +1572,7 @@
 !
 ! CALCULATE (DACC/DDENS)*(DDENS/DHT)
 !
-      TEMP(1)=DXDD(1)*C(1)
+      TEMP(1)=DXDD(1)*C(1)    ! C(1) is DRHODZ
       TEMP(2)=DXDD(2)*C(1)
       TEMP(3)=DXDD(3)*C(1)
 !
@@ -1454,6 +1585,8 @@
   460 VMATRX(I,J+3)=VMATRX(I,J+3)+PARTII(I,J)
 !
 ! GET EXPLICIT PARTIALS IF DRAG ADJUSTED
+    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] GET EXPLICIT PARTIALS IF DRAG ADJUSTED'
+    if(kin_2.eq.1) WRITE(6,*) '            --------------------------------------'
 !
 !  XDRREF IS THE RELATIVE VELOCITY VECTOR IN TRUE OF REFERENCE
 !
@@ -1463,20 +1596,43 @@
 !
 !  CALCULATE EXPLICIT PARTIALS
 !
-      C2=-C3*B0*RATIO2
-      if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90] - C2', C2
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - C3=VEL*RHO       ', C3
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - B0=.5*AREA/MASS  ', B0
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - RATIO2           ', RATIO2
 
-!
+      C2=-C3*B0*RATIO2
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - C2=-C3*B0*RATIO2 ', C2
+      !WRITE(6,*) '     [drag.f90] - CDprime = ', CDprime
+
+
+     !!!!   ZACH -- Added CDprime (the scaling factor) back into the drag acceleration
+     !!!!           Now we must include CD-DRIA into the partials
+     !!!!           this has the effect of actively scaling the drag acceleration by the scaling factor
+     !!!!           and the partials include CD_dria since the derivitivbe is wrt CDprime
+
+      if(Ldrag_ScalingFactor) then
+          scaleCD_term = CD_drag
+      else
+          scaleCD_term=1.D0
+      endif
+      
       IF(LVAREA) THEN
-      C2=C2*RTAREA*TOTARE/SCAREA
+      C2=(C2*RTAREA*TOTARE/SCAREA)*scaleCD_term
       ELSE
-      C2=C2*RTAREA
+      C2=(C2*RTAREA)*scaleCD_term
       ENDIF
+      
+      if(kin_2.eq.1) WRITE(6,*) '   '
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - C2 again        ', C2
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - RTAREA        ', RTAREA
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - TOTARE        ', TOTARE
+      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] - SCAREA        ', SCAREA
 
 !
       KPART=JSADRG(1)
       DO 750 J=1,IORDRG
       IF(.NOT.LSADRG(J)) GO TO 750
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - PARTIALS 1 '
       PXDDT(KPART,1)=C2*XDRREF(1)*TM(J)
       PXDDT(KPART,2)=C2*XDRREF(2)*TM(J)
       PXDDT(KPART,3)=C2*XDRREF(3)*TM(J)
@@ -1485,6 +1641,7 @@
 !
       IF(.NOT.LSADRG(4)) RETURN
       IF(.NOT.LSADRG(IORDRG)) GO TO 760
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - PARTIALS 2 '
       PXDDT(KPART-1,1)=ZERO
       PXDDT(KPART-1,2)=ZERO
       PXDDT(KPART-1,3)=ZERO
@@ -1493,6 +1650,11 @@
       KPARTS=KPART
       DO 800 I=1,IPDDRG
       IF(.NOT.LAJDP(I)) GO TO 800
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -760- PARTIALS- period not adjusted?  '
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -760- I              ',I
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -760- LSADRG(IORDRG)                    ', LSADRG(IORDRG)
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -760- LAJDP(I)                          ', LAJDP(I)
+
       PXDDT(KPART,1)=ZERO
       PXDDT(KPART,2)=ZERO
       PXDDT(KPART,3)=ZERO
@@ -1505,6 +1667,7 @@
       IF(.NOT.LAJDP(I)) GO TO 840
       TD=STDRG(I)-T0
       CALL POWER(IORDRG,TD,TDN,.FALSE.)
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - PARTIALS 4 '
       PXDDT(KPART,1)=C2*XDRREF(1)*TDN
       PXDDT(KPART,2)=C2*XDRREF(2)*TDN
       PXDDT(KPART,3)=C2*XDRREF(3)*TDN
@@ -1522,12 +1685,21 @@
   920 CONTINUE
       TD=TTEST-T0
       CALL POWER(IORDRG,TD,TDN,.TRUE.)
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -920- PARTIALS- period has been adjusted  '
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -920- IORDRG         ',IORDRG
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -920- LSADRG(IORDRG)                    ', LSADRG(IORDRG)
+      if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -920- LAJDP(IPD)                        ', LAJDP(IPD)
       PXDDT(KPART,1)=C2*XDRREF(1)*TDN
       PXDDT(KPART,2)=C2*XDRREF(2)*TDN
       PXDDT(KPART,3)=C2*XDRREF(3)*TDN
 !1000 CONTINUE
 
+      if(kin_2.eq.1) WRITE(6,*) '  '   
+      if(kin_2.eq.1) WRITE(6,*) ' ========================'
+      if(kin_2.eq.1) WRITE(6,*) ' RETURN FROM DRAG ROUTINE'
+      if(kin_2.eq.1) WRITE(6,*) ' ========================'
+
       RETURN
-      
+
 
       END
