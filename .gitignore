@@ -1,7 +1,7 @@
 .ipynb_checkpoints
-data/
+data/*
+!data/README.md
 src/geodyn_code/IIE/ORIG/
 src/geodyn_code/IIS/ORIG/
 src/geodyn_code/RUNS/
-src/geodyn_code/analysis/temp_data/
-notebooks/
+src/geodyn_code/analysis/temp_data//

@@ -1,0 +1,174 @@
+---
+###  Run Settings Test File 
+#
+#### Declare paths and naming conventions:
+user                         : 'Zach Waldron'
+path_to_output_directory     : '/data/zach_work/output_from_runs'
+directory_name_specifier     : '_arclengthtests'  
+PASS_INPUT_VALUE_TO_fortran  :  'None'
+file_string                  : ''
+
+arc_length                   : '1hr'
+model_data_path              :  None 
+den_model                    : 'dtm2020' 
+
+#### CD MODEL
+cd_model  :   'BWDRAG' # 
+
+
+##### CHOOSE GEODYN VERSION:
+GEODYN_iie_MOD_version     : 'CD_model_proj'
+recompile_on               :  False
+
+save_drag_file  : False
+save_accel_file : False
+
+
+### Construct Arcs (YYYY.DDD)
+epoch_start         : [ 
+                    '181109 000000.0000000', 
+                    '181109 010000.0000000', 
+                    '181109 020000.0000000', 
+                    '181109 030000.0000000', 
+                    '181109 040000.0000000', 
+                    '181109 050000.0000000', 
+                    '181109 060000.0000000', 
+                    '181109 070000.0000000', 
+                    '181109 080000.0000000', 
+                    '181109 090000.0000000', 
+                    '181109 100000.0000000', 
+                    '181109 110000.0000000', 
+                    '181109 120000.0000000', 
+                    '181109 130000.0000000', 
+                    '181109 140000.0000000', 
+                    '181109 150000.0000000', 
+                    '181109 160000.0000000', 
+                    '181109 170000.0000000', 
+                    '181109 180000.0000000', 
+                    '181109 190000.0000000', 
+                    '181109 200000.0000000', 
+                    '181109 210000.0000000', 
+                    '181109 220000.0000000', 
+                    '181109 230000.0000000', 
+                    '181110 000000.0000000', 
+                      ] 
+epoch_end         : [ 
+                    '181109 010000.0000000', 
+                    '181109 020000.0000000', 
+                    '181109 030000.0000000', 
+                    '181109 040000.0000000', 
+                    '181109 050000.0000000', 
+                    '181109 060000.0000000', 
+                    '181109 070000.0000000', 
+                    '181109 080000.0000000', 
+                    '181109 090000.0000000', 
+                    '181109 100000.0000000', 
+                    '181109 110000.0000000', 
+                    '181109 120000.0000000', 
+                    '181109 130000.0000000', 
+                    '181109 140000.0000000', 
+                    '181109 150000.0000000', 
+                    '181109 160000.0000000', 
+                    '181109 170000.0000000', 
+                    '181109 180000.0000000', 
+                    '181109 190000.0000000', 
+                    '181109 200000.0000000', 
+                    '181109 210000.0000000', 
+                    '181109 220000.0000000', 
+                    '181109 230000.0000000', 
+                    '181110 000000.0000000', 
+                    '181110 010000.0000000', 
+                      ] 
+arc         : [ 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.313', 
+                    '2018.314', 
+                      ] 
+
+
+
+
+
+#----------------------------------------------------------------------------
+satellite    : 'icesat2' 
+request_data :  ['Trajectory_orbfil',
+                'Density',
+                #'DragFile',
+                'Residuals_summary', 
+                #'RunSummary',
+                # Residuals_obs',
+                # 'AdjustedParams',
+                                  ]
+                                                                 
+### SETUP FILE OPTIONS 
+geodyn_StepSize           : 10.
+cd_adjustment_boolean     : False
+total_hours_in_run        : None
+hours_between_cd_adj      : None
+accels                    :  False
+empirical_accels          :  False, 
+ACCELS                    : 'acceloff'
+cards_to_remove           : [ 'ACCEL9', 'ORBTVU', 'RESID', 'CON9PA',]
+
+#### DRIA CD Model Parameters
+cd_model_params : { 
+#                     MS     : 26.0D0   ,  #!  molar mass for each panel (g/mol)
+#                     TW     : 300.0D0  ,  #!  temperature of panels  (K)
+#                     ALPHA  : 1.0D0    ,  #!  accomodation coefficient
+#                     KL     : 0.0D0    ,  #!  langmuir parameter
+#                     FRACOX : 0.90D0   ,  #!  fraction of surface covered by atomic oxygen
+                   }
+                         
+                  
+#### USER AUXILLIARY OPTIONS
+verbose         :  False
+DRHODZ_update   :  True     #### Do you want to use the updated DRHODZ calculation? (recommended)
+
+
+
+#### ----------------------------------------------------------------------------
+#### Options that are hardcoded defaults for ICESAT2 class
+#### ----------------------------------------------------------------------------
+#### The name of the satellite
+SATELLITE_dir  : 'icesat2'
+#### Satellites COSPAR ID number
+SATID          : '1807001'
+#### Datatype being used as tracking data
+DATA_TYPE      : 'PCE'
+#### ----------------------------------------------------------------------------
+####### File Choices:
+#### G2B file name
+g2b_file       : 'g2b_pce_fullset_nomaneuver'  
+#### Atmospheric Gravity file name
+atgrav_file    : 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+#### Planetary Ephemeris file name
+ephem_file     : 'ephem1430.data_2025'
+#### Gravity field file name
+gravfield_file : 'eigen-6c.gfc_20080101_do_200_fix.grv'
+#### PCE Ascii textfile name
+StateVector_epochs_datafile  : '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+
+
+

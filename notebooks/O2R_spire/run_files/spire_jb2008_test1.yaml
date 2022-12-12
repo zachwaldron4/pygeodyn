@@ -1,0 +1,113 @@
+---
+###  Run Settings 
+#
+user                       : 'Zach Waldron'
+#
+#### Declare paths and naming conventions:
+#### CONSTRUCTED PATH = path_to_output_directory/
+#                                      den_model/
+#                                      den_model+_+cd_model+_+directory_name_specifier/
+#                                      IIEOUT/  
+#                                      satellite_ARCID_arc_length.den_model.file_string
+#                                       
+
+path_to_output_directory   : '/data/data_geodyn/results/spire83/testruns'
+den_model                  : 'jb2008'  
+cd_model                   : 'BWDRAG'  
+directory_name_specifier   : ''  
+arc_length                 : '24hr'
+file_string                : 'test'
+satellite                  : 'spire83' 
+geodyn_StepSize            : 60.
+
+# model_data_path              : '/data/data_geodyn/atmos_models_data/gitm/icesat2_oct2018_jan2019/data'
+  
+
+####  Fixed CD value:    Must have form #.###### 
+cd_value : 2.300000
+
+#### ADJUST THE CD?
+cd_adjustment_boolean   :   False
+total_hours_in_run      :   None
+hours_between_cd_adj    :   None
+
+scaling_factor : False
+
+
+#### DRIA CD Model Parameters
+cd_model_params : { 
+                   }
+
+
+##### CHOOSE GEODYN VERSION:
+GEODYN_iie_MOD_version      : 'CD_model_proj'
+recompile_on                :  False
+save_drag_file              :  True
+save_accel_file             :  True
+PASS_INPUT_VALUE_TO_fortran :  'None'
+
+### IDENTIFY ARCS   (YYYY.DDD)
+arc                 : [ '2018.313',
+#                         '2018.314',
+                        ]
+epoch_start         : [ '181109 000000.0000000',
+#                         '181110 000000.0000000', 
+                        ]
+epoch_end           : [ '181110 000000.0000000',
+#                         '181111 000000.0000000',
+                        ]
+
+request_data :  ['Trajectory_orbfil',
+                #'Density',
+                #'DragFile',
+#                 'Residuals_summary', 
+#                 'AccelFile',
+                #'RunSummary',
+                # Residuals_obs',
+#                 'AdjustedParams',
+                                  ]
+                                  
+                                 
+### SETUP FILE OPTIONS 
+accels                    :  False
+empirical_accels          :  False, 
+ACCELS                    : 'acceloff'
+#cards_to_remove           : [ 'ACCEL9',
+#                              'ORBTVU',
+#                              'RESID',
+#                              'CON9PA',]
+                  
+#### USER AUXILLIARY OPTIONS
+verbose         :  True
+DRHODZ_update   :  True     #### Use the updated DRHODZ calculation? (recommended)
+
+
+
+#### ----------------------------------------------------------------------------
+#### Options that are hardcoded defaults for ICESAT2 class
+#### ----------------------------------------------------------------------------
+#### The name of the satellite
+SATELLITE_dir  : 'spire83'
+#### Satellites COSPAR ID number
+SATID          : '1804607' #2018-046F
+#### Datatype being used as tracking data
+DATA_TYPE      : 'orbit_prop'
+#
+#### --------------------------------------------------------------------------
+#### File Choices:
+#### --------------------------------------------------------------------------
+#### G2B file name
+g2b_file       : 'DOES_NOT_EXIST'  
+##### PCE Ascii textfile name
+StateVector_epochs_datafile  : 'DOES_NOT_EXIST'
+
+#### Atmospheric Gravity file name
+atgrav_file    : 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+#### Planetary Ephemeris file name
+ephem_file     : 'ephem1430.data_2025'
+#### Gravity field file name
+gravfield_file : 'eigen-6c.gfc_20080101_do_200_fix.grv'
+
+
+
+

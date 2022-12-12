@@ -1,0 +1,15 @@
+
+
+gfortran -O3 -c  dtm2020_F107_Kp-subr.f90 Mod_DTM2020F107Kp_Benchmark.f90 >err 2>err2
+
+# gfortran -O3 -c *.f90>err 2>err2
+# 
+gfortran *.o  -o DTMexe 
+
+
+
+
+
+
+
+/data/zach_work/side_projects/ManualModelRuns/DTMexe > dtmout 2> dtmout2

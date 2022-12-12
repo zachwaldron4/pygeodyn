@@ -1,0 +1,12 @@
+      ---TEST DTM---
+sol_DTM2020_F107_Kp_iterT  (SWAMI Operational Model. Drivers: F107 and Kp)      , facteur mutiplicat
+
+      Model DTM2020_F107_Kp
+      Benchmark
+ tz  :    843.243   1312.266    844.099   1334.874
+ tinf:    844.099   1334.875    844.099   1334.875
+ ro  : 0.94719E-14 0.29053E-13 0.26600E-17 0.39104E-16
+ this run:
+tz  :    843.243   1312.266    844.099   1334.874
+tinf:    844.099   1334.876    844.099   1334.876
+ro  : 0.94719E-14 0.29053E-13 0.26600E-17 0.39104E-16

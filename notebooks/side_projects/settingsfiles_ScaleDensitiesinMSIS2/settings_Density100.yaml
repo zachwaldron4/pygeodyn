@@ -1,0 +1,82 @@
+---
+###  Run Settings Test File 
+#
+#### Declare paths and naming conventions:
+user                         : 'Zach Waldron'
+path_to_output_directory     : '/data/zach_work/output_from_runs'
+directory_name_specifier     : 'ScaleDensity'  
+file_string                  : '100'
+PASS_INPUT_VALUE_TO_fortran  : '100'
+
+arc_length                   : '24hr'
+model_data_path              :  None
+
+##### CHOOSE GEODYN VERSION:
+GEODYN_iie_MOD_version     : 'Kamodo_pygeodyn_MODS'
+recompile_on               :   False
+
+### IDENTIFY ARCS   (YYYY.DDD)
+arc                 : ['2018.313','2018.314','2018.315',]
+epoch_start         : ['181109 000000.0000000',
+                        '181110 000000.0000000',
+                        '181111 000000.0000000',]
+epoch_end           : ['181110 000000.0000000',
+                        '181111 000000.0000000',
+                        '181112 000000.0000000',]
+
+
+
+satellite    : 'icesat2' 
+den_model    : 'msis2'  
+request_data :  ['Trajectory_orbfil',
+                'Density',
+                'Residuals_summary', 
+                'RunSummary',
+                # Residuals_obs',
+                # 'AdjustedParams',
+                                  ]
+                                  
+                                 
+### SETUP FILE OPTIONS 
+geodyn_StepSize           : 10.
+cd_adjustment_boolean     : False
+total_hours_in_run        : None
+hours_between_cd_adj      : None
+accels                    :  False
+empirical_accels          :  False, 
+ACCELS                    : 'acceloff'
+cards_to_remove           : [ 'ACCEL9',
+                              'ORBTVU',
+                              'RESID',
+                              'CON9PA',]
+                  
+#### USER AUXILLIARY OPTIONS
+verbose         :  False
+DRHODZ_update   :  True     #### Do you want to use the updated DRHODZ calculation? (recommended)
+
+
+
+#### ----------------------------------------------------------------------------
+#### Options that are hardcoded defaults for ICESAT2 class
+#### ----------------------------------------------------------------------------
+#### The name of the satellite
+SATELLITE_dir  : 'icesat2'
+#### Satellites COSPAR ID number
+SATID          : '1807001'
+#### Datatype being used as tracking data
+DATA_TYPE      : 'PCE'
+#### ----------------------------------------------------------------------------
+####### File Choices:
+#### G2B file name
+g2b_file       : 'g2b_pce_fullset_nomaneuver'  
+#### Atmospheric Gravity file name
+atgrav_file    : 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+#### Planetary Ephemeris file name
+ephem_file     : 'ephem1430.data_2025'
+#### Gravity field file name
+gravfield_file : 'eigen-6c.gfc_20080101_do_200_fix.grv'
+#### PCE Ascii textfile name
+StateVector_epochs_datafile  : '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+
+
+
