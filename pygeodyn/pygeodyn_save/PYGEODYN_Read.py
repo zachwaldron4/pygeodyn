@@ -21,8 +21,12 @@ sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 
 ### Import the Classes from the Tools
 # from util_classtools import Util_Tools
-from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
-from common_functions   import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW_returnall
+# from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
+from time_systems import mjds_to_ymdhms
+from time_systems import time_tdt_to_utc
+
+# from common_functions   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
+from coordinate_systems   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
 
 
 class PygeodynReader:
@@ -296,10 +300,10 @@ class PygeodynReader:
         orbfil_dict['data_record'] = data_record_df
 
         ##### Convert from Terrestrial time to UTC:
-        MJDS_UTC = [Convert_ET_TDT_to_UTC(float(x), 37) for x in orbfil_dict['data_record']['MJDSEC ET'] ]
+        MJDS_UTC = [time_tdt_to_utc(float(x), 37) for x in orbfil_dict['data_record']['MJDSEC ET'] ]
 
         ##### Calculate the Gregorian Calendar date:
-        yymmdd_str = [MJDS_to_YYMMDDHHMMSS(x) for x in MJDS_UTC]
+        yymmdd_str = [mjds_to_ymdhms(x) for x in MJDS_UTC]
 
         ##### Compute date as Datetime object:
         dates_dt_UTC = [pd.to_datetime( x, format='%y%m%d-%H%M%S') for x in yymmdd_str]
@@ -654,7 +658,7 @@ class PygeodynReader:
         timedep_Cd_dates = []
         for i,val in enumerate(card_inputs_range):
                 line = linecache.getline(self._iieout_filename,val)            
-                if 'DRAG' in line:
+                if 'DRAG             '+self.SATID in line:    #"DRAG             1807001"
                     check_sat = int(line[18:26])
 #                     print(check_sat)
                     if check_sat == int(self.SATID):
@@ -1047,16 +1051,497 @@ class PygeodynReader:
         del DEN_df['YYMMDD']
         del DEN_df['HHMMSS']
         
-        
+        #------------------------------------------------------------------------------------------
+        #### DELETE THE duplicated dataset
+        #------------------------------------------------------------------------------------------
 
+#         ### Find the index for the correct date  
+#         vals  = np.arange(DEN_df.index[0],DEN_df.index[-1]+1)
+#         df = DEN_df.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min() 
+#         for name in DEN_df.columns:
+#             DEN_df[name] = DEN_df[name][:index_date]
         
+#         #### Drop the NaNs
+#         DEN_df = DEN_df.dropna()
+        
+#         epoch_end = self.run_settings['epoch_start'][self.arcnumber]
+#         epoch_end_YYMMDD     = epoch_end[:6].strip() 
+#         epoch_end_HHMM       = epoch_end[7:11].strip()
+#         epoch_end_dt = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')
+        def nearest(items, pivot):
+            return min(items, key=lambda x: abs(x - pivot))
+        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        epoch_start_HHMM       = epoch_start[7:11].strip()
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+        
+        vals  = np.arange(DEN_df.index[0],DEN_df.index[-1]+1)
+        df = DEN_df.set_index('Date',drop=False ) 
+        df['i_vals'] = vals
+
+#         date_nearend = nearest(pd.to_datetime(df['i_vals'].index), epoch_end_dt)
+        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
+#         df['i_vals'][date_nearend]
+        
+        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
+        for name in DEN_df.columns:
+            DEN_df[name] = DEN_df[name][index_date:]
+
+        DEN_df = DEN_df.dropna()
+
+        #------------------------------------------------------------------------------------------
+
         #--------------------------------------------------------
         end = time.time()
         elapsed = end - start
 #         print('Density file end: ',elapsed)
         return(DEN_df)
 
+
+
+
+
+
+    def read_drag_file(self):
+        '''
+             Read the drag file.  
+             The drag file has a different date format than the other outputs
+                       so it is dealt with here in the method.
+
+        '''
+        start = time.time()
         
+        ##### Unzip the density file:
+     
+        
+        #### The density file is a very simple format
+        #### with this it can be loaded using pd.csv very easily
+        Drag_csv = pd.read_csv(self._drag_filename, 
+#                             skiprows = 1, 
+                            names = ['YYMMDD',
+                                     'HHMMSS',
+                                    #                                      
+                                     'CD',
+                                     'TOTAREA',
+                                     'VELREL',
+                                     'SpeedRatio',
+                                    #                                      
+                                    'DXDD_X',
+                                    'DXDD_Y',
+                                    'DXDD_Z',
+                                  ],
+                            sep = '\s+',
+                            )
+
+        drag_df = pd.DataFrame(Drag_csv)
+        #### The below takes the double precision format from Fortran (D) and puts an 
+        #### E in the string to be interpeted as a float by python
+        fix_D_decimal_to_E1 = []
+        fix_D_decimal_to_E2 = []
+        fix_D_decimal_to_E3 = []
+        fix_D_decimal_to_E4 = []
+        fix_D_decimal_to_E5 = []
+        fix_D_decimal_to_E6 = []
+        fix_D_decimal_to_E7 = []
+
+        #### TODO: There is definitely a faster and better way to do this...
+        for i,val1 in enumerate(drag_df['CD']):
+            val2 = drag_df['VELREL'][i]
+            val3 = drag_df['DXDD_X'][i]
+            val4 = drag_df['DXDD_Y'][i]
+            val5 = drag_df['DXDD_Z'][i]
+            val6 = drag_df['TOTAREA'][i]
+            val7 = drag_df['SpeedRatio'][i]
+
+            list_val1 = list(val1)
+            list_val2 = list(val2)
+            list_val3 = list(val3)
+            list_val4 = list(val4)
+            list_val5 = list(val5)
+            list_val6 = list(val6)
+            list_val7 = list(val7)
+
+            indx1 = list(val1).index('D')
+            indx2 = list(val2).index('D')
+            indx3 = list(val3).index('D')
+            indx4 = list(val4).index('D')
+            indx5 = list(val5).index('D')
+            indx6 = list(val6).index('D')
+            indx7 = list(val7).index('D')
+
+            list_val1[indx1] = 'E'
+            list_val2[indx2] = 'E'
+            list_val3[indx3] = 'E'
+            list_val4[indx4] = 'E'
+            list_val5[indx5] = 'E'
+            list_val6[indx6] = 'E'
+            list_val7[indx7] = 'E'
+
+            list_val1 = "".join(list_val1)
+            list_val2 = "".join(list_val2)
+            list_val3 = "".join(list_val3)
+            list_val4 = "".join(list_val4)
+            list_val5 = "".join(list_val5)
+            list_val6 = "".join(list_val6)
+            list_val7 = "".join(list_val7)
+            
+            #### If you get an error here, it is likely:
+            ####  due to some values not being floats?
+            ###
+            val_float1 = np.float(list_val1)
+            val_float2 = np.float(list_val2)
+            val_float3 = np.float(list_val3)
+            val_float4 = np.float(list_val4)
+            val_float5 = np.float(list_val5)
+            val_float6 = np.float(list_val6)
+            val_float7 = np.float(list_val7)
+
+            fix_D_decimal_to_E1.append(val_float1)
+            fix_D_decimal_to_E2.append(val_float2)
+            fix_D_decimal_to_E3.append(val_float3)
+            fix_D_decimal_to_E4.append(val_float4)
+            fix_D_decimal_to_E5.append(val_float5)
+            fix_D_decimal_to_E6.append(val_float6)
+            fix_D_decimal_to_E7.append(val_float7)
+
+        drag_df['CD']         = fix_D_decimal_to_E1
+        drag_df['VELREL']     = fix_D_decimal_to_E2
+        drag_df['DXDD_X']     = fix_D_decimal_to_E3
+        drag_df['DXDD_Y']     = fix_D_decimal_to_E4
+        drag_df['DXDD_Z']     = fix_D_decimal_to_E5
+        drag_df['TOTAREA']    = fix_D_decimal_to_E6
+        drag_df['SpeedRatio'] = fix_D_decimal_to_E7
+
+
+        ####--------------------------------------------------------
+        #### Now we must correct the formatting of the HoursMinutesSeconds column
+        #### The lack of zeros was really messing things up, so I forced them in there...
+        #### It works so I hope everyone is okay with how dumb it is.
+        timeHHMMSS = [] 
+        for i,val in enumerate(drag_df['HHMMSS'].values.astype(int)):
+            # print(len(str(val)))
+            if len(str(val)) == 1:
+                timehhmmss_val = '00000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 2:
+                timehhmmss_val = '0000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 3:
+                timehhmmss_val = '000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 4:
+                timehhmmss_val = '00'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 5:
+                timehhmmss_val = '0'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            else:
+                timeHHMMSS.append(str(val))
+        drag_df['timeHHMMSS'] = timeHHMMSS
+        #--------------------------------------------------------
+        #### Here we split up the years, months, and days.
+        #### we add a '20' in front of the year
+        # TODO:  need to find a workaround on this dumb YR variable being passed in.
+        
+        YR = int(str(self.YR)[-2:])
+        
+        YYMMDD_list = drag_df['YYMMDD'].astype(int).astype(str)
+        timeHHMMSS_list = drag_df['timeHHMMSS'].astype(str)
+
+        if YR < 10:
+            year    = ['200' + x[:1]  for x in YYMMDD_list]
+            month   = [        x[1:3] for x in YYMMDD_list]
+            day     = [        x[3:]  for x in YYMMDD_list]
+            hours   = [        x[:2]  for x in timeHHMMSS_list]
+            minutes = [        x[2:4] for x in timeHHMMSS_list]
+            secs    = [        x[4:]  for x in timeHHMMSS_list]
+        else:
+            year    = ['20' + x[:2]  for x in YYMMDD_list]
+            month   = [       x[2:4] for x in YYMMDD_list]
+            day     = [       x[4:]  for x in YYMMDD_list]
+            hours   = [       x[:2]  for x in timeHHMMSS_list]
+            minutes = [       x[2:4] for x in timeHHMMSS_list]
+            secs    = [       x[4:]  for x in timeHHMMSS_list]
+        #--------------------------------------------------------
+        drag_df['year']  = year
+        drag_df['month'] = month
+        drag_df['day']   = day
+        drag_df['hours']  = hours
+        drag_df['minutes'] = minutes
+        drag_df['secs']  = secs
+        #--------------------------------------------------------
+        year= list(map(int, drag_df['year'].values))
+        month= list(map(int, drag_df['month'].values))
+        day= list(map(int, drag_df['day'].values))
+        hour= list(map(int, drag_df['hours'].values))
+        minute = list(map(int, drag_df['minutes'].values))
+        second = list(map(int, drag_df['secs'].values))
+
+        DATE = list(map(datetime, year,month, day, hour,minute,second ))
+        
+        #self.DEN_df['Date']  = DATE
+        drag_df.insert(0, 'Date', DATE)
+        
+        #### DELETE the superfluous columns in the dataframe now.       
+        del drag_df['year']
+        del drag_df['month']
+        del drag_df['day']
+        del drag_df['hours']
+        del drag_df['minutes']
+        del drag_df['secs']
+        del drag_df['timeHHMMSS']
+        del drag_df['YYMMDD']
+        del drag_df['HHMMSS']
+        
+        ### DELETE the duplicated dataset
+        #### Find the index for the correct date and 
+#         vals  = np.arange(drag_df.index[0],drag_df.index[-1]+1)
+#         df = drag_df.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min() 
+#         for name in drag_df.columns:
+#             drag_df[name] = drag_df[name][:index_date]
+        
+#         #### Drop the NaNs
+#         drag_df = drag_df.dropna()
+        def nearest(items, pivot):
+            return min(items, key=lambda x: abs(x - pivot))
+        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        epoch_start_HHMM       = epoch_start[7:11].strip()
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+        vals  = np.arange(drag_df.index[0],drag_df.index[-1]+1)
+        df = drag_df.set_index('Date',drop=False ) 
+        df['i_vals'] = vals
+        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
+        
+        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
+        for name in drag_df.columns:
+            drag_df[name] = drag_df[name][index_date:]
+
+        drag_df = drag_df.dropna()
+        #--------------------------------------------------------
+        end = time.time()
+        elapsed = end - start
+#         print('Density file end: ',elapsed)
+        return(drag_df)
+
+
+
+
+    def read_accel_file(self):
+        '''
+             Read the acceleration file that is written from the F.f90 routine.  
+        '''
+        
+        
+        start = time.time()
+        
+        ##### Unzip the density file:
+     
+        
+        #### The density file is a very simple format
+        #### with this it can be loaded using pd.csv very easily
+        Accel_csv = pd.read_csv(self._accel_filename, 
+#                             skiprows = 1, 
+                            names = ['YYMMDD',
+                                    'HHMMSS',
+                                    'drag_acc_mag',
+                                    'solrad_acc_mag',
+                                    'albedo_acc_mag',
+                                    'tidal_acc_mag',
+                                    'genrel_acc_mag',
+                                    'fburn_acc_mag',
+                                  ],
+                            sep = '\s+',
+                            )
+
+        #### The below takes the double precision format from Fortran (D) and puts an 
+        #### E in the string to be interpeted as a float by python
+        accel_df = pd.DataFrame(Accel_csv)
+        fix_D_decimal_to_E1 = []
+        fix_D_decimal_to_E2 = []
+        fix_D_decimal_to_E3 = []
+        fix_D_decimal_to_E4 = []
+        fix_D_decimal_to_E5 = []
+        fix_D_decimal_to_E6 = []
+
+        #### TODO: There is definitely a faster and better way to do this...
+        for i,val1 in enumerate(accel_df['drag_acc_mag']):
+            val2 = accel_df['solrad_acc_mag'][i]
+            val3 = accel_df['albedo_acc_mag'][i]
+            val4 = accel_df['tidal_acc_mag'][i]
+            val5 = accel_df['genrel_acc_mag'][i]
+            val6 = accel_df['fburn_acc_mag'][i]
+
+            list_val1 = list(val1)
+            list_val2 = list(val2)
+            list_val3 = list(val3)
+            list_val4 = list(val4)
+            list_val5 = list(val5)
+            list_val6 = list(val6)
+
+            indx1 = list(val1).index('D')
+            indx2 = list(val2).index('D')
+            indx3 = list(val3).index('D')
+            indx4 = list(val4).index('D')
+            indx5 = list(val5).index('D')
+            indx6 = list(val6).index('D')
+
+            list_val1[indx1] = 'E'
+            list_val2[indx2] = 'E'
+            list_val3[indx3] = 'E'
+            list_val4[indx4] = 'E'
+            list_val5[indx5] = 'E'
+            list_val6[indx6] = 'E'
+
+            list_val1 = "".join(list_val1)
+            list_val2 = "".join(list_val2)
+            list_val3 = "".join(list_val3)
+            list_val4 = "".join(list_val4)
+            list_val5 = "".join(list_val5)
+            list_val6 = "".join(list_val6)
+            
+            #### If you get an error here, it is likely:
+            ####  due to some values not being floats?
+            ###
+            val_float1 = np.float(list_val1)
+            val_float2 = np.float(list_val2)
+            val_float3 = np.float(list_val3)
+            val_float4 = np.float(list_val4)
+            val_float5 = np.float(list_val5)
+            val_float6 = np.float(list_val6)
+
+            fix_D_decimal_to_E1.append(val_float1)
+            fix_D_decimal_to_E2.append(val_float2)
+            fix_D_decimal_to_E3.append(val_float3)
+            fix_D_decimal_to_E4.append(val_float4)
+            fix_D_decimal_to_E5.append(val_float5)
+            fix_D_decimal_to_E6.append(val_float6)
+
+        accel_df['drag_acc_mag']      = fix_D_decimal_to_E1
+        accel_df['solrad_acc_mag']       = fix_D_decimal_to_E2
+        accel_df['albedo_acc_mag']  = fix_D_decimal_to_E3
+        accel_df['tidal_acc_mag']  = fix_D_decimal_to_E4
+        accel_df['genrel_acc_mag']  = fix_D_decimal_to_E5
+        accel_df['fburn_acc_mag']  = fix_D_decimal_to_E6
+
+        ####--------------------------------------------------------
+        #### Now we must correct the formatting of the HoursMinutesSeconds column
+        #### The lack of zeros was really messing things up, so I forced them in there...
+        #### It works so I hope everyone is okay with how dumb it is.
+        timeHHMMSS = [] 
+        for i,val in enumerate(accel_df['HHMMSS'].values.astype(int)):
+            # print(len(str(val)))
+            if len(str(val)) == 1:
+                timehhmmss_val = '00000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 2:
+                timehhmmss_val = '0000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 3:
+                timehhmmss_val = '000'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 4:
+                timehhmmss_val = '00'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            elif len(str(val)) == 5:
+                timehhmmss_val = '0'+ str(val)
+                timeHHMMSS.append(timehhmmss_val)
+            else:
+                timeHHMMSS.append(str(val))
+        accel_df['timeHHMMSS'] = timeHHMMSS
+        #--------------------------------------------------------
+        #### Here we split up the years, months, and days.
+        #### we add a '20' in front of the year
+        # TODO:  need to find a workaround on this dumb YR variable being passed in.
+        
+        YR = int(str(self.YR)[-2:])
+        
+        YYMMDD_list = accel_df['YYMMDD'].astype(int).astype(str)
+        timeHHMMSS_list = accel_df['timeHHMMSS'].astype(str)
+
+        if YR < 10:
+            year    = ['200' + x[:1]  for x in YYMMDD_list]
+            month   = [        x[1:3] for x in YYMMDD_list]
+            day     = [        x[3:]  for x in YYMMDD_list]
+            hours   = [        x[:2]  for x in timeHHMMSS_list]
+            minutes = [        x[2:4] for x in timeHHMMSS_list]
+            secs    = [        x[4:]  for x in timeHHMMSS_list]
+        else:
+            year    = ['20' + x[:2]  for x in YYMMDD_list]
+            month   = [       x[2:4] for x in YYMMDD_list]
+            day     = [       x[4:]  for x in YYMMDD_list]
+            hours   = [       x[:2]  for x in timeHHMMSS_list]
+            minutes = [       x[2:4] for x in timeHHMMSS_list]
+            secs    = [       x[4:]  for x in timeHHMMSS_list]
+        #--------------------------------------------------------
+        accel_df['year']  = year
+        accel_df['month'] = month
+        accel_df['day']   = day
+        accel_df['hours']  = hours
+        accel_df['minutes'] = minutes
+        accel_df['secs']  = secs
+        #--------------------------------------------------------
+        year= list(map(int, accel_df['year'].values))
+        month= list(map(int, accel_df['month'].values))
+        day= list(map(int, accel_df['day'].values))
+        hour= list(map(int, accel_df['hours'].values))
+        minute = list(map(int, accel_df['minutes'].values))
+        second = list(map(int, accel_df['secs'].values))
+
+        DATE = list(map(datetime, year,month, day, hour,minute,second ))
+        
+        accel_df.insert(0, 'Date', DATE)
+        
+        #### DELETE the superfluous columns in the dataframe now.       
+        del accel_df['year']
+        del accel_df['month']
+        del accel_df['day']
+        del accel_df['hours']
+        del accel_df['minutes']
+        del accel_df['secs']
+        del accel_df['timeHHMMSS']
+#         del accel_df['Elapsed Secs']
+        del accel_df['YYMMDD']
+        del accel_df['HHMMSS']
+        
+        ### DELETE THE duplicated dataset
+        #### Find the index for the correct date and 
+#         vals  = np.arange(accel_df.index[0],accel_df.index[-1]+1)
+#         df = accel_df.set_index('Date',drop=False ) 
+#         df['i_vals'] = vals
+#         index_date = df.loc[df.index.max()]['i_vals'].min() 
+#         for name in accel_df.columns:
+#             accel_df[name] = accel_df[name][:index_date]
+        
+#         #### Drop the NaNs
+#         accel_df = accel_df.dropna()
+        def nearest(items, pivot):
+            return min(items, key=lambda x: abs(x - pivot))
+        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        epoch_start_HHMM       = epoch_start[7:11].strip()
+        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+        vals  = np.arange(accel_df.index[0],accel_df.index[-1]+1)
+        df = accel_df.set_index('Date',drop=False ) 
+        df['i_vals'] = vals
+        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
+        
+        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
+        for name in accel_df.columns:
+            accel_df[name] = accel_df[name][index_date:]
+        accel_df = accel_df.dropna()
+
+        #--------------------------------------------------------
+        end = time.time()
+        elapsed = end - start
+#         print('Density file end: ',elapsed)
+        return(accel_df)
+
+
     def read_observed_resids(self):
         '''
         Now find all the instances of the OBSERVATION RESIDUALS 
@@ -1764,6 +2249,15 @@ class PygeodynReader:
     
     def getData_density_denfile(self):
         return(self.read_density_file())
+    #----------------------------------------------
+    
+    def getData_DragFile(self):
+        return(self.read_drag_file())
+    
+    #----------------------------------------------
+    
+    def getData_AccelFile(self):
+        return(self.read_accel_file())
     
     #----------------------------------------------
 
@@ -1997,6 +2491,7 @@ class PygeodynReader:
         self.Residuals_obs     = {}
         self.Residuals_summary = {}
         self.RunSummary        = {}
+        self.DragFile          = {}
         
         num_arcs = np.size(self.arc_input)
         
@@ -2009,6 +2504,7 @@ class PygeodynReader:
             if os.path.exists(self.path_to_model+'DENSITY/'):
                 os.chdir(self.path_to_model+'DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
+                os.system('bunzip2 -v '+ i +'drag_file.bz2')
 
             if os.path.exists(self.path_to_model+'ORBITS/'):
                 os.chdir(self.path_to_model+'ORBITS/')
@@ -2021,6 +2517,8 @@ class PygeodynReader:
             self.set_file_paths_for_multiple_arcs( arc, iarc, False )
             self.check_if_run_converged(self._iieout_filename)
 
+            print('Loading ', self.den_model , arc )
+            
             for choice in data_keys:                
                 
                 if choice == 'AdjustedParams':
@@ -2038,6 +2536,8 @@ class PygeodynReader:
                 elif choice == 'Trajectory_orbfil':
 #                     print('TESTTESTTEST')
                     self.Trajectory_orbfil[arc]      = self.getData_Trajectory_orbfil()
+                elif choice == 'DragFile':
+                    self.DragFile[arc]               = self.getData_DragFile()
                 else:
 #                     print('Error in PygeodynReader.getData()')
 #                     print('The requested output [', choice, '] does not match any inputs')
@@ -2516,11 +3016,804 @@ class PygeodynReader:
 
 
                
+
+        
+    def QuickLook_plots(self, plot_num, PLOTTYPE):
+        import plotly.graph_objects as go
+        from plotly.offline import plot, iplot
+        from plotly.subplots import make_subplots
+        import plotly.express as px
+        import pandas as pd
+        import numpy as np
+        config = dict({
+                        'displayModeBar': True,
+                        'responsive': False,
+                        'staticPlot': False,
+                        'displaylogo': False,
+                        'showTips': False,
+                        })
+
+        import os
+
+        def get_color(colorscale_name, loc):
+            from _plotly_utils.basevalidators import ColorscaleValidator
+            # first parameter: Name of the property being validated
+            # second parameter: a string, doesn't really matter in our use case
+            cv = ColorscaleValidator("colorscale", "")
+            # colorscale will be a list of lists: [[loc1, "rgb1"], [loc2, "rgb2"], ...] 
+            colorscale = cv.validate_coerce(colorscale_name)
+
+            if hasattr(loc, "__iter__"):
+                return [get_continuous_color(colorscale, x) for x in loc]
+            return get_continuous_color(colorscale, loc)
+
+
+        import plotly.colors
+        from PIL import ImageColor
+
+        def get_continuous_color(colorscale, intermed):
+            """
+            Plotly continuous colorscales assign colors to the range [0, 1]. This function computes the intermediate
+            color for any value in that range.
+
+            Plotly doesn't make the colorscales directly accessible in a common format.
+            Some are ready to use:
+
+                colorscale = plotly.colors.PLOTLY_SCALES["Greens"]
+
+            Others are just swatches that need to be constructed into a colorscale:
+
+                viridis_colors, scale = plotly.colors.convert_colors_to_same_type(plotly.colors.sequential.Viridis)
+                colorscale = plotly.colors.make_colorscale(viridis_colors, scale=scale)
+
+            :param colorscale: A plotly continuous colorscale defined with RGB string colors.
+            :param intermed: value in the range [0, 1]
+            :return: color in rgb string format
+            :rtype: str
+            """
+            if len(colorscale) < 1:
+                raise ValueError("colorscale must have at least one color")
+
+            hex_to_rgb = lambda c: "rgb" + str(ImageColor.getcolor(c, "RGB"))
+
+            if intermed <= 0 or len(colorscale) == 1:
+                c = colorscale[0][1]
+                return c if c[0] != "#" else hex_to_rgb(c)
+            if intermed >= 1:
+                c = colorscale[-1][1]
+                return c if c[0] != "#" else hex_to_rgb(c)
+
+            for cutoff, color in colorscale:
+                if intermed > cutoff:
+                    low_cutoff, low_color = cutoff, color
+                else:
+                    high_cutoff, high_color = cutoff, color
+                    break
+
+            if (low_color[0] == "#") or (high_color[0] == "#"):
+                # some color scale names (such as cividis) returns:
+                # [[loc1, "hex1"], [loc2, "hex2"], ...]
+                low_color = hex_to_rgb(low_color)
+                high_color = hex_to_rgb(high_color)
+
+            return plotly.colors.find_intermediate_color(
+                lowcolor=low_color,
+                highcolor=high_color,
+                intermed=((intermed - low_cutoff) / (high_cutoff - low_cutoff)),
+                colortype="rgb",
+            )
+
+        cols = get_color("Viridis", np.linspace(0, 1, 5))
+        map_cols = np.linspace(0, 1, 5)
+        colorscale=[]
+        for i,val in enumerate(map_cols):
+            colorscale.append([val, cols[i]])
+
+        # Simplify Plotting Schemes:
+        col1 =  px.colors.qualitative.Plotly[0]
+        col2 =  px.colors.qualitative.Plotly[1]
+        col3 =  px.colors.qualitative.Plotly[2]
+        col4 =  px.colors.qualitative.Plotly[3]
+        col5 =  px.colors.qualitative.Plotly[4]
+        col6 =  px.colors.qualitative.Plotly[5]
+
+        if plot_num == 0:
+            col = col1
+            m_size = 4.5
+        elif plot_num == 1:
+            col = col2
+            m_size = 4
+        elif plot_num == 2:
+            col = col3
+            m_size = 3.5
+        elif plot_num == 3:
+            col = col4
+            m_size = 3
+        elif plot_num == 4:
+            col = col5
+            m_size = 3
+        elif plot_num == 5:
+            col = col6
+            m_size = 3
+
+    ############################################################################
+    
+        if PLOTTYPE =='DEN':
+            fig = make_subplots(
+                rows=1, cols=1,
+                subplot_titles=(['Sampled Orbit Densities']),
+                vertical_spacing = 0.15)
+
+            model_m1 = self.__dict__['global_params']['den_model']
+            print(model_m1)
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input'][:]):
+
+
+                #### INDEX THE DENSITY DF correctly
+                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
+                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+
+                str_run_param = 'run_parameters'+ arc
+                final_iter = self.__dict__[str_run_param]['str_iteration']
+                i_arc = ii+1
+
+                print('----',model_m1,'----')
+                print('     mean:    ',np.mean(self.Density[arc]['rho (kg/m**3)']),'----')
+                print('     variance:',np.std(self.Density[arc]['rho (kg/m**3)']),'----')
+                print()
+
+                if ii==0:
+                    legend_flag = True
+                    name_str    = model_m1+arc
+                else:
+                    legend_flag = False
+                    name_str    = model_m1+arc
+
+
+                fig.add_trace(go.Scattergl(  x=self.Density[arc]['Date'][:index_date][:],
+                                             y=self.Density[arc]['rho (kg/m**3)'][:index_date][:],
+                                             name= name_str,
+                                             mode='markers',
+                                             opacity=1,
+                                             marker=dict(
+                                                color=col, 
+                                                size=m_size,
+                                                        ),
+                                             showlegend=legend_flag,
+                                          ),
+                                              secondary_y=False,
+                                               row=1, col=1,
+                                          )
+
+            fig.update_layout(legend= {'itemsizing': 'constant'})
+            fig.update_yaxes( title="rho (kg/m**3)", type='log', exponentformat= 'power',row=1, col=1)
+            fig.update_xaxes( title="Date", row=1, col=1)       
+            
+            return(fig.show(config=config) )        
+    ############################################################################
+
+        elif PLOTTYPE =='DEN_orbavg':
+
+            def orb_avg(den_df, arc):
+                #### Find the index for the correct date
+                vals  = np.arange(den_df[arc].index[0],den_df[arc].index[-1]+1)
+                df = den_df[arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+                lat = np.asarray(den_df[arc]['Lat'][:index_date])
+                time_pd = pd.to_datetime(den_df[arc]['Date'][:index_date])
+                i = np.nonzero( lat[1:]*lat[0:-1]  <  np.logical_and(0 , lat[1:] > lat[0:-1] )  )
+                i = i[0]
+
+                d_avg = np.zeros(np.size(i))
+                height_avg = np.zeros(np.size(i))
+
+                time_avg = []
+                d_avg_rolling = []
+
+                roll_avg_count = 0
+                for j in range(np.size(i)-1):
+                    d_avg[j]      = np.mean(den_df[arc]['rho (kg/m**3)'  ][i[j] : i[j+1]-1  ]  )
+                    height_avg[j] = np.mean(den_df[arc]['Height (meters)'][i[j] : i[j+1]-1  ]  )
+                    t1 = pd.to_datetime(time_pd[ i[j]    ])
+                    t2 = pd.to_datetime(time_pd[ i[j+1]-1])
+                    datemiddle = pd.Timestamp(t1) + (pd.Timestamp(t2) - pd.Timestamp(t1)) / 2
+
+                    time_avg.append(datemiddle)
+
+                    if roll_avg_count ==1:
+                        d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+                        roll_avg_count =0
+
+                    roll_avg_count+=1 
+                d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+
+                return(time_avg, d_avg, d_avg_rolling )
+            fig = make_subplots(
+                rows=1, cols=1,
+                subplot_titles=(['Orbit Averaged Densities']),
+                vertical_spacing = 0.15)
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
+                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+
+                time_avg,d_avg, d_avg_rolling = orb_avg(self.Density, arc)
+
+
+                fig.add_trace(go.Scattergl(x=time_avg,
+                                         y=d_avg_rolling,
+        #                                  y=d_avg,
+        #                                 name= ' Arc ' +str(i_arc) ,
+                                         mode='markers',
+                                         marker=dict(
+                                         color=col,
+                                         size=7,),
+                                         showlegend=False,
+                                           ),
+                                           row=1, col=1,
+                                           )
+
+
+                fig.update_yaxes(type="log", exponentformat= 'power',row=1, col=1)
+            fig.update_xaxes(title_text="Date", row=1, col=1)
+            fig.update_yaxes(title_text="kg/m^3", row=1, col=1)
+            fig.update_layout(legend= {'itemsizing': 'constant'})
+
+
+            
+            return(fig.show(config=config) )        
+            
+    ############################################################################
+
+        elif PLOTTYPE =='NTW_residuals':
+            
+            coords = ['N','T','W']
+
+            fig = make_subplots(
+                rows=3, cols=1,
+                subplot_titles=(['Normal (N)', 'In-track (T)','Cross-Track (W)']),
+                vertical_spacing = 0.15)
+
+            model_m1 = self.__dict__['global_params']['den_model']
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+                data_resids = self.__dict__['OrbitResids'][arc]['resids']
+
+
+                fig.update_layout(title=''.join(coords)+' Orbit Residuals',
+                                autosize=True,
+                                font=dict(size=14),
+                                legend= {'itemsizing': 'constant'})
+
+                for i,val in enumerate(coords):
+                    fig.add_trace(go.Scattergl(
+                                             x=data_resids['Date'][::10],
+                                             y=data_resids[val][::10],
+                                         name=val+' '+model_m1,
+                                         mode='markers',
+                                         marker=dict(
+                                             color=col,
+                                             size=m_size,
+                                                    ),
+                                         showlegend=False),
+                                         secondary_y=False,
+                                         row=i+1, col=1)
+
+
+
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=1, col=1)
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=2, col=1)
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=3, col=1)
+            fig.update_xaxes( title="Date",  row=3, col=1)
+
+            
+            
+            return(fig.show(config=config) )        
+
         
         
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    def getData_BigData_lowmemory(self):
+
+        import gc
+        
+        rsw_bool = True
+        
+    
+        data_keys = self.request_data
+
+        #### Make dictionaries to store arc in a loop
+        self.AdjustedParams    = {}
+        self.Trajectory_xyz    = {}
+        self.Trajectory_orbfil = {}
+        self.Density           = {}
+        self.Residuals_obs     = {}
+        self.Residuals_summary = {}
+        self.RunSummary        = {}
+        self.DragFile          = {}
+        self.AccelFile          = {}
+        
+        data_keys.append('Statistics')
+        data_keys.append('OrbitResids')
+        ### Init these here so they don't get deleted by the above func
+        self.Statistics  = {}
+        self.OrbitResids = {} 
+
+        num_arcs = np.size(self.arc_input)
+        
+        ##### Go thru the files once and unzip them
+        self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1, True )
+        ARC_FILES = self.make_list_of_arcfilenames()
+        
+        for i in ARC_FILES:
+#             print('arcfiles',i )
+            if os.path.exists(self.path_to_model+'DENSITY/'):
+                os.chdir(self.path_to_model+'DENSITY/')
+                os.system('bunzip2 -v '+ i +'.bz2')
+                os.system('bunzip2 -v '+ i +'drag_file.bz2')
+
+            if os.path.exists(self.path_to_model+'ORBITS/'):
+                os.chdir(self.path_to_model+'ORBITS/')
+                os.system('bunzip2 -v '+i+'_orb1.bz2')
+
+        
+        
+        #### Construct and save the relevent run information and stats for each arc
+        for iarc, arc in enumerate(self.arc_input):
+
+#             print('Arc: ', arc,'.', iarc ,sep='')
+
+            
+            self.set_file_paths_for_multiple_arcs( arc, iarc, False )
+            self.check_if_run_converged(self._iieout_filename)
+
+            print('Arc: ',self.arcdate_v2)
+            
+            self.arcnumber = iarc
+
+            for choice in data_keys:                
+                if choice == 'AdjustedParams':
+                    self.AdjustedParams[self.arcdate_v2]    = self.getData_adjustedparams_iieout()
+                elif choice == 'Trajectory_xyz':
+                    self.Trajectory_xyz[self.arcdate_v2]    = self.getData_asciiXYZ()
+                elif choice == 'Density':
+                    self.Density[self.arcdate_v2]           = self.getData_density_denfile()
+                elif choice == 'Residuals_obs':
+                    self.Residuals_obs[self.arcdate_v2]     = self.getData_residsObserved_iieout()
+                elif choice ==  'Residuals_summary':
+                    self.Residuals_summary[self.arcdate_v2] = self.getData_residsMeasSumm_iieout()
+                elif choice == 'RunSummary':
+                    self.RunSummary[self.arcdate_v2]        = self.getData_RunSummary_iieout()
+                elif choice == 'Trajectory_orbfil':
+#                     print('TESTTESTTEST')
+                    self.Trajectory_orbfil[self.arcdate_v2] = self.getData_Trajectory_orbfil()
+                
+                elif choice == 'DragFile':
+                    self.DragFile[self.arcdate_v2]          = self.getData_DragFile()
+                
+                elif choice == 'AccelFile':
+                    self.AccelFile[self.arcdate_v2]          = self.getData_AccelFile()
+                
+                else:
+
+                    break
+                    
+            self.organize_output_object_keys(data_keys, self.arcdate_v2, iarc, num_arcs)
+
+            ### Init these here so they don't get deleted by the above func
+            if iarc+1 == num_arcs:
+                self.arcdate_v2 = self.__dict__['global_params']['arcdate_v2']
+            self.Statistics[self.arcdate_v2]  = {}
+            self.OrbitResids[self.arcdate_v2] = {} 
+
+            
+            #### GET THE TOTAL RMS of the RESIDUALS
+            final_iter  = float(self.__dict__['run_parameters'+self.arcdate_v2]['total_iterations'])
+            index_iter  = self.__dict__['Residuals_summary'][self.arcdate_v2].Iter == final_iter
+            
+            #### Index the component RMS values
+            index_PCEX = self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['TYPE'] =='PCEX'
+            index_PCEY = self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['TYPE'] =='PCEY'
+            index_PCEZ = self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['TYPE'] =='PCEZ'
+            #
+            rms_PCEX = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'])
+            rms_PCEY = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS'])
+            rms_PCEZ = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['RMS'])
+            w_rms_PCEX = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS'])
+            w_rms_PCEY = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS'])
+            w_rms_PCEZ = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['WTD-RMS'])
+
+            
+            #### Total number of observational Residuals
+            N = np.sum(np.array(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['NUMBER']))
+            RMS_total = np.sqrt( ( np.square(rms_PCEX) + np.square(rms_PCEY) + np.square(rms_PCEZ) )/3  )
+            w_RMS_total = np.sqrt( ( np.square(w_rms_PCEX) + np.square(w_rms_PCEY) + np.square(w_rms_PCEZ) )/3  )
+            
+            ### Get Arc length from the run param settings
+            txt = self.__dict__['global_params']['run_settings']['arc_length']
+            chars = [s for s in [char for char in txt] if s.isdigit()]
+            arc_length = int(''.join(chars))
+
+            
+            data = { 'ARC'             :  [] ,
+                     'ArcLength'       :  [] ,
+                     'Total_iters'     :  [] ,
+                     'RMS_total_XYZ'   :  [] ,
+                     'w_RMS_total_XYZ' :  [] ,
+                     'PCEX_RMS'        :  [] ,
+                     'PCEX_WTD-RMS'    :  [] ,
+                     'PCEY_RMS'        :  [] ,
+                     'PCEY_WTD-RMS'    :  [] ,
+                     'PCEZ_RMS'        :  [] ,
+                     'PCEZ_WTD-RMS'    :  [] ,
+                    }
+            data['N_RMS']         = []
+            data['T_RMS']         = []
+            data['W_RMS']         = []
+            data['RMS_total_NTW'] = []
+            
+            if rsw_bool == True:
+                data['R_RMS']         = []
+                data['S_RMS']         = []
+                data['Wrsw_RMS']         = []
+                data['RMS_total_RSW'] = []
+
+            data['ARC'].append(self.arcdate_v2)
+            data['ArcLength'].append(int(arc_length))
+            data['Total_iters'].append(int(final_iter))
+            
+            data['RMS_total_XYZ'].append(RMS_total)     
+            data['w_RMS_total_XYZ'].append(w_RMS_total)
+
+            data['PCEX_RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'])      )
+            data['PCEX_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS']))
+            data['PCEY_RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS']))
+            data['PCEY_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS']))
+            data['PCEZ_RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['RMS']))
+            data['PCEZ_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['WTD-RMS']))
+            
+
+############--------------------------------------------------------------------------------------------------        
+            #### Get the OrbFil and PCE data for the datapoints that match in time
+            CombinedOrbitsDF  = {}
+        
+        
+            ###### GET THE PCE DATA:
+            StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+            SAT_ID = int(self.__dict__['global_params']['SATID'])
+            which_stat = 'CURRENT_VALUE'
+
+            ####--------------------- Residual  ---------------------
+            arc_first_time  = self.__dict__['Trajectory_orbfil'][self.arcdate_v2]['data_record']['Date_UTC'].iloc[0]
+            arc_last_time   = self.__dict__['Trajectory_orbfil'][self.arcdate_v2]['data_record']['Date_UTC'].iloc[-1]
+
+            arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
+            arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
+            
+                       
+            A=[]
+            for i,val in enumerate(np.arange(-20,20)):
+                A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
+            B=[]
+            for i,val in enumerate(np.arange(-20,20)):
+                B.append(str(pd.to_datetime(arc_last_time)+pd.to_timedelta(val,'s')))
+
+            ####---------------------------------------------------------
+            last_line = False
+            with open(StateVector_PCE_datafile, 'r') as f:
+                for line_no, line_text in enumerate(f):
+                    if any(times in line_text for times in A):
+                        first_line = line_no
+                    if any(times in line_text for times in B):
+                        last_line = line_no
+                        break
+
+                if not last_line:
+                    last_line = first_line +32220
+                    print('No matching lastline time: ',arc_last_time_str, last_line )
+
+            ####    IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
+            ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
+#             print('        Loading PCE datafile...')
+            PCE_data = pd.read_csv(StateVector_PCE_datafile, 
+                        skiprows = first_line, 
+                        nrows=last_line-first_line,           
+                        sep = '\s+',
+                        dtype=str,
+                        names = [
+                                'Date',
+                                'MJDSECs', 
+                                'RSECS', #(fractional secs)
+                                'GPS offset', # (UTC - GPS offset (secs))
+                                'X_pce',
+                                'Y_pce',
+                                'Z_pce',
+                                'Xdot_pce',
+                                'Ydot_pce',
+                                'Zdot_pce',
+                                'YYMMDDhhmmss',
+                                    ],)
+            
+            PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
+            del PCE_data['YYMMDDhhmmss']
+            del PCE_data['MJDSECs']
+            del PCE_data['RSECS']
+            del PCE_data['GPS offset']
+            del PCE_data['Date']
+
+            
+            orbfil_arc1 = self.__dict__['Trajectory_orbfil'][self.arcdate_v2]['data_record']
+            orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
+            
+            del orbfil_arc1['Date_UTC']
+            del orbfil_arc1['MJDSEC ET']
+            del orbfil_arc1['Satellite Geodetic Latitude']
+            del orbfil_arc1['Satellite East Longitude']
+            del orbfil_arc1['Satellite Height']
+            del orbfil_arc1['MJDS_UTC']
+
+
+            ### CombinedOrbitsDF is a dataframe containing all data between the two files where the dates match
+            CombinedOrbitsDF[self.arcdate_v2] = pd.merge(left=orbfil_arc1, left_on='Date_pd',
+                 right=PCE_data, right_on='Date_pd')
+
+#             print(CombinedOrbitsDF[arc].columns)
+            CombinedOrbitsDF[self.arcdate_v2] = CombinedOrbitsDF[self.arcdate_v2].rename(columns={"Satellite Inertial X coordinate": "X_orbfil",
+                                     "Satellite Inertial Y coordinate": "Y_orbfil",
+                                     "Satellite Inertial Z coordinate": "Z_orbfil",
+                                     "Satellite Inertial X velocity"  : "Xdot_orbfil",
+                                     "Satellite Inertial Y velocity"  : "Ydot_orbfil",
+                                     "Satellite Inertial Z velocity"  : "Zdot_orbfil",
+                                    })
+############--------------------------------------------------------------------------------------------------        
+#             OrbitResids = self.ResidInvestigation_get_residuals_coordsystems(CombinedOrbitsDF)
+
+            data_orbfil = {}
+            data_PCE    = {}
+            resids      = {}
+            ### Convert the PCE data to NTW
+#             print('        Converting PCE data to other coordinates...')
+            X = CombinedOrbitsDF[self.arcdate_v2]['X_pce'].astype(float)
+            Y = CombinedOrbitsDF[self.arcdate_v2]['Y_pce'].astype(float)
+            Z = CombinedOrbitsDF[self.arcdate_v2]['Z_pce'].astype(float)
+            Xdot = CombinedOrbitsDF[self.arcdate_v2]['Xdot_pce'].astype(float)
+            Ydot = CombinedOrbitsDF[self.arcdate_v2]['Ydot_pce'].astype(float)
+            Zdot = CombinedOrbitsDF[self.arcdate_v2]['Zdot_pce'].astype(float)
+            state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+            data_PCE['Date'] = CombinedOrbitsDF[self.arcdate_v2]['Date_pd']
+
+            ##### NTW Coordinate System
+#             NTW_PCE  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
+            NTW_pce =  [Convert_cartesian_to_NTW_returnall(x_pce, 0, True) for x_pce in state_vector]
+#             Rvec_ntw_pce = []
+            Tmat_ntw         = []
+            n_pce        = []
+            t_pce        = []
+            w_pce        = []
+            for vec,matrix in NTW_pce:
+                Tmat_ntw.append(matrix)
+                n_pce.append( vec[0])
+                t_pce.append( vec[1])
+                w_pce.append( vec[2])        
+               
+            data_PCE['N'] = n_pce
+            data_PCE['T'] = t_pce
+            data_PCE['W'] = w_pce
+            ##### XYZ Coordinate System
+            data_PCE['X'] = X
+            data_PCE['Y'] = Y
+            data_PCE['Z'] = Z
+            data_PCE['Xdot'] = Xdot
+            data_PCE['Ydot'] = Ydot
+            data_PCE['Zdot'] = Zdot
+            
+            if rsw_bool == True:
+                RSW_pce =  [Convert_cartesian_to_RSW_returnall(x_pce, 0, True) for x_pce in state_vector]
+                Tmat_rsw     = []
+                r_pce        = []
+                s_pce        = []
+                wrsw_pce        = []
+                for vec,matrix in RSW_pce:
+                    Tmat_rsw.append(matrix)
+                    r_pce.append( vec[0])
+                    s_pce.append( vec[1])
+                    wrsw_pce.append( vec[2]) 
+                data_PCE['R'] = r_pce
+                data_PCE['S'] = s_pce
+                data_PCE['Wrsw'] = wrsw_pce            
+         ##### R theta phi Coordinate System
+#             data_PCE['R']     = np.sqrt( np.square(X) + 
+#                                             np.square(Y) +
+#                                             np.square(Z) )
+#             data_PCE['theta'] = np.arctan(Y / X)
+#             data_PCE['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
+#                                             np.square(Y) +
+#                                             np.square(Z) )))
+    
+    
+        ### Convert the ORBIT FILE data to NTW
+            X = CombinedOrbitsDF[self.arcdate_v2]['X_orbfil']
+            Y = CombinedOrbitsDF[self.arcdate_v2]['Y_orbfil']
+            Z = CombinedOrbitsDF[self.arcdate_v2]['Z_orbfil']
+            Xdot = CombinedOrbitsDF[self.arcdate_v2]['Xdot_orbfil']
+            Ydot = CombinedOrbitsDF[self.arcdate_v2]['Ydot_orbfil']
+            Zdot = CombinedOrbitsDF[self.arcdate_v2]['Zdot_orbfil']
+            state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
+            data_orbfil['Date'] = CombinedOrbitsDF[self.arcdate_v2]['Date_pd']
+
+            ##### NTW Coordinate System
+#             NTW_orbfil  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
+            NTW_orb  = [Convert_cartesian_to_NTW_returnall(x_orb, Tmat_ntw_i, False) for x_orb, Tmat_ntw_i in zip(state_vector,Tmat_ntw)]
+            n_orb        = []
+            t_orb        = []
+            w_orb        = []
+
+            for vecorb,matrixorb in NTW_orb:
+                n_orb.append( vecorb[0])
+                t_orb.append( vecorb[1])
+                w_orb.append( vecorb[2])        
+
+            data_orbfil['N'] = n_orb
+            data_orbfil['T'] = t_orb
+            data_orbfil['W'] = w_orb
+            ##### XYZ Coordinate System
+            data_orbfil['X'] = X
+            data_orbfil['Y'] = Y
+            data_orbfil['Z'] = Z
+            data_orbfil['Xdot'] = Xdot
+            data_orbfil['Ydot'] = Ydot
+            data_orbfil['Zdot'] = Zdot
+            
+            if rsw_bool == True:
+                RSW_orb  = [Convert_cartesian_to_RSW_returnall(x_orb, Tmat_rsw_i, False) for x_orb, Tmat_rsw_i in zip(state_vector,Tmat_rsw)]
+                Tmat         = []
+                r_orb        = []
+                s_orb        = []
+                wrsw_orb     = []
+                for vecorb,matrixorb in RSW_orb:
+                    r_orb.append( vecorb[0])
+                    s_orb.append( vecorb[1])
+                    wrsw_orb.append( vecorb[2]) 
+                data_orbfil['R'] = r_orb
+                data_orbfil['S'] = s_orb
+                data_orbfil['Wrsw'] = wrsw_orb            
+
+            ##### R theta phi Coordinate System
+#             data_orbfil['R']     = np.sqrt( np.square(X) + 
+#                                             np.square(Y) +
+#                                             np.square(Z) )
+#             data_orbfil['theta'] = np.arctan(Y / X)
+#             data_orbfil['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
+#                                             np.square(Y) +
+#                                             np.square(Z) )))
+
+
+            ### RESIDUALS:
+            resids['Date'] = CombinedOrbitsDF[self.arcdate_v2]['Date_pd']
+
+            ##### NTW Coordinate System
+            resids['N'] = (np.array(data_PCE['N']) - np.array(data_orbfil['N']))
+            resids['T'] = (np.array(data_PCE['T']) - np.array(data_orbfil['T']))
+            resids['W'] = (np.array(data_PCE['W']) - np.array(data_orbfil['W']))
+            
+            if rsw_bool == True:
+                resids['R'] = (np.array(data_PCE['R']) - np.array(data_orbfil['R']))
+                resids['S'] = (np.array(data_PCE['S']) - np.array(data_orbfil['S']))
+                resids['Wrsw'] = (np.array(data_PCE['Wrsw']) - np.array(data_orbfil['Wrsw']))
+
+            ##### XYZ Coordinate System
+#             resids['X'] = (np.array(data_PCE['X']) - np.array(data_orbfil['X']))
+#             resids['Y'] = (np.array(data_PCE['Y']) - np.array(data_orbfil['Y']))
+#             resids['Z'] = (np.array(data_PCE['Z']) - np.array(data_orbfil['Z']))
+            ##### R theta phi Coordinate System
+#             resids['R']     = (np.array(data_PCE['R'])     - np.array(data_orbfil['R']))
+#             resids['theta'] = (np.array(data_PCE['theta']) - np.array(data_orbfil['theta']))
+#             resids['phi']   = (np.array(data_PCE['phi'])   - np.array(data_orbfil['phi']))
+
+            self.OrbitResids[self.arcdate_v2] = {}
+            self.OrbitResids[self.arcdate_v2]['data_orbfil'] = data_orbfil
+            self.OrbitResids[self.arcdate_v2]['data_PCE']    = data_PCE
+            self.OrbitResids[self.arcdate_v2]['resids']      = resids
+
+            
+            N_mean, N_rms, N_rms_0 = self.STATS_residuals(self.OrbitResids[self.arcdate_v2]['resids']['N'])
+            T_mean, T_rms, T_rms_0 = self.STATS_residuals(self.OrbitResids[self.arcdate_v2]['resids']['T'])
+            W_mean, W_rms, W_rms_0 = self.STATS_residuals(self.OrbitResids[self.arcdate_v2]['resids']['W'])
+            data['N_RMS'].append(N_rms_0)
+            data['T_RMS'].append(T_rms_0)
+            data['W_RMS'].append(W_rms_0)
+            RMS_total_ntw = np.sqrt( ( np.square(N_rms_0) + np.square(T_rms_0) + np.square(W_rms_0) )/3  )
+            data['RMS_total_NTW'].append(RMS_total_ntw)
+        
+        
+            if rsw_bool == True:
+                R_mean, R_rms, R_rms_0 = self.STATS_residuals(self.OrbitResids[self.arcdate_v2]['resids']['R'])
+                S_mean, S_rms, S_rms_0 = self.STATS_residuals(self.OrbitResids[self.arcdate_v2]['resids']['S'])
+                Wrsw_mean, Wrsw_rms, Wrsw_rms_0 = self.STATS_residuals(self.OrbitResids[self.arcdate_v2]['resids']['Wrsw'])
+                data['R_RMS'].append(R_rms_0)
+                data['S_RMS'].append(S_rms_0)
+                data['Wrsw_RMS'].append(W_rms_0)
+                RMS_total_rsw = np.sqrt( ( np.square(R_rms_0) + np.square(S_rms_0) + np.square(Wrsw_rms_0) )/3  )
+                data['RMS_total_RSW'].append(RMS_total_rsw)
+
+        
+        
+            self.Statistics[self.arcdate_v2] = pd.DataFrame.from_dict(data) 
+       
+        
+    
+                ### FREE UP MEMORY
+                ####-----------------------------------------------------------------
+                #### DELETE UNNECESSARY VARS IN DENSITY
+            del self.__dict__['Density'][self.arcdate_v2]['drhodz (kg/m**3/m)']
+            del self.__dict__['Density'][self.arcdate_v2]['flux_daily']
+            del self.__dict__['Density'][self.arcdate_v2]['flux_avg']
+            del self.__dict__['Density'][self.arcdate_v2]['Kp']
+
+            ####-----------------------------------------------------------------
+            #### DELETE UNNECESSARY VARS IN Residuals_obs
+            ####-----------------------------------------------------------------
+            #### DELETE UNNECESSARY VARIABLES IN AdjustedParams
+            ####-----------------------------------------------------------------
+            #### DELETE UNNECESSARY VARIABLES IN Trajectory_orbfil
+
+            
+            del self.__dict__['Trajectory_orbfil'][self.arcdate_v2]
+            del self.__dict__['Residuals_summary'][self.arcdate_v2]
+
+            
+            ##### Optional, delete the coordinate systems we dont want
+            
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_orbfil']['X']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_orbfil']['Y']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_orbfil']['Z']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_orbfil']['Xdot']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_orbfil']['Ydot']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_orbfil']['Zdot']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_PCE']['X']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_PCE']['Y']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_PCE']['Z']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_PCE']['Xdot']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_PCE']['Ydot']
+            del self.__dict__['OrbitResids'][self.arcdate_v2]['data_PCE']['Zdot']
+        
+            ### IF ON THE LAST ARC, delete this silly thing that got double saved somehow
+            if iarc+1 == num_arcs:
+                for iarc, arc in enumerate(self.__dict__['global_params']['arc_input']):
+#                     self.set_file_paths_for_multiple_arcs( arc, iarc, False )
+
+                    if 'OrbitResids' in self.__dict__['run_parameters'+self.arcdate_v2]:
+                        del self.__dict__['run_parameters'+self.arcdate_v2]['OrbitResids']
+                    if 'Statistics' in self.__dict__['run_parameters'+self.arcdate_v2]:
+                        del self.__dict__['run_parameters'+self.arcdate_v2]['Statistics']
+                    
+                    if 'request_data' in self.__dict__['run_parameters'+self.arcdate_v2]:
+                        del self.__dict__['run_parameters'+self.arcdate_v2]['request_data']
+            
+            ### Must use garbage collector in conjunction with del to clear memory in python
+            gc.collect()
         
 ### END OF CLASS       
         

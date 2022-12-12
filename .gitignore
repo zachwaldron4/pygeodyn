@@ -1,5 +1,7 @@
-geodyn_code/IIE/ORIG/
-geodyn_code/IIS/ORIG/
-geodyn_code/RUNS/
-geodyn_code/analysis/temp_data/
-runs_geodyn/icesat2/pre_processing/G2B_PCE
+.ipynb_checkpoints
+data/
+src/geodyn_code/IIE/ORIG/
+src/geodyn_code/IIS/ORIG/
+src/geodyn_code/RUNS/
+src/geodyn_code/analysis/temp_data/
+notebooks/

@@ -1,0 +1,2 @@
+gfortran -c forpy_mod.F90
+# gfortran intro_to_forpy.F90 forpy_mod.o -fno-lto `python3-config --ldflags`

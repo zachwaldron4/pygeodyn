@@ -76,33 +76,28 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     """
     
     def __init__(self):
-
+        pass
             
         ###### ---------------------------------------------------------------------
         #### HARD CODE the ICESat2 properties
         ###### ---------------------------------------------------------------------
-        self.SATELLITE_dir = 'icesat2'
-        self.SATID         = '1807001'
-#         self.YR            =  2018
-        self.DATA_TYPE     = 'PCE'
-        self.grav_id = '' 
-        self.options_in =  {'DRHODZ_update':True}  
+#         self.SATELLITE_dir = 'icesat2'
+#         self.SATID         = '1807001'
+# #         self.YR            =  2018
+#         self.DATA_TYPE     = 'PCE'
+#         self.grav_id = '' 
+#         self.options_in =  {'DRHODZ_update':True}  
 
         #### ICESAT2 Data files
-#         self.g2b_file = 'g2b_pce_Dec2018'   # chose this for running test in Dec. for faster run times
-        self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
-        self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
-        self.ephem_file     = 'ephem1430.data_2025'
-        self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
+#         self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
+#         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
+#         self.ephem_file     = 'ephem1430.data_2025'
+#         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
         
 
 #         self.path_to_binaryrvgs     = '/data/data_geodyn/inputs/icesat2/pre_processing/traj_files_rvg'
-        self.StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
+#         self.StateVector_epochs_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
         
-        ###### ---------------------------------------------------------------------
-        ###### SPECIFY ARC NAMING CONVENTION
-        ###### ---------------------------------------------------------------------
-        self.arc_length = '54hr'
 
         
         
@@ -113,14 +108,39 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         '''
         Handles the Arc naming conventions
         Construct a way to read in the satellite specific filenames.
+        
+        :param: arc_val aslkjdkldsj definintinonasldkfjsaldkj
+        :output: slkdfjlksdjf
+        
         '''
         
         self.run_ID = 'Run # '+ str(iarc+1)
         
+#         seen = set()
+#         dupes = [x for x in self.arc_input if x in seen or seen.add(x)]         
+        
+        #### Count how many arcs of this name there are
+        for x_arc in self.arc_input:
+            if self.arc_input.count(x_arc) == 1:
+#                 print('Only one arc of this name', x_arc)
+                iarc = 0
+#             elif self.arc_input.count(arc_val) > 1:
+#                 self.unique_arc_count+=1
+#                 iarc = self.unique_arc_count
+#                 print('There are multiples of this arc, this is #',iarc)
+            else:
+#                 print('There are multiples of this arc, this is #',iarc+1)
+                pass
+                
         self.arc_name_id = arc_val
         self.YR  = self.arc_name_id[0:4]
         doy = self.arc_name_id[5:]
-        self.arcdate_for_files = self.YR + doy
+#         self.arcdate_for_files = '%02d.%d%d'   % ( str(iarc+1), self.YR, doy)
+#         self.arcdate_v2        = '%02d.%d.%d'   % ( str(iarc+1), self.YR, doy) #str(iarc+1)+'.'+ self.YR + '.' + doy 
+        self.arcdate_for_files = '%d%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1))
+        self.arcdate_v2        = '%d.%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1)) #str(iarc+1)+'.'+ self.YR + '.' + doy 
+
+
         ####
         #### The setup files and the external attitutde files have the same naming convention.
 #         print('self.arc_name_id',self.arc_name_id)
@@ -135,25 +155,24 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     self.run_settings['file_string'])
 
         
-        
-        self.path_to_model = ('/data/data_geodyn/results/'+
-                                   self.SATELLITE_dir +'/'+
-                                   self.den_model+'/'+  
-                                   self.den_model+'_'+ self.ACCELS + self.SpecialRun_name +'/')
-        file_name =   self.ARC         
-#         print('     Loading ... ', file_name,' ' ,sep = '')
+#         self.SERIES = self.DEN_DIR + '_' + self.ACCELS + self.directory_name_specifier
+        self.SERIES = self.DEN_DIR + '_' + self.cd_model + self.directory_name_specifier
 
-        if unzip_and_loadpaths == True:
-            pass
-        else:
-            print('     Loading ... ', file_name,' ' ,sep = '')
-        
+        self.path_to_model = self.run_settings['path_to_output_directory'] + '/'+self.DEN_DIR+'/'+self.SERIES +'/'
+                            #('/data/data_geodyn/results/'+
+                              #     self.SATELLITE_dir +'/'+
+                               #    self.den_model+'/'+  
+                                #   self.den_model+'_'+ self.ACCELS + self.directory_name_specifier +'/')
+        file_name =   self.ARC         
+       
         
         ####  save the specific file names as "private members" with the _filename convention
         self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
         self._orbfil_filename = self.path_to_model + 'ORBITS/'+ file_name+'_orb1'
         self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
         self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
+        self._drag_filename  = self.path_to_model + 'DENSITY/' + file_name +'drag_file'    
+        self._accel_filename  = self.path_to_model + 'ORBITS/' + file_name +'_accel_file'    
 #         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
         
@@ -173,10 +192,22 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             
         for i, val in enumerate(self.arc_input):
 
+            #### Count how many arcs of this name there are
+            if self.arc_input.count(val) == 1:
+#                 print('Only one arc of this name', x_arc)
+                i = 0
+#             elif self.arc_input.count(arc_val) > 1:
+#                 self.unique_arc_count+=1
+#                 i = self.unique_arc_count
+#                 print('There are multiples of this arc, this is #',iarc)
+            else:
+#                 print('filename list #',i+1)
+                pass
+
             arc_name_id = val
             YR  = arc_name_id[0:4]
             doy = arc_name_id[5:]
-            arcdate_for_files = YR + doy
+            arcdate_for_files =  '%d%03d.%02d' % ( int(YR), int(doy), (i+1)) # str(i+1)+'.' +YR + doy 
             ####
             ####
             ### Now specify what we what the output arcs to be named.
@@ -324,8 +355,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         if  self.run_settings['epoch_end'] == None :
             pass
         else:
-            
-            
             epoch_end            = self.run_settings['epoch_end'][self.arcnumber]
             epoch_end_YYMMDD     = epoch_end[:6].strip() 
             epoch_end_HHMM       = epoch_end[7:11].strip()
@@ -338,6 +367,12 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
         epoch_end_dt = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')
 
+        
+        #### RE-SAVE THE DATE in datetime format for easy printing
+        self.epoch_start_dt = epoch_start_dt
+        self.epoch_end_dt   = epoch_end_dt
+
+        
         dt_2days = pd.Series(pd.to_timedelta(48,'h'))
         dt_1days = pd.Series(pd.to_timedelta(24,'h'))
         
@@ -356,8 +391,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         epoch_start_dt_STR = str(epoch_start_dt)
         date_in_file_flag = False
         
-        print("Epoch Start: "  , epoch_start_dt_STR)
-        print("Epoch End:   "  , epoch_end_dt)
+#         print("Epoch Start: "  , epoch_start_dt_STR)
+#         print("Epoch End:   "  , epoch_end_dt)
 
         with open(self.StateVector_epochs_datafile, 'r') as f:
             for line_no, line_text in enumerate(f):
@@ -439,17 +474,46 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             #####  25-44        START date and time for trajectory output (YYMMDDHHMMSS.SS).
             #####  45-59        STOP  date and time for trajectory output (YYMMDDHHMMSS.SS).
             #####  60-72        Time interval between successive trajectory outputs.
-        dt_end_minus20mins = (epoch_end_dt - pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
-        dt_start_plus20mins  = (epoch_start_dt + pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
-        
-        card_strings['SELECT         01']  =  'SELECT         01                       '+dt_start_plus20mins+dt_end_minus20mins   
-        card_strings['SELECT         02']  =  'SELECT         02                       '+dt_start_plus20mins+dt_end_minus20mins   
-        card_strings['SELECT         03']  =  'SELECT         03                       '+dt_start_plus20mins+dt_end_minus20mins   
+            
+            
+        txt = self.arc_length
+        chars = [s for s in [char for char in txt] if s.isdigit()]
+        int_arc_length = int(''.join(chars))
 
-        card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(dt_start_plus20mins)[:-6]+'  '+str(dt_end_minus20mins)[:15]+'         10'
-#         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(dt_start_plus20mins)[:-6]+'  '+str(dt_end_minus20mins)[:15]+'         60'
+            
+        if int_arc_length == 24:
+#             dt_end_minusmins = (epoch_end_dt - pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
+#             dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0] 
+            
+            # #### ADD A TEMPORARY HASDM RUN OPTION:  july 10, 2022 
+            if self.den_model == 'hasdm_oc':
+                dt_end_minusmins = (epoch_end_dt - pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
+                dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(20,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0] 
+            else:
+                dt_end_minusmins = (epoch_end_dt - pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
+                dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
+
+        elif int_arc_length < 24:
+            dt_end_minusmins = (epoch_end_dt - pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
+            dt_start_plusmins  = (epoch_start_dt + pd.Series(pd.to_timedelta(1,'m'))).dt.strftime('%y%m%d%H%M%S.0000000').values[0]       
+
+
+        card_strings['SELECT         01']  =  'SELECT         01                       '+dt_start_plusmins+dt_end_minusmins   
+        card_strings['SELECT         02']  =  'SELECT         02                       '+dt_start_plusmins+dt_end_minusmins   
+        card_strings['SELECT         03']  =  'SELECT         03                       '+dt_start_plusmins+dt_end_minusmins   
+
+        card_strings['ORBFIL'] =  'ORBFIL20131'+'      '   \
+                                      + SAT_ID + '     '   \
+                                      + str(dt_start_plusmins)[:-6] +'  '       \
+                                      + str(dt_end_minusmins)[:15]  +'        ' \
+                                      + '120'   # time interval between successive outputs
         
-        card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
+        print('     SELECT data data from:       ',str(dt_start_plusmins),str(dt_end_minusmins))
+        print('     ORBFIL will print data from: ',str(dt_start_plusmins)[:-6],str(dt_end_minusmins)[:15])
+#         card_strings['ORBFIL'] =  'ORBFIL20131      '+SAT_ID+'     '+str(dt_start_plusmins)[:-6]+'  '+str(dt_end_minusmins)[:15]+'         60'
+        
+#         card_strings['OBSVU']  =  'OBSVU 2'  # print residuals on last iteration only
+        card_strings['OBSVU']  =  'OBSVU 5'  # NO residuals requested for any arc
 
         ##### --------------------------------------------------------------------
             ####   PRNTVU KEY ------ Used to control the IIS and IIE printed content 
@@ -564,28 +628,38 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         #####  If we are NOT using CD adjustment, remove DRAG times from the file
         ####   INPUT THE DRAG OPTIONS  for time dependent drag
         card_drag_strings={}
-        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
+        card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '                   \
+                                                + str(epoch_start[:-5])+str(epoch_end[:-5])  \
+                                                + '         0.50000  28800.'
+                                             #     '         0.50000  28800.'
 
-        if self.run_settings['cd_adjustment_boolean'] == True:
+        
+        CD_VALUE = str(self.run_settings['cd_value'])
+        print('   Using a CD value of ', CD_VALUE)
+
+        if self.run_settings['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
            
             hours_between_cd_adj = self.run_settings['hours_between_cd_adj']
-            num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj']) - 1
+            if self.run_settings['total_hours_in_run']==hours_between_cd_adj:   # The 24 hour case
+                num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj'])
+            else:    
+                num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj']) #- 1
             add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
             
             drag_dates = []
             for i_cd in np.arange(0, num_of_cd_adj):
                 factor = i_cd+1
                 drag_dates.append( (epoch_start_dt+add_hours_dt*factor).dt.strftime('%y%m%d%H%M%S').values[0])
-#             drag_dates = (epoch_start_dt+add_hours_dt*2).dt.strftime('%y%m%d%H%M%S').values[0]
-#             drag_dates = (epoch_start_dt+add_hours_dt*3).dt.strftime('%y%m%d%H%M%S').values[0]
-#             drag_dates = (epoch_start_dt+add_hours_dt*4).dt.strftime('%y%m%d%H%M%S').values[0]
-#             drag_dates = (epoch_start_dt+add_hours_dt*5).dt.strftime('%y%m%d%H%M%S').values[0]
-#             drag_dates = (epoch_start_dt+add_hours_dt*6).dt.strftime('%y%m%d%H%M%S').values[0]
+                
             for i_cd in np.arange(0, num_of_cd_adj):
                 i_cd = int(i_cd)
                 print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
 
-                card_drag_strings[i_cd] =  'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_dates[i_cd][:10]+' 0.00    0.100D+02'
+                card_drag_strings[i_cd] =  'DRAG             '+ SAT_ID+' '            \
+                                                              + CD_VALUE+'0000000D+00'\
+                                                              + '     '+drag_dates[i_cd][:10] \
+                                                              + ' 0.00    0.100D+02'
+#                 card_drag_strings[i_cd] =  'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_dates[i_cd][:10]+' 0.00    0.100D+02'
 
         else:
             cards_to_remove.append('CONDRG')
@@ -607,20 +681,21 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                 for line in lines_all:
                     if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
                         f.write(card_drag_strings['CONDRG'] + ' \n')
-                        f.write('DRAG             '+SAT_ID+' 2.2000000000000E+00'+ ' \n')
+                        f.write('DRAG             '+SAT_ID+' '+CD_VALUE+'0000000E+00'+ ' \n')
                         for i_cd in np.arange(0, num_of_cd_adj):
                             i_cd = int(i_cd)
                             f.write(card_drag_strings[i_cd] + ' \n')                 
                     else:
                         f.write(line)
-        elif self.run_settings['cd_adjustment_boolean'] == False:
-            print('Running without DRAG time dependence')
+                        
+        elif self.run_settings['cd_adjustment_boolean'] == False: ### DONT allow CD to ADJUST, i.e. only 1 DRAG card, no time dep.
+            print('   Running without DRAG time dependence')
             with open(iisset_file, "r") as f:
                 lines_all = f.readlines()                
             with open(iisset_file, "w") as f:
                 for line in lines_all:
                     if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
-                        f.write('DRAG             '+SAT_ID+' 2.2000000000000E+00'+ ' \n')
+                        f.write('DRAG             '+SAT_ID+' '+CD_VALUE+'0000000E+00'+ ' \n')
                     else:
                         f.write(line)
               
@@ -869,8 +944,8 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         
         #### make symlink to the G2B file and save as ftn40
         if not os.path.exists(self.TMPDIR_arc +'/ftn40'+''):
-#             os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40')
-            shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+            os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+#             shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
             self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'')
         else:
             self.verboseprint(self.tabtab,'copy:  g2b file')

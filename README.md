@@ -1,6 +1,6 @@
 # Pygeodyn Documentation
 
-PYGEODYN is a intended to be an easy-to-use Python-based wrapper for the GEODYN precise orbit determination software.
+PYGEODYN is a Python-based wrapper for the GEODYN precise orbit determination software.
 
 Pygeodyn is not yet available for public use or for use outside of its current server placement.
 

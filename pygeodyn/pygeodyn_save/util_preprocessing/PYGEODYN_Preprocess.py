@@ -40,7 +40,8 @@ class PygeodynPreprocessing:
 
         #------------INFO------------------------
         #
-        1. These files are in what is called the **RVG format**. The RVG files are pretty simple to unpack (lol)
+        1. These files are in what is called the **RVG format**. The RVG files are 
+                        pretty simple to unpack (lol not)
         2. Each **record has 29 words**
         3. Each **word is a 64 bit floating point number**
         4. The first record is a *header record* with information about the file.
