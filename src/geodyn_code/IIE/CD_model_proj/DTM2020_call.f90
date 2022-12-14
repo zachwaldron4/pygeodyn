@@ -90,7 +90,7 @@
       !DATA RADDEG/57.29577951D0/
 
       CHARACTER(len=*) dtmversion_model
-      CHARACTER(len = 48) global_path
+      ! CHARACTER(len = 48) global_path
       CHARACTER(len = 26) filename_ap60
       CHARACTER(len = 74) file_ap60
       
@@ -172,6 +172,9 @@
                       !     X(9)  = exospheric temperature
                       !     X(10) = mean molecular mass  (in kg)
 
+      CHARACTER(len=255) :: PATH_IIELOCAL
+
+
       DATA He_amu/4.002602D0/
       DATA O_amu/15.9994D0/
       DATA N2_amu/28.0134D0/
@@ -190,7 +193,11 @@
 !* START OF EXECUTABLE CODE *******************************************
 !**********************************************************************
       kin = kin+1     ! count how many times the file is entered
-      global_path = '/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/'
+      
+      if(kin.eq.1)then
+            !!! Read the path to the options file from am environment variable
+            CALL get_environment_variable("PATH_IIELOCAL", PATH_IIELOCAL)      
+      endif
       
 ! DATE
       !     day   =   day of year [1-366]
@@ -260,10 +267,9 @@
          if(kin.eq.1) WRITE(6,*) '    GLAT         ', GLAT         
          if(kin.eq.1) WRITE(6,*) '    GLON         ', GLON         
          if(kin.eq.1) WRITE(6,*) ' '
-!read in coefficients for the operation version (F107 and Kp)
-open(146, &
-& file='/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/DTM_2020_F107_Kp.dat', &
-& status='old') 
+      !read in coefficients for the operation version (F107 and Kp)
+      open(146, file=trim(PATH_IIELOCAL)//"/"//"DTM_2020_F107_Kp.dat", &
+                  & status='old') 
       call lecdtm(146)   !read in coefficients
       close (146)
 
@@ -291,7 +297,7 @@ open(146, &
        !!!! Open the ap60 file on the first entry
        if(kin.eq.1)then
           filename_ap60 = 'dtm2020_Hp60_2018_2019.txt'
-          file_ap60  = trim(global_path)//trim(filename_ap60)
+          file_ap60  = trim(PATH_IIELOCAL)//"/"//trim(filename_ap60)
           if(kin.eq.1) WRITE(6,*) '    AP60 File     ', file_ap60     
 
           !
@@ -468,9 +474,8 @@ open(146, &
    
   
    !read in coefficients for the Research version (Hp and Ap)
-open(146, &
-& file='/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/DTM_2020_F30_ap60.dat', &
-& status='old') 
+      open(146, file=trim(PATH_IIELOCAL)//"/"//"DTM_2020_F30_ap60.dat", &
+                &status='old') 
       call lecdtm_res(146)   !read in coefficients
       close (146)
          

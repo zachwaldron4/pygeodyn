@@ -87,7 +87,8 @@ class RunController():
         self.file_G2B        = dir_g2b        +'/'+ self.filename_g2b        
         #--GDN-table - Solar flux,Ap,Kp,PolarMotion,A1-UTC,A1-UT1
         self.filename_gdntable = 'gdntable.data'
-        self.file_gdntable = self.path_data_inputs+'/common_2018/'+self.filename_gdntable
+        self.file_gdntable = self.path_data_inputs+'/common_2018/'\
+                             +self.filename_gdntable
         #----- Solar Radiation file. #### I dont have one  ####
         #        SOLRAD_filename = ARCFIL+'.'+self.GRAVITY
 
@@ -218,7 +219,7 @@ class RunController():
             f.write(f"    Satellite                       {self.satellite} \n")
             f.write(f"    Arc name                        {self.ARC} \n")
             f.write(f"    Density model                   {self.den_model} \n")
-            f.write(f"    GEODYN Version                  {self.GDYN_version} \n")
+            # f.write(f"    GEODYN Version                  {self.GDYN_version} \n")
             f.write('\n')
             f.write('\n')
             f.write('\n')
@@ -348,7 +349,7 @@ class RunController():
         print('|')
         print('| ',self.run_ID,"    IISSET Cleaned     " , 'tmp/.../cleaned_setup'+'_' + self.arcdate_for_files)
         print('| ',self.run_ID,"    Density Model:     " , self.den_model)
-        print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)       
+        # print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)       
         if len(longest_line) > 110:
             A=self.dir_output_raw
             len_dir = int(len(A.split('/'))/2)
@@ -530,18 +531,18 @@ class RunController():
 #                 break
         time.sleep(1)
 
-        #### Save the Interface files from IIS. 
-        # if not os.path.exists('giie.ft12'):
-        #     os.system('cp ftn41 giie.ft12')
-        #     os.system('cp giie.ft12 ftn12')
-        # else:
-        #     self.verboseprint('ft12 is ready')
+        ### Save the Interface files from IIS. 
+        if not os.path.exists('giie.ft12'):
+            os.system('cp ftn41 giie.ft12')
+            os.system('cp giie.ft12 ftn12')
+        else:
+            self.verboseprint('ft12 is ready')
             
-        # if not os.path.exists('giie.ft11'):
-        #     os.system('cp ftn11 giie.ft11')
-        #     os.system('cp giie.ft11 ftn11')
-        # else:
-        #     self.verboseprint('ft11 is ready')
+        if not os.path.exists('giie.ft11'):
+            os.system('cp ftn11 giie.ft11')
+            os.system('cp giie.ft11 ftn11')
+        else:
+            self.verboseprint('ft11 is ready')
 
         ### Check if there are any errors from IIS output
         #_iiserr_filename
@@ -583,7 +584,7 @@ class RunController():
         start = time.time()
         print(' ------ Current DIR: ', os.getcwd())
 #         os.system("touch gmon.out")
-        command_IIE = self.G2EDIR+'/giie2002_gfortran > '+'iieout 2> '+'iieerr' 
+        command_IIE = self.dir_IIE+'/giie2002_gfortran > '+'iieout 2> '+'iieerr' 
         time.sleep(0.5)
         logger.info(f" Running IIE: {command_IIE} ")
         subprocess.run(command_IIE, shell = True)

@@ -283,7 +283,8 @@
       REAL(8) :: SPEED_RATIO
       
       integer :: intFACE
-
+      CHARACTER(len=255) :: PATH_IO_GEODYN
+      CHARACTER(len=255) :: PATH_IIELOCAL
       
       
       
@@ -333,13 +334,17 @@
 !  
 ! Read in the options file from pygeodyn. We only need/want to do this once.
       if(kentry.eq.1)then
-          open (121,                                                    &
-& file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt",&
-           &       status='old')
-          do i=1,5   !#### Loop through the options file and save the values to an array.
-             read(121,*) optionsin(i)
-          end do
-          close (121)     
+
+            !!! Read the path to the options file from am environment variable
+            CALL get_environment_variable("PATH_IO_GEODYN", PATH_IO_GEODYN)      
+            !     
+            open (121,                                                    &
+                  & file=trim(PATH_IO_GEODYN)//"/"//trim("geodyn_options.txt"),&
+                  &       status='old')
+                  do i=1,5   !#### Loop through the options file and save the values to an array.
+                        read(121,*) optionsin(i)
+                  end do
+            close (121)     
              !the first  index contains the drhodz option (for use in MSIS routines)
                  !  (Zach W. later made the DRHODZ update the default)
              
@@ -353,17 +358,16 @@
                  ! we haven't run across the alternative but the Variable Area Model must be ON (LVAREA==True)
                  ! optionsin(4) = 1 ---- use the original options in GEODYN (BWDRAG)
                  ! optionsin(4) = 2 ---- use the DRIA model by Visal and Zach
-                 
-          choose_model=optionsin(2)          
+            choose_model=optionsin(2)          
       
-      !!!!! Read in the path for the location of the MODEL OUTPUT that was used by Kamodo
-      !                    i.e. location of TIEGCM Secondary History (output) .nc files
-          open (122,                                                    &
-& file="/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt",&
-           &       status='old')
+            ! Read in the path for the location of the modeloutput that was
+            ! used by Kamodo i.e. location of TIEGCM .nc files
+          open (122,                                                           &
+            & file=trim(PATH_IO_GEODYN)//"/"//trim("geodyn_modelpaths.txt"),   &
+            &       status='old')
             read(122,"(A200)") model_path
             read(122,"(A200)") orbitcloud_file
-            close (122)             
+          close (122)             
           WRITE(6,*) '[DRAG.f90] CHECK--model_path         ', model_path
           WRITE(6,*) '[DRAG.f90] CHECK--orbitcloud_file    ', orbitcloud_file
            

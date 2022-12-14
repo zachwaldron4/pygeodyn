@@ -9,9 +9,9 @@ C     PROGRAM WILL ABORT IF MISSING DATA FOUND
 C
       IMPLICIT REAL*8(A-H,O-Z)
 C
-      CHARACTER*80 FGAP
-      CHARACTER*66 FDTC
-      CHARACTER*48 local_path
+      CHARACTER*80    FGAP
+      CHARACTER*255   FDTC
+      CHARACTER*255   PATH_IIELOCAL   
 
 C
       COMMON /DTCDATA/ DT1950,DTDTC,IDTC(500000),IDTCRD,IDTCNM
@@ -21,9 +21,9 @@ C     SET UP I/O FILES
 C
       KIUNIT = 146
       KGUNIT = 147
-C
-      local_path = '/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/'
-      FDTC = local_path // 'JB2008_DTCFILE.TXT'
+C  
+      CALL get_environment_variable("PATH_IIELOCAL", PATH_IIELOCAL)      
+      FDTC = trim(trim(PATH_IIELOCAL)//"/" //"JB2008_DTCFILE.TXT")
       FGAP = 'DTCVAL.GAP'
 C
       IF (IDTCRD.NE.1) THEN
@@ -118,9 +118,9 @@ C      READ ONE TIME AND STORE ALL FILE VALUES IN COMMON FOR RETRIEVAL
 C
       IMPLICIT REAL*8(A-H,O-Z)
 C
-      CHARACTER*66 FLUXUNIT
-      CHARACTER*48 local_path
-      CHARACTER*1  ADESC,A1SRC,A2SRC,A3SRC,A4SRC
+      CHARACTER*255   FLUXUNIT
+      CHARACTER*1     ADESC,A1SRC,A2SRC,A3SRC,A4SRC
+      CHARACTER*255   PATH_IIELOCAL   
 C
       COMMON /CSOLFSMY/ FS1950,VF10(10000),VF10B(10000),
      *               VS10(10000),VS10B(10000),VM10(10000),VM10B(10000),
@@ -129,10 +129,10 @@ C
 C
 C     INITIALIZE SOLAR FLUX VALUES - HOST DEPENDENT FILEPATHS
       KFUNIT = 124
-      local_path = '/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/'
 
 C     FLUXUNIT = 'SOLFSMY.DAT'          Deprecated
-      FLUXUNIT =  local_path //'JB2008_SOLFSMY.TXT'
+      CALL get_environment_variable("PATH_IIELOCAL", PATH_IIELOCAL)      
+      FLUXUNIT =  trim(trim(PATH_IIELOCAL)//"/" //"JB2008_SOLFSMY.TXT")
 C
       IF (ISOLFSMRD.NE.1) THEN
 C

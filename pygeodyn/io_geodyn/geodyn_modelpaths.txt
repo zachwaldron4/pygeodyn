@@ -1,2 +1,2 @@
-/data/data_geodyn/atmos_models_data/hasdm/twoweekNov2018
+ 
 none

@@ -80,9 +80,8 @@
       CHARACTER(len = 6) i_HHMMSS
       CHARACTER(len = 12) i_YYMMDDHHMMSS
       integer, dimension(4) :: optionsin
-
       REAL(8), DIMENSION(11) ::  n_dens_temp
-
+      CHARACTER(len=255) :: PATH_IIELOCAL
 !
 !**********************************************************************
 !* START OF EXECUTABLE CODE *******************************************
@@ -95,6 +94,7 @@
 !
       if(ICNT.eq.1)then
           WRITE(6,*) 'CHECK -- Using MODS_msis2 / MSIS.f90'
+          CALL get_environment_variable("PATH_IIELOCAL", PATH_IIELOCAL)      
       endif
 
       IF(ICNT .EQ. 1) THEN
@@ -118,11 +118,10 @@
 !        CALL TSELEC86(SWI)
         iiun=117
 !
-        CALL msisinit(                                                  &
-         & parmpath='/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/', &
-         & parmfile='msis20.parm',                                      &
-!        & iun=iiun,                                                    &
-         & switch_legacy=SWI  )
+        CALL msisinit( parmpath=trim(PATH_IIELOCAL)//"/",     &
+                     & parmfile='msis20.parm',                &
+!            & iun=iiun,                                                    &
+                     & switch_legacy=SWI                     )
 !        
 !
       ENDIF

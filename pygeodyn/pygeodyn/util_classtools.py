@@ -93,35 +93,40 @@ class Util_Tools:
         if search('tiegcm', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
-                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
-        
         elif search('hasdm', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
-                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
-                
         elif search('ctipe', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
-                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
-
-        if search('gitm', self.den_model):
+        elif search('gitm', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
-                filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
+                filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()                
-            
+        else:
+            self.model_data_path = " "
+            filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
+            filemodels.writelines(self.model_data_path+'\n')
+            filemodels.writelines('none'+'\n')
+            filemodels.close()  
+
+
+
     def make_directory_check_exist(self, directory, verbose=False):
         if verbose:
             def verboseprint(*args, **kwargs):
@@ -174,13 +179,15 @@ class Util_Tools:
         elif density_model== 'gitm':
             model_val = '9'        
 
-        ### The following models are run with 71 (jaachia71) as the input to IIS on the ATMDEN CARD    
+        # The following models are run with 71 (jaachia71) as the input to IIS
+        # on the ATMDEN CARD    
         elif density_model== 'jaachia71':
             model_val = '0'       
         elif density_model== 'jb2008':
             model_val = '1' 
         #
-        ### The following models are run with 87 (dtm87) as the input to IIS on the ATMDEN CARD    
+        # The following models are run with 87 (dtm87) as the input to IIS on
+        # the ATMDEN CARD    
         elif density_model== 'dtm87':
             model_val = '0'
         elif density_model== 'dtm2020_o':
@@ -193,11 +200,13 @@ class Util_Tools:
             sys.exit("Density Model Option (den_model) is in an incorrect format")
         
         
-        ####
-        ####
-        ####  Save the options to a file (overwrite it) to be read into the GEODYN fortran code
-        ####
-        file1 = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_options.txt","w+")
+        #
+        #  Save the options to a file (overwrite it) to be read into the GEODYN
+        #  fortran code
+
+
+        file1 = open(self.path_io_geodyn+"/geodyn_options.txt","w+")
+        
         file1.writelines(drhodz_val+'\n') # first value is for DrhoDz
         file1.writelines(model_val +'\n') # 2nd values is for model switching
         #
@@ -228,7 +237,7 @@ class Util_Tools:
         ##### MAKE CD MODEL INPUT FILE
         
         if self.cd_model  == 'DRIA' :
-            file_CDparams = open("/data/geodyn_proj/pygeodyn/temp_runfiles/cd_params.txt","w+")
+            file_CDparams = open(self.path_io_geodyn+"/cd_params.txt","w+")
             file_CDparams.writelines(str(self.cd_model_params['MS'])    + '\n') 
             file_CDparams.writelines(str(self.cd_model_params['TW'])    + '\n')  
             file_CDparams.writelines(str(self.cd_model_params['ALPHA']) + '\n')

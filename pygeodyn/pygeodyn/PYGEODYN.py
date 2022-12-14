@@ -9,13 +9,21 @@ Todo:
 ## level 0 - paths
 from pygeodyn.config_paths import path_project
 from pygeodyn.config_paths import path_pygeodyn
+from pygeodyn.config_paths import path_io_geodyn
 from pygeodyn.config_paths import path_data_inputs
 from pygeodyn.config_paths import path_data_outputs_raw
 from pygeodyn.config_paths import path_tmp
+from pygeodyn.config_paths import path_IIS_exec
+from pygeodyn.config_paths import path_IIE_exec
 ## level 1
 from pygeodyn.util_classtools   import Util_Tools
 ## level 2
 from pygeodyn.satellite_icesat2 import ICESat2
+
+
+# from subprocess import run as subprocess_run
+import os
+
 
 
 class InheritIcesat2(ICESat2):
@@ -51,25 +59,28 @@ class InheritIcesat2(ICESat2):
 
 class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette 
     
-    ####  Initialize a Pygeodyn Object with the YAML file containing the run settings as an input.
-    def __init__(self, run_settings_yaml, yamlpath=True):  
+    #  Initialize a Pygeodyn Object with the YAML file containing the run
+    #  settings as an input.
+    def __init__(self, run_settings_yaml, settings_as_file=True):  
         #### Save the various paths to the object
-        self.path_project     = str(path_project)
-        self.path_pygeodyn    = str(path_pygeodyn)
-        self.path_data_inputs = str(path_data_inputs)
+        self.path_project          = str(path_project)
+        self.path_pygeodyn         = str(path_pygeodyn)
+        self.path_data_inputs      = str(path_data_inputs)
         self.path_data_outputs_raw = str(path_data_outputs_raw)
         self.path_tmp              = str(path_tmp)
+        self.path_io_geodyn        = str(path_io_geodyn)
+        self.dir_IIS               = str(path_IIS_exec)
+        self.dir_IIE               = str(path_IIE_exec)
 
         import yaml
         from yaml.loader import SafeLoader
         # Open the file and load the file
-        if yamlpath:
+        if settings_as_file:
             with open(run_settings_yaml) as f:
                 run_settings = yaml.load(f, Loader=SafeLoader)
         else:
             run_settings = yaml.load(run_settings_yaml, Loader=SafeLoader)
         self.params = run_settings
-                
         self.user             = self.params['user']
         self.satellite        = self.params['satellite']
         self.den_model        = self.params['den_model']
@@ -126,15 +137,11 @@ class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette
             self.run_specifier = self.params['run_specifier']
        
  
-        #------ Point to the GEODYN executables
-        self.GDYN_version =  self.params['GEODYN_iie_MOD_version']  
-            # G2SDIR
-        self.dir_IIS       =  '/data/geodyn_proj/geodyn_code' + '/IIS/ORIG'
-        self.dir_IIE       =  '/data/geodyn_proj/geodyn_code' + '/IIE/' + self.GDYN_version
-            # G2EDIR    
 
-        
-              
+        # Set Environment variables to be read in by GEODYN:       
+        os.environ["PATH_IO_GEODYN"] = str(self.path_io_geodyn)
+        os.environ["PATH_IIELOCAL"] = str(self.dir_IIE)
+
         
         
         

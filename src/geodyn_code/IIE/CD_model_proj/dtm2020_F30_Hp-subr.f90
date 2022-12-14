@@ -539,10 +539,13 @@ subroutine lecdtm_res
   common /pardtm/ tt,h,he,o,az2,o2,az,t0,tp
   real, dimension(nlatm) :: az,az2,h,he,o,o2,t0,tp,tt
   integer :: npdtm,i,ni
+  character(len=255) :: PATH_IIELOCAL
+
   !
-  open(146, &
-& file='/data/geodyn_proj/geodyn_code/IIE/CD_model_proj/DTM_2020_F30_ap60.dat', &
-& status='old')  
+  CALL get_environment_variable("PATH_IIELOCAL", PATH_IIELOCAL)      
+
+  open(146,  file=trim(PATH_IIELOCAL)//"/DTM_2020_F30_ap60.dat", &
+           & status='old')  
   !
   read(146,530) titre
   read(146,540) npdtm

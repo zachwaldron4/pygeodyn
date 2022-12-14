@@ -1,3 +1,4 @@
 {
-    "workbench.editor.decorations.colors": true
+    "workbench.editor.decorations.colors": true,
+    "fortran.fortls.disabled": true
 }
