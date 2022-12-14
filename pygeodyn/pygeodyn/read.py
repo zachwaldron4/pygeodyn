@@ -16,17 +16,17 @@ import copy
 #### ----------------------------------------
 #### ----------------------------------------
 
-import sys
-sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
+# import sys
+# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
 
 ### Import the Classes from the Tools
 # from util_classtools import Util_Tools
 # from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
-from time_systems import mjds_to_ymdhms
-from time_systems import time_tdt_to_utc
+from pygeodyn.util_dir.time_systems import mjds_to_ymdhms
+from pygeodyn.util_dir.time_systems import time_tdt_to_utc
 
 # from common_functions   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
-from coordinate_systems   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
+from pygeodyn.util_dir.coordinate_systems import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
 
 
 class PygeodynReader:

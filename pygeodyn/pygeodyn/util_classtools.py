@@ -1,3 +1,14 @@
+"""
+_summary_
+
+_extended_summary_
+
+
+TODO:
+    * add Spire to the physics model path writing section
+
+"""
+
 #### ----------------------------------------
 #### Import modules:
 #### -----------------
@@ -28,72 +39,49 @@ class Util_Tools:
 #         print('UTIL ---- set_density_model_setup_params ')
         
         if den_model == 'msis86':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
             self.iisset_den = '86'
-#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'msis00':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
             self.iisset_den = '86'
-#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'msis2':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'msis'
             self.iisset_den = '86'
-#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'dtm87':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'dtm87'
             self.iisset_den = '87'
-#             self.GDYN_version  = 'pygeodyn_MODS'
         elif den_model == 'jaachia71':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jaachia71'
             self.iisset_den = '71'
-        #### We will have two methods for running a model in Kamodo: 
-        ####                  1) Command Line kamodo call (model_cl)
-        ####                  2) OrbitCloud method        (model_oc)
-#         elif den_model == 'tiegcm_cl':
-#             self.DEN_DIR       = den_model
-#             self.SETUP_DEN_DIR = 'tiegcm_cl'
-#             self.iisset_den = '86'
+        #### Running a model in Kamodo uses OrbitCloud method (model_oc)
         elif den_model == 'tiegcm_oc':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'tiegcm_oc'
             self.iisset_den = '86'
         elif den_model == 'hasdm_oc':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'hasdm_oc'
             self.iisset_den = '86'
         elif den_model == 'ctipe_oc':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'ctipe_oc'
             self.iisset_den = '86'
 
         elif den_model == 'jb2008':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'jb2008'
             self.iisset_den = '71'
             
         elif den_model == 'dtm2020_o':   
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'dtm2020_o'
             self.iisset_den = '87' # Will run GEODYN WITH DTM87 according to IIS, but switch out for DTM2020 in DRAG.f90
-        
+
         elif den_model == 'dtm2020_r':   ### use the research vers. of dtm2020
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'dtm2020_r'
             self.iisset_den = '87' # Will run GEODYN WITH DTM87 according to IIS, but switch out for DTM2020 in DRAG.f90        else:
             print('Density model string formats: [msis86, msis00, msis2, dtm87, jaachia71, tiegcm_oc, jb2008, dtm2020_o]')   
 
         elif den_model == 'gitm':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'gitm'
             self.iisset_den = '86'
             
         elif den_model == 'orbit_cloud':
-            self.DEN_DIR       = den_model
             self.SETUP_DEN_DIR = 'orbit_cloud'
             self.iisset_den = '00'
 
@@ -102,7 +90,7 @@ class Util_Tools:
         ####  Write the data path to a file to be read by fortran.
         ####
         from re import search
-        if search('tiegcm', self.DEN_DIR):
+        if search('tiegcm', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
                 filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
@@ -110,7 +98,7 @@ class Util_Tools:
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
         
-        elif search('hasdm', self.DEN_DIR):
+        elif search('hasdm', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
                 filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
@@ -118,7 +106,7 @@ class Util_Tools:
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
                 
-        elif search('ctipe', self.DEN_DIR):
+        elif search('ctipe', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
                 filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
@@ -126,7 +114,7 @@ class Util_Tools:
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
 
-        if search('gitm', self.DEN_DIR):
+        if search('gitm', self.den_model):
             if self.satellite == 'icesat2':
                 self.model_data_path = self.run_settings['model_data_path']
                 filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
@@ -1042,3 +1030,131 @@ class Util_Tools:
 
 #     return(orbit_resids)
 
+    def set_file_paths_for_multiple_arcs(self, arc_val, iarc, unzip_and_loadpaths=False):
+        '''
+        Handles the Arc naming conventions
+        Construct a way to read in the satellite specific filenames.
+        
+        :param: arc_val aslkjdkldsj definintinonasldkfjsaldkj
+        :output: slkdfjlksdjf
+        
+        '''
+        
+        self.run_ID = 'Run # '+ str(iarc+1)
+        
+#         seen = set()
+#         dupes = [x for x in self.arc_input if x in seen or seen.add(x)]         
+        
+        #### Count how many arcs of this name there are
+        for x_arc in self.arc_input:
+            if self.arc_input.count(x_arc) == 1:
+#                 print('Only one arc of this name', x_arc)
+                iarc = 0
+#             elif self.arc_input.count(arc_val) > 1:
+#                 self.unique_arc_count+=1
+#                 iarc = self.unique_arc_count
+#                 print('There are multiples of this arc, this is #',iarc)
+            else:
+#                 print('There are multiples of this arc, this is #',iarc+1)
+                pass
+                
+        self.arc_name_id = arc_val
+        self.YR  = self.arc_name_id[0:4]
+        doy = self.arc_name_id[5:]
+#         self.arcdate_for_files = '%02d.%d%d'   % ( str(iarc+1), self.YR, doy)
+#         self.arcdate_v2        = '%02d.%d.%d'   % ( str(iarc+1), self.YR, doy) #str(iarc+1)+'.'+ self.YR + '.' + doy 
+        self.arcdate_for_files = '%d%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1))
+        self.arcdate_v2        = '%d.%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1)) #str(iarc+1)+'.'+ self.YR + '.' + doy 
+
+
+        ####
+        #### The setup files and the external attitutde files have the same naming convention.
+#         print('self.arc_name_id',self.arc_name_id)
+        self.setup_file_arc    = 'iisset.'+self.arc_name_id
+        # self.external_attitude = 'EXAT01.'+self.arc_name_id+'.gz'
+        self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+        ####
+        ### Now specify what we what the output arcs to be named.
+        self.ARC = (self.satellite    + '_' + 
+                    self.arcdate_for_files+ '_' + 
+                    self.arc_length + '.' +  
+                    self.den_model + '.' +
+                    self.params['file_string'])
+
+        
+#         self.SERIES = self.den_model + '_' + self.ACCELS + self.run_specifier
+        self.series = self.den_model + '_' + self.cd_model + self.run_specifier
+        # if iarc ==0:
+        #     dir_out = self.params['path_to_output_directory'] 
+        # else:
+        dir_out = self.dir_output_raw
+        self.path_to_model = dir_out + '/'+self.den_model+'/'+self.series +'/'
+                            #('/data/data_geodyn/results/'+
+                              #     self.satellite +'/'+
+                               #    self.den_model+'/'+  
+                                #   self.den_model+'_'+ self.ACCELS + self.run_specifier +'/')
+        file_name =   self.ARC         
+       
+        
+        ####  save the specific file names as "private members" with the _filename convention
+        self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
+        self._orbfil_filename = self.path_to_model + 'ORBITS/'+ file_name+'_orb1'
+        self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
+        self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
+        self._drag_filename  = self.path_to_model + 'DENSITY/' + file_name +'drag_file'    
+        self._accel_filename  = self.path_to_model + 'ORBITS/' + file_name +'_accel_file'    
+#         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
+
+        
+        time.sleep(1)
+        
+    
+    
+    def make_list_of_arcfilenames(self):
+        '''
+        Handles the Arc naming conventions for the icesat2 satellite
+        Construct a way to read in the satellite specific filenames.
+        '''
+        
+        arc_file_list = []
+        
+#         print('make_list_of_arcfilenames-- self.arc_input: ',self.arc_input)
+            
+        for i, val in enumerate(self.arc_input):
+
+            #### Count how many arcs of this name there are
+            if self.arc_input.count(val) == 1:
+#                 print('Only one arc of this name', x_arc)
+                i = 0
+#             elif self.arc_input.count(arc_val) > 1:
+#                 self.unique_arc_count+=1
+#                 i = self.unique_arc_count
+#                 print('There are multiples of this arc, this is #',iarc)
+            else:
+#                 print('filename list #',i+1)
+                pass
+
+            arc_name_id = val
+            YR  = arc_name_id[0:4]
+            doy = arc_name_id[5:]
+            arcdate_for_files =  '%d%03d.%02d' % ( int(YR), int(doy), (i+1)) # str(i+1)+'.' +YR + doy 
+            ####
+            ####
+            ### Now specify what we what the output arcs to be named.
+#             ARC_file = (self.satellite    + '_' + 
+#                         arcdate_for_files+ '_' + 
+#                         self.arc_length + '.' +  
+#                         self.den_model)
+            ARC_file = (self.satellite    + '_' + 
+                        arcdate_for_files+ '_' + 
+                        self.arc_length + '.' +  
+                        self.den_model + '.' +
+                        self.params['file_string'])
+
+
+            arc_file_list.append(ARC_file)
+        
+#         print('make_list_of_arcfilenames-- arc_file_list: ',arc_file_list)
+
+        return(arc_file_list)
+    

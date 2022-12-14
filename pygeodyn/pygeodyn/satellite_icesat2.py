@@ -1,9 +1,6 @@
-#### ===============
-#### Import modules:
-#### ===============
 import pandas as pd
 import numpy as np
-#### Computer/Command Line functions
+#### Computer/ Command Line functions
 import os
 import os.path
 import sys
@@ -11,43 +8,31 @@ import subprocess
 import shutil
 import linecache
 import time
-
-#### --------------------------------------------
-#### ============================================
-
-
-# Import class to be inherited
-import sys  
-sys.path.insert(0, '/data/geodyn_proj/pygeodyn/pygeodyn_develop/')
-from PYGEODYN_Control import PygeodynController
-from PYGEODYN_Read    import PygeodynReader
-
-# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/utils_pygeodyn_develop/util_dir/')
-# from common_functions          import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
-
-
-#=======================================
-#-------------ICESAT2 CLASS-------------
-#=======================================
-
 import logging
 
-# class Satellite_ICESat2(PygeodynController, PygeodynReader ):
-class Satellite_ICESat2(PygeodynController,  PygeodynReader):
-    """ Satellite_ICESat2 class documentation
-    
-    Description: 
-    ------------
-       Class with satellite specific confiuguration for running 
-       Pygeodyn with ICESat2.
-       
 
-    Long Description:
-    -----------------
-       This class hosts all major modifications to the methods 
-       in the PygeodynController and PygeodynReader that allow 
-       the running of the ICESat2 satellite through Pygeodyn.  
-       The setup here is originally for PCE trajectory analysis.
+#### Import the Pygeodyn Modules
+## level 3
+from pygeodyn.control import RunController
+from pygeodyn.read    import PygeodynReader
+
+
+class InheritControl(RunController):
+    def __init__(self):
+        RunController.__init__(self)
+        pass
+
+
+# class Satellite_ICESat2(PygeodynController, PygeodynReader ):
+class ICESat2(RunController):#,  PygeodynReader):
+    """Inherited class for the ICESat-2 Satellite's run configuration.
+    
+    Level 2 in the Pygeodyn Infrastructure but it inherits the methods in Level
+    3.  Class with satellite specific confiuguration for running Pygeodyn with
+    ICESat2.  This class hosts all major modifications to the methods in the
+    RunController and PygeodynReader that allow the running of the ICESat2
+    satellite through Pygeodyn.  The setup here is originally for PCE trajectory
+    analysis.
 
 
     Parameters
@@ -69,19 +54,27 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
     Returns
     -------
         Object
-            Returns an object with methods that have been re-written 
-            to accomodate the Icesat2 satellite, its data, and its default
+            Returns an object with methods that have been re-written to
+            accomodate the Icesat2 satellite, its data, and its default
             configuration on AWS.
             
     """
-    
+
     def __init__(self):
-        pass
+        
+        # if self.satellite == 'icesat2':
+        InheritControl.__init__(self)
+        
+        #### Call the control pointer to establish attribute paths
+        self.ctrlStage1_setup_path_pointers()
+        # #### Call utility path setter for multiple arcs as a dummy
+        # self.set_file_paths_for_multiple_arcs( '2018.318' , 0)  
+        
             
         ###### ---------------------------------------------------------------------
         #### HARD CODE the ICESat2 properties
         ###### ---------------------------------------------------------------------
-#         self.SATELLITE_dir = 'icesat2'
+#         self.satellite = 'icesat2'
 #         self.SATID         = '1807001'
 # #         self.YR            =  2018
 #         self.DATA_TYPE     = 'PCE'
@@ -104,130 +97,6 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         
         
         
-    def set_file_paths_for_multiple_arcs(self, arc_val, iarc, unzip_and_loadpaths=False):
-        '''
-        Handles the Arc naming conventions
-        Construct a way to read in the satellite specific filenames.
-        
-        :param: arc_val aslkjdkldsj definintinonasldkfjsaldkj
-        :output: slkdfjlksdjf
-        
-        '''
-        
-        self.run_ID = 'Run # '+ str(iarc+1)
-        
-#         seen = set()
-#         dupes = [x for x in self.arc_input if x in seen or seen.add(x)]         
-        
-        #### Count how many arcs of this name there are
-        for x_arc in self.arc_input:
-            if self.arc_input.count(x_arc) == 1:
-#                 print('Only one arc of this name', x_arc)
-                iarc = 0
-#             elif self.arc_input.count(arc_val) > 1:
-#                 self.unique_arc_count+=1
-#                 iarc = self.unique_arc_count
-#                 print('There are multiples of this arc, this is #',iarc)
-            else:
-#                 print('There are multiples of this arc, this is #',iarc+1)
-                pass
-                
-        self.arc_name_id = arc_val
-        self.YR  = self.arc_name_id[0:4]
-        doy = self.arc_name_id[5:]
-#         self.arcdate_for_files = '%02d.%d%d'   % ( str(iarc+1), self.YR, doy)
-#         self.arcdate_v2        = '%02d.%d.%d'   % ( str(iarc+1), self.YR, doy) #str(iarc+1)+'.'+ self.YR + '.' + doy 
-        self.arcdate_for_files = '%d%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1))
-        self.arcdate_v2        = '%d.%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1)) #str(iarc+1)+'.'+ self.YR + '.' + doy 
-
-
-        ####
-        #### The setup files and the external attitutde files have the same naming convention.
-#         print('self.arc_name_id',self.arc_name_id)
-        self.setup_file_arc    = 'iisset.'+self.arc_name_id
-        self.external_attitude = 'EXAT01.'+self.arc_name_id+'.gz'
-        ####
-        ### Now specify what we what the output arcs to be named.
-        self.ARC = (self.SATELLITE_dir    + '_' + 
-                    self.arcdate_for_files+ '_' + 
-                    self.arc_length + '.' +  
-                    self.DEN_DIR + '.' +
-                    self.run_settings['file_string'])
-
-        
-#         self.SERIES = self.DEN_DIR + '_' + self.ACCELS + self.directory_name_specifier
-        self.SERIES = self.DEN_DIR + '_' + self.cd_model + self.directory_name_specifier
-
-        self.path_to_model = self.run_settings['path_to_output_directory'] + '/'+self.DEN_DIR+'/'+self.SERIES +'/'
-                            #('/data/data_geodyn/results/'+
-                              #     self.SATELLITE_dir +'/'+
-                               #    self.den_model+'/'+  
-                                #   self.den_model+'_'+ self.ACCELS + self.directory_name_specifier +'/')
-        file_name =   self.ARC         
-       
-        
-        ####  save the specific file names as "private members" with the _filename convention
-        self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
-        self._orbfil_filename = self.path_to_model + 'ORBITS/'+ file_name+'_orb1'
-        self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
-        self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
-        self._drag_filename  = self.path_to_model + 'DENSITY/' + file_name +'drag_file'    
-        self._accel_filename  = self.path_to_model + 'ORBITS/' + file_name +'_accel_file'    
-#         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
-
-        
-        time.sleep(1)
-        
-    
-    
-    def make_list_of_arcfilenames(self):
-        '''
-        Handles the Arc naming conventions for the icesat2 satellite
-        Construct a way to read in the satellite specific filenames.
-        '''
-        
-        arc_file_list = []
-        
-#         print('make_list_of_arcfilenames-- self.arc_input: ',self.arc_input)
-            
-        for i, val in enumerate(self.arc_input):
-
-            #### Count how many arcs of this name there are
-            if self.arc_input.count(val) == 1:
-#                 print('Only one arc of this name', x_arc)
-                i = 0
-#             elif self.arc_input.count(arc_val) > 1:
-#                 self.unique_arc_count+=1
-#                 i = self.unique_arc_count
-#                 print('There are multiples of this arc, this is #',iarc)
-            else:
-#                 print('filename list #',i+1)
-                pass
-
-            arc_name_id = val
-            YR  = arc_name_id[0:4]
-            doy = arc_name_id[5:]
-            arcdate_for_files =  '%d%03d.%02d' % ( int(YR), int(doy), (i+1)) # str(i+1)+'.' +YR + doy 
-            ####
-            ####
-            ### Now specify what we what the output arcs to be named.
-#             ARC_file = (self.SATELLITE_dir    + '_' + 
-#                         arcdate_for_files+ '_' + 
-#                         self.arc_length + '.' +  
-#                         self.DEN_DIR)
-            ARC_file = (self.SATELLITE_dir    + '_' + 
-                        arcdate_for_files+ '_' + 
-                        self.arc_length + '.' +  
-                        self.DEN_DIR + '.' +
-                        self.run_settings['file_string'])
-
-
-            arc_file_list.append(ARC_file)
-        
-#         print('make_list_of_arcfilenames-- arc_file_list: ',arc_file_list)
-
-        return(arc_file_list)
-    
     
     
     def clean_iisset_file(self):
@@ -254,14 +123,20 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 
         #### --------------------------------------------------------------------
         #### Initialize our variables from user input
-        (path_to_setupfiles, setup_file_arc, SAT_ID, den_model_setupval) = ( self.INPUTDIR,  self.setup_file_arc, self.SATID, self.iisset_den)
+        (path_to_setupfiles, 
+        setup_file_arc, 
+        SAT_ID, 
+        den_model_setupval) = ( self.dir_input,  
+                                self.setup_file_arc, 
+                                self.satellite_id, 
+                                self.iisset_den)
               
         #### OPEN THE LOG FILE TO APPEND THE SETUP PARAMETERS TO
         log_file = open(self.log_file, 'a')
 
-        ORIG_iisset_file = self._INPUT_filename 
+        ORIG_iisset_file = self.filename_iisset 
         iisset_file      = 'cleaned_setup'+'_'  + self.arcdate_for_files
-        log_file.write(f"    Original iisset file            {self._INPUT_filename} \n")
+        log_file.write(f"    Original iisset file            {self.filename_iisset} \n")
         log_file.write('\n')
         
         
@@ -269,13 +144,13 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         ##### COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
         ####    We copy to a temporary file "cleaned_setup_file"
                     
-        shutil.copyfile(ORIG_iisset_file, self.TMPDIR_arc +'/'+iisset_file+'.bz2')
+        shutil.copyfile(ORIG_iisset_file, self.dir_tmp_arc +'/'+iisset_file+'.bz2')
         
-        os.chdir(self.TMPDIR_arc)
+        os.chdir(self.dir_tmp_arc)
         os.system('bunzip2 -v '+ '*.bz2')
-        os.chdir('/data/geodyn_proj/pygeodyn')
+        os.chdir(self.path_pygeodyn)
         
-        iisset_file = self.TMPDIR_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
+        iisset_file = self.dir_tmp_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
         
         
       
@@ -283,7 +158,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
       
         #### --------------------------------------------------------------------
         #### identify the cards we do not want in the setup file according to user request
-        cards_to_remove = self.run_settings['cards_to_remove']
+        cards_to_remove = self.params['cards_to_remove']
         
         ###  The below cards must be removed despite any modifications 
         ###  the user requests for the working of the PCE data run type
@@ -341,21 +216,21 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #         print(self.arcnumber)
         
         
-        if  self.run_settings['epoch_start'] == None :  # if no options given 
+        if  self.params['epoch_start'] == None :  # if no options given 
             pass  ## use the defaults from the setup file (parsed above)
         else:
             
-            epoch_start            = self.run_settings['epoch_start'][self.arcnumber]
+            epoch_start            = self.params['epoch_start'][self.arcnumber]
             epoch_start_YYMMDD     = epoch_start[:6].strip() 
             epoch_start_HHMM       = epoch_start[7:11].strip()
             epoch_start_SS_SSSSSSS = epoch_start[11:21].strip()
             epoch_start            = epoch_start_YYMMDD+epoch_start_HHMM+epoch_start_SS_SSSSSSS
                  
                 
-        if  self.run_settings['epoch_end'] == None :
+        if  self.params['epoch_end'] == None :
             pass
         else:
-            epoch_end            = self.run_settings['epoch_end'][self.arcnumber]
+            epoch_end            = self.params['epoch_end'][self.arcnumber]
             epoch_end_YYMMDD     = epoch_end[:6].strip() 
             epoch_end_HHMM       = epoch_end[7:11].strip()
             epoch_end_SS_SSSSSSS = epoch_end[11:21].strip()
@@ -634,16 +509,16 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                                              #     '         0.50000  28800.'
 
         
-        CD_VALUE = str(self.run_settings['cd_value'])
+        CD_VALUE = str(self.params['cd_value'])
         print('   Using a CD value of ', CD_VALUE)
 
-        if self.run_settings['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
+        if self.params['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
            
-            hours_between_cd_adj = self.run_settings['hours_between_cd_adj']
-            if self.run_settings['total_hours_in_run']==hours_between_cd_adj:   # The 24 hour case
-                num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj'])
+            hours_between_cd_adj = self.params['hours_between_cd_adj']
+            if self.params['total_hours_in_run']==hours_between_cd_adj:   # The 24 hour case
+                num_of_cd_adj = (self.params['total_hours_in_run']/self.params['hours_between_cd_adj'])
             else:    
-                num_of_cd_adj = (self.run_settings['total_hours_in_run']/self.run_settings['hours_between_cd_adj']) #- 1
+                num_of_cd_adj = (self.params['total_hours_in_run']/self.params['hours_between_cd_adj']) #- 1
             add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
             
             drag_dates = []
@@ -674,7 +549,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         ###       Find the drag card that is already in the file:
         ###       Add CONDRAG before all drag cards
         ###       Add DRAG cards with TIME periods after the first drag card
-        if self.run_settings['cd_adjustment_boolean'] == True:
+        if self.params['cd_adjustment_boolean'] == True:
             with open(iisset_file, "r") as f:
                 lines_all = f.readlines()                
             with open(iisset_file, "w") as f:
@@ -688,7 +563,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
                     else:
                         f.write(line)
                         
-        elif self.run_settings['cd_adjustment_boolean'] == False: ### DONT allow CD to ADJUST, i.e. only 1 DRAG card, no time dep.
+        elif self.params['cd_adjustment_boolean'] == False: ### DONT allow CD to ADJUST, i.e. only 1 DRAG card, no time dep.
             print('   Running without DRAG time dependence')
             with open(iisset_file, "r") as f:
                 lines_all = f.readlines()                
@@ -897,7 +772,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             
             
             
-    def prepare_tmpdir_for_geodyn_run(self):
+    def ctrlStage4_populate_tmpdir_for_run(self):
         '''  This it the ICESAT2 version of this method.
              
              it is being overridden to INCLUDE the external attitude
@@ -907,12 +782,9 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         logger.info(f"ICESat2 - Construct a tmp directory in which to run IIS and IIE")
 
         
-#         self.verboseprint('ICESat2 -- prepare_tmpdir_for_geodyn_run()')
-#         print(self.TMPDIR_arc)
-#         self.verboseprint(self.tabtab,'Current DIR: ',os.getcwd())
      
-        #### Navigate TO the TMPDIR
-        os.chdir(self.TMPDIR_arc)
+        #### Navigate to the tmp dirdir_tmp_arc
+        os.chdir(self.dir_tmp_arc)
         
         ####-------------------------------------------------------------
         ####     Construct Common Setup of a GEODYN RUN
@@ -925,7 +797,7 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
         self.verboseprint(self.tabtab,'Current DIR',os.getcwd())
 
         #### make copy to the External attitude file and save as EXAT01
-        if not os.path.exists(self.TMPDIR_arc +'/EXAT01'+'.gz'):
+        if not os.path.exists(self.dir_tmp_arc +'/EXAT01'+'.gz'):
 #             if np.size(self.external_attitude) >= 1:
 # #                 print('dict of EXATfilename: ',np.size(self.external_attitude))
 #                 shutil.copyfile(self._EXTATTITUDE_filename[1], self.TMPDIR_arc +'/EXAT01'+'.gz')
@@ -935,49 +807,49 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
 #                 shutil.copyfile(self._EXTATTITUDE_filename[5], self.TMPDIR_arc +'/EXAT05'+'.gz')
 #                 print('Copied 5 EXAT files')
 #             else:
-            shutil.copyfile(self._EXTATTITUDE_filename, self.TMPDIR_arc +'/EXAT01'+'.gz')
+            shutil.copyfile(self.file_exat, self.dir_tmp_arc +'/EXAT01'+'.gz')
             self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   '+self._EXTATTITUDE_filename+' > EXAT01'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   '+self.file_exat+' > EXAT01'+'.gz')
         else:
             self.verboseprint(self.tabtab,'copy is set up: EXAT01 file')
 
         
         #### make symlink to the G2B file and save as ftn40
-        if not os.path.exists(self.TMPDIR_arc +'/ftn40'+''):
-            os.symlink(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+        if not os.path.exists(self.dir_tmp_arc +'/ftn40'+''):
+            os.symlink(self.file_G2B, self.dir_tmp_arc +'/ftn40'+'')
 #             shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
             self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'')
         else:
             self.verboseprint(self.tabtab,'copy:  g2b file')
 
         #### make symlink to the gravity field and save as ftn12
-        if not os.path.exists(self.TMPDIR_arc +'/ftn12'+''):
-            shutil.copyfile(self._grav_field_filename, self.TMPDIR_arc +'/ftn12'+'')
+        if not os.path.exists(self.dir_tmp_arc +'/ftn12'+''):
+            shutil.copyfile(self.file_grav_field, self.dir_tmp_arc +'/ftn12'+'')
 #             self.verboseprint(self.tabtab,'gravfield:',self._grav_field_filename)
             self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'')
         else:
             self.verboseprint(self.tabtab,'copy is set up: grav_field file')
 
         #### make symlink to the ephemerides and save as ftn01
-        if not os.path.exists(self.TMPDIR_arc +'/ftn01'+''):
+        if not os.path.exists(self.dir_tmp_arc +'/ftn01'+''):
 #             os.symlink(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
-            shutil.copyfile(self._ephem_filename, self.TMPDIR_arc +'/ftn01'+'')
+            shutil.copyfile(self.file_ephem, self.dir_tmp_arc +'/ftn01'+'')
             self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'')
         else:
             self.verboseprint(self.tabtab,'copy is set up: ephem file'+'')
 
         #### make symlink to the gdntable and save as ftn02
-        if not os.path.exists(self.TMPDIR_arc +'/ftn02'):
-            shutil.copyfile(self._gdntable_filename, self.TMPDIR_arc +'/ftn02')
+        if not os.path.exists(self.dir_tmp_arc +'/ftn02'):
+            shutil.copyfile(self.file_gdntable, self.dir_tmp_arc +'/ftn02')
             self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02')
         else:
             self.verboseprint(self.tabtab,'copy is set up: gdntable file')
 
 
         #### make symlink to the ATGRAVFIL and save as fort.18
-        if not os.path.exists(self.TMPDIR_arc +'/fort.18'+''):
+        if not os.path.exists(self.dir_tmp_arc +'/fort.18'+''):
 #             os.symlink(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
-            shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18'+'')
+            shutil.copyfile(self.file_atmograv, self.dir_tmp_arc +'/fort.18'+'')
 #             shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/ftn18')
 #             self.verboseprint(self.tabtab,'ATGRAV:',self._ATGRAV_filename)
             self.verboseprint(self.tabtab,'copied:  atgrav     > fort.18'+'')
@@ -985,14 +857,14 @@ class Satellite_ICESat2(PygeodynController,  PygeodynReader):
             self.verboseprint(self.tabtab,'symlink is set up: atgrav file')
 
             
-        if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
-            os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05')
+        if not os.path.exists(self.dir_tmp_arc+'/ftn05'):
+            os.system('cp '+self.filename_iisset+' '+self.dir_tmp_arc+'/ftn05')
             self.verboseprint(self.tabtab,'copying          : iieout file')
         else:
             self.verboseprint(self.tabtab,'copied           : iieout file')
 
-        if not os.path.exists(self.TMPDIR_arc+'/giis.input'):
-            os.system('cp  '+self.TMPDIR_arc+'/ftn05 '+self.TMPDIR_arc+'/giis.input')
+        if not os.path.exists(self.dir_tmp_arc+'/giis.input'):
+            os.system('cp  '+self.dir_tmp_arc+'/ftn05 '+self.dir_tmp_arc+'/giis.input')
             self.verboseprint(self.tabtab,'copying          : giis.input file')
         else:
             self.verboseprint(self.tabtab,'copied              : giis.input file')   
