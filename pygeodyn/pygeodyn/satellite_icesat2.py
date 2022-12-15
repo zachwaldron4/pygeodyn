@@ -1,15 +1,12 @@
 import pandas as pd
-import numpy as np
+import numpy  as np
 #### Computer/ Command Line functions
 import os
 import os.path
-import sys
-import subprocess
 import shutil
 import linecache
-import time
 import logging
-
+import sys
 
 #### Import the Pygeodyn Modules
 ## level 3
@@ -18,6 +15,7 @@ from pygeodyn.read    import PygeodynReader
 
 
 class InheritControl(RunController):
+    """Class that enable satellite to inherit the RunController Class"""
     def __init__(self):
         RunController.__init__(self)
         pass
@@ -42,14 +40,6 @@ class ICESat2(RunController):#,  PygeodynReader):
         Inherit PygeodynReader : Class
             Used to read and reformat the GEODYN output with Python
 
-
-    Example
-    -------
-
-
-    Notes
-    -----
-    
     
     Returns
     -------
@@ -61,31 +51,57 @@ class ICESat2(RunController):#,  PygeodynReader):
     """
 
     def __init__(self):
-        
-        # if self.satellite == 'icesat2':
+        # Initialize the ICESat2 class to contain the methods from RunController
         InheritControl.__init__(self)
-        
-        #### Call the control pointer to establish attribute paths
+        # Call the control path pointer to establish attributed paths
         self.ctrlStage1_setup_path_pointers()
-        # #### Call utility path setter for multiple arcs as a dummy
-        # self.set_file_paths_for_multiple_arcs( '2018.318' , 0)  
-        
-            
-        ###### ---------------------------------------------------------------------
-        #### HARD CODE the ICESat2 properties
-        ###### ---------------------------------------------------------------------
-#         self.satellite = 'icesat2'
-#         self.SATID         = '1807001'
-# #         self.YR            =  2018
-#         self.DATA_TYPE     = 'PCE'
-#         self.grav_id = '' 
-#         self.options_in =  {'DRHODZ_update':True}  
 
-        #### ICESAT2 Data files
-#         self.g2b_file = 'g2b_pce_fullset_nomaneuver'  
-#         self.atgrav_file = 'ATGRAV.glo-3HR_20160101-PRESENT_9999_AOD1B_0006.0090'
-#         self.ephem_file     = 'ephem1430.data_2025'
-#         self.gravfield_file = 'eigen-6c.gfc_20080101_do_200_fix.grv'
+        #=====================================================================
+
+        # Universal ICESat2 Properties 
+        # COSPAR ID number
+        self.satellite_id = '1807001'
+        
+        #=====================================================================
+        ## Use the Global Files for the timeperiod of interest
+        epoch_str = self.params['epoch_start'].split('.')[0]
+        epoch_dt = pd.to_datetime(epoch_str, format='%y%m%d %H%M%S')
+        if epoch_dt.year<2020:
+            #### Atmospheric Gravity file name
+            self.filename_atmograv  = 'ATGRAV.glo-3HR_20160101-PRESENT'\
+                                                +'_9999_AOD1B_0006.0090'
+            #### Planetary Ephemeris file name
+            self.filename_ephem     = 'ephem1430.data_2025'
+            #### Gravity field file name
+            self.filename_gravfield = 'eigen-6c.gfc_20080101_do_200_fix.grv'
+
+        #=====================================================================
+        ### Run-type Options
+        list_run_types = ["PCE_vs_OrbitFit",
+                          "OrbitPropagation"] 
+        # Fill in the appropriate settings based on the run_type.
+        if self.run_type == "PCE_vs_OrbitFit":
+            self.tracking_data_type = 'PCE'
+            self.cards_to_remove = [ 'ACCEL9','ORBTVU', 'RESID', 'CON9PA',]
+
+            if epoch_dt.year<2020:
+                #### G2B file name
+                self.filename_g2b                 = 'g2b_pce_fullset_nomaneuver'  
+                #### PCE Ascii textfile name
+                self.StateVector_epochs_datafile  = self.dir_input\
+                                                    +'/PCE_ascii.txt'
+        #
+        elif self.run_type == "OrbitPropagation":
+                self.filename_g2b = False
+                self.StateVector_epochs_datafile  = self.dir_input\
+                                                    +'/PCE_ascii.txt'
+        else:
+            print("Run Settings Error: User input bad option as run_type.")
+            print("    bad input:           ",self.run_type)
+            print("    available run types: ",list_run_types)
+            sys.exit(0)
+
+        #=====================================================================
         
 
 #         self.path_to_binaryrvgs     = '/data/data_geodyn/inputs/icesat2/pre_processing/traj_files_rvg'
@@ -159,7 +175,7 @@ class ICESat2(RunController):#,  PygeodynReader):
         #### --------------------------------------------------------------------
         #### identify the cards we do not want in the setup file according to user request
         cards_to_remove = self.params['cards_to_remove']
-        
+        # 
         ###  The below cards must be removed despite any modifications 
         ###  the user requests for the working of the PCE data run type
         cards_to_remove.append('SATPAR') 
@@ -254,7 +270,7 @@ class ICESat2(RunController):#,  PygeodynReader):
         dt_epoch_start_minus2days = (epoch_start_dt - dt_2days).dt.strftime('%y%m%d%H%M%S.0000000').values[0]
         dt_epoch_end_plus1days    = (epoch_end_dt + dt_1days).dt.strftime('%y%m%d%H%M%S.000').values[0]
 
-                
+                            
         
         ##### -------------------------------------------------------------------------------------------
         ##### -------------------------------------------------------------------------------------------

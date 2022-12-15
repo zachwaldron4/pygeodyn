@@ -19,10 +19,11 @@ from pygeodyn.config_paths import path_IIE_exec
 from pygeodyn.util_classtools   import Util_Tools
 ## level 2
 from pygeodyn.satellite_icesat2 import ICESat2
-
-
+#
 # from subprocess import run as subprocess_run
 import os
+import yaml
+from yaml.loader import SafeLoader
 
 
 
@@ -62,7 +63,8 @@ class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette
     #  Initialize a Pygeodyn Object with the YAML file containing the run
     #  settings as an input.
     def __init__(self, run_settings_yaml, settings_as_file=True):  
-        #### Save the various paths to the object
+        #
+        # Init the various paths to the object
         self.path_project          = str(path_project)
         self.path_pygeodyn         = str(path_pygeodyn)
         self.path_data_inputs      = str(path_data_inputs)
@@ -71,53 +73,46 @@ class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette
         self.path_io_geodyn        = str(path_io_geodyn)
         self.dir_IIS               = str(path_IIS_exec)
         self.dir_IIE               = str(path_IIE_exec)
+        # Set environment variables to be read in by GEODYN:       
+        os.environ["PATH_IO_GEODYN"] = str(self.path_io_geodyn)
+        os.environ["PATH_IIELOCAL"] = str(self.dir_IIE)
 
-        import yaml
-        from yaml.loader import SafeLoader
-        # Open the file and load the file
+
+        # Load the yaml as either a file or string.
         if settings_as_file:
             with open(run_settings_yaml) as f:
                 run_settings = yaml.load(f, Loader=SafeLoader)
         else:
             run_settings = yaml.load(run_settings_yaml, Loader=SafeLoader)
         self.params = run_settings
-        self.user             = self.params['user']
+        #
+        self.user             = os.environ["USER"]#self.params['user']
         self.satellite        = self.params['satellite']
         self.den_model        = self.params['den_model']
         self.run_specifier    = self.params['run_specifier']
-        self.verbose          = self.params['verbose']
+        self.run_type         = self.params['run_type']
         self.arc_input        = self.params['arc']
         self.geodyn_StepSize  = self.params['geodyn_StepSize']
+        self.arc_length       = self.params['arc_length']       
         self.request_data     = self.params['request_data']      
-        self.empirical_accels = self.params['empirical_accels']      
-        self.ACCELS           = self.params['ACCELS']      
-        self.arc_length       = self.params['arc_length']
         
-        
-        
-        ##### SATELLITE SPECIFIC OPTIONS:
-        # self.SATELLITE_dir     = self.params['satellite']
-        self.satellite_id             = self.params['satellite_id']
-        self.DATA_TYPE         = self.params['DATA_TYPE']
-        self.DRHODZ_update     = self.params['DRHODZ_update']
-        #### File Choices
-        self.filename_g2b       = self.params['filename_g2b']
-        self.filename_atmograv  = self.params['filename_atmograv']
-        self.filename_ephem     = self.params['filename_ephem']
-        self.filename_gravfield = self.params['filename_gravfield']
-        self.StateVector_epochs_datafile = self.params['StateVector_epochs_datafile']
-        
-        
-        
-        self.PASS_INPUT_VALUE_TO_fortran = self.params['PASS_INPUT_VALUE_TO_fortran']
-        self.recompile_on = self.params['recompile_on']
+        #### Set some default options.
+        self.verbose          = False
+        self.PASS_INPUT_VALUE_TO_fortran = "None"
+        self.DRHODZ_update    = True
+        self.recompile_on     = False
+        self.empirical_accels = False  # use empirical accelerations?
+        # self.ACCELS         = False
+        # self.accels           = False
+        # Request Specific Raw Output Files?
+        self.save_drag_file  =  True
+        self.save_accel_file =  True
+        # Formatting.    
+        self.tab = '  '
+        self.tabtab = '       '
 
+    
 
-        ### User choose if certain files should be saved or not.
-        self.save_drag_file  =  self.params['save_drag_file']
-        self.save_accel_file =  self.params['save_accel_file']
-        
-        
         ###### RELEVANT CD MODEL INPUTS
         self.cd_model        = self.params['cd_model']
         if self.cd_model == 'DRIA': 
@@ -129,7 +124,8 @@ class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette
         ### Populate the GEODYN user input files with control options
         self.set_density_model_setup_params( self.den_model )     
 
-        ########## THE BLEOW SHOULD BE REMOVED/UPGRADED WITH AN IMPROVED METHOD FOR CONTROLLING NAMES OF RUNS
+        ########## THE below SHOULD BE REMOVED/UPGRADED WITH AN IMPROVED METHOD 
+        # FOR CONTROLLING NAMES OF RUNS
         #### The below interprets that no input has been given for special name
         if self.run_specifier == None:
             self.run_specifier = ''
@@ -138,29 +134,9 @@ class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette
        
  
 
-        # Set Environment variables to be read in by GEODYN:       
-        os.environ["PATH_IO_GEODYN"] = str(self.path_io_geodyn)
-        os.environ["PATH_IIELOCAL"] = str(self.dir_IIE)
 
         
         
-        
-        
-        
-        #### Do some book-keeping:    
-        self.tab = '  '
-        self.tabtab = '       '
-        
-#         if "accels" in params.keys():
-#             if params["accels"] == True:
-#                 self.empirical_accels =  True  
-#                 self.ACCELS = 'accelon'
-#             else:
-#                 self.empirical_accels =  False  
-#                 self.ACCELS = 'acceloff'
-#         else:
-#             self.empirical_accels =  False  
-#             self.ACCELS = 'acceloff'
 
             
             
@@ -174,46 +150,7 @@ class Pygeodyn(Util_Tools, ICESat2): #Inherit_Icesat2): Inherit_Starlette
 
             
             
-        
-#         ########## ACTUALLY IM NOT SO SURE WAHT THIS IS DOING TBH
-#         ##### The following cleans up the run settings so that they are added to the final object that is returned to the user. 
-#         append_names = []
-#         for i,val in enumerate(self.run_settings):
-#             append_names.append(val)
-        
-#         for i,val in enumerate(self.run_settings):
-#             if val in append_names: 
-# #                         ['run_params', 
-# #                         'model_data_path',
-# #                         'request_data',
-# #                         'cards_to_remove',
-# #                         'epoch_start',
-# #                         'epoch_end', 
-# #                         'file_string',
-# #                         'cd_adjustment_boolean',
-# #                         'total_hours_in_run',
-# #                         'hours_between_cd_adj',
-# #                        'path_to_output_directory',
-# #                         'GEODYN_iie_MOD_version',
-# #                         'arc',
-# #                         'accels',
-# #                         'empirical_accels',
-# #                         'ACCELS',
-# #                         'arc_length',   
-# #                        ]:
-#                 pass
-#             else:
-#                 if self.run_settings[val] == self.__dict__[val]:
-#                     pass
-#                 else:
-#                     self.__dict__[val] = self.run_settings[val]
-            
-            
-            
-            
-            
-            
-            
+                
             
             
             

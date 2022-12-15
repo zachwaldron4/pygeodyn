@@ -14,9 +14,7 @@ import subprocess
 import shutil
 import time
 #### reading and converting data
-import linecache
-from   datetime import datetime,timedelta, timezone
-import copy
+from  datetime import datetime,timedelta
 import logging
 import gc
 
