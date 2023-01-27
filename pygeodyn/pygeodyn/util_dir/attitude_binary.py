@@ -1,4 +1,4 @@
-def write_EXAT_binary(filename, params, quat_xyzw, quat_dates):
+def write_EXAT_binary(filename, params, quat_xyzw, quat_dates, writetxt=False):
     """Write the GEODYN external attitude file from satellite quaternions.
 
         filename
@@ -147,6 +147,52 @@ def write_EXAT_binary(filename, params, quat_xyzw, quat_dates):
 
     print('Reached end of attitude data.  Closing the File')
     f.close()
+
+    if writetxt:
+        #'/data/SatDragModelValidation/notebooks/O2R_spire/exat.txt'
+        filetxt = filename+'_check.txt'
+        print("Saving external attitude as a text file")
+        print("    filetxt" ,filetxt )
+
+        f = open(filetxt, "w")
+        f.write("\n")
+        f.close()
+
+        with open(filetxt, 'r+') as file:
+            file.write('# '+ ', '.join([str(i) for i in record1_HeaderGeneral])  + '\n'  )
+            file.write('# '+ ', '.join([str(i) for i in record2_HeaderSatInfo])  + '\n'  )
+            file.write('# '+ ', '.join([str(i) for i in record3_HeaderQuatInfo]) + '\n' )
+            file.write('# ------------------------------------------------------'+'\n' )
+       
+            startDT = pd.to_datetime(params['startEpoch'], format='%y%m%d%H%M%S')#'%Y-%m-%d %H:%M:%S')
+            stopDT  = pd.to_datetime(params['stopEpoch'],  format='%y%m%d%H%M%S')#'%Y-%m-%d %H:%M:%S')
+            
+            freq_str = str(int(params['interval']))+"S"
+            times_linspace = pd.date_range(start=startDT, end=stopDT, freq=freq_str)
+
+            print('startDT', startDT)
+            print('stopDT', stopDT)
+            print(times_linspace)
+
+            print(len(times_linspace))
+            print(len(quat_xyzw))
+        
+            for i, val in enumerate(quat_xyzw):
+                record4_Data = [#0. ,     #       Not used at present time
+                                #0. ,     #       Not used at present time
+                    times_linspace[i],
+                    quat_xyzw[i,0] ,     # 3 --- Q1      [  sin (/2)n1  ]
+                    quat_xyzw[i,1] ,     # 4 --- Q2      [  sin (/2)n2  ]
+                    quat_xyzw[i,2] ,     # 5 --- Q3      [  sin (/2)n3  ]
+                    quat_xyzw[i,3] ,     # 6 --- Q4      [  cos (/2)    ]
+                                #0. ,     #       Not used at present time
+                                #0. ,     #       Not used at present time
+                                #0. ,     #       Not used at present time
+                                ]
+                
+                file.write(', '.join([str(i) for i in record4_Data]) + '\n' )
+
+
     return
 
 

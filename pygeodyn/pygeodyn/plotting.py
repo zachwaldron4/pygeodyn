@@ -4,9 +4,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 import plotly.io as pio   ### Allows you to save plotly figs
 import pandas as pd
-import datetime
 import numpy as np
-import os
 
 import sys
 sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
@@ -496,3 +494,302 @@ def add_fancy_legend_noRMS(fig, run_dict):
 
 
 
+def QuickLook_plots(self, plot_num, PLOTTYPE):
+        import plotly.graph_objects as go
+        from plotly.offline import plot, iplot
+        from plotly.subplots import make_subplots
+        import plotly.express as px
+        import pandas as pd
+        import numpy as np
+        config = dict({
+                        'displayModeBar': True,
+                        'responsive': False,
+                        'staticPlot': False,
+                        'displaylogo': False,
+                        'showTips': False,
+                        })
+
+        import os
+
+        def get_color(colorscale_name, loc):
+            from _plotly_utils.basevalidators import ColorscaleValidator
+            # first parameter: Name of the property being validated
+            # second parameter: a string, doesn't really matter in our use case
+            cv = ColorscaleValidator("colorscale", "")
+            # colorscale will be a list of lists: [[loc1, "rgb1"], [loc2, "rgb2"], ...] 
+            colorscale = cv.validate_coerce(colorscale_name)
+
+            if hasattr(loc, "__iter__"):
+                return [get_continuous_color(colorscale, x) for x in loc]
+            return get_continuous_color(colorscale, loc)
+
+
+        import plotly.colors
+        from PIL import ImageColor
+
+        def get_continuous_color(colorscale, intermed):
+            """
+            Plotly continuous colorscales assign colors to the range [0, 1]. This function computes the intermediate
+            color for any value in that range.
+
+            Plotly doesn't make the colorscales directly accessible in a common format.
+            Some are ready to use:
+
+                colorscale = plotly.colors.PLOTLY_SCALES["Greens"]
+
+            Others are just swatches that need to be constructed into a colorscale:
+
+                viridis_colors, scale = plotly.colors.convert_colors_to_same_type(plotly.colors.sequential.Viridis)
+                colorscale = plotly.colors.make_colorscale(viridis_colors, scale=scale)
+
+            :param colorscale: A plotly continuous colorscale defined with RGB string colors.
+            :param intermed: value in the range [0, 1]
+            :return: color in rgb string format
+            :rtype: str
+            """
+            if len(colorscale) < 1:
+                raise ValueError("colorscale must have at least one color")
+
+            hex_to_rgb = lambda c: "rgb" + str(ImageColor.getcolor(c, "RGB"))
+
+            if intermed <= 0 or len(colorscale) == 1:
+                c = colorscale[0][1]
+                return c if c[0] != "#" else hex_to_rgb(c)
+            if intermed >= 1:
+                c = colorscale[-1][1]
+                return c if c[0] != "#" else hex_to_rgb(c)
+
+            for cutoff, color in colorscale:
+                if intermed > cutoff:
+                    low_cutoff, low_color = cutoff, color
+                else:
+                    high_cutoff, high_color = cutoff, color
+                    break
+
+            if (low_color[0] == "#") or (high_color[0] == "#"):
+                # some color scale names (such as cividis) returns:
+                # [[loc1, "hex1"], [loc2, "hex2"], ...]
+                low_color = hex_to_rgb(low_color)
+                high_color = hex_to_rgb(high_color)
+
+            return plotly.colors.find_intermediate_color(
+                lowcolor=low_color,
+                highcolor=high_color,
+                intermed=((intermed - low_cutoff) / (high_cutoff - low_cutoff)),
+                colortype="rgb",
+            )
+
+        cols = get_color("Viridis", np.linspace(0, 1, 5))
+        map_cols = np.linspace(0, 1, 5)
+        colorscale=[]
+        for i,val in enumerate(map_cols):
+            colorscale.append([val, cols[i]])
+
+        # Simplify Plotting Schemes:
+        col1 =  px.colors.qualitative.Plotly[0]
+        col2 =  px.colors.qualitative.Plotly[1]
+        col3 =  px.colors.qualitative.Plotly[2]
+        col4 =  px.colors.qualitative.Plotly[3]
+        col5 =  px.colors.qualitative.Plotly[4]
+        col6 =  px.colors.qualitative.Plotly[5]
+
+        if plot_num == 0:
+            col = col1
+            m_size = 4.5
+        elif plot_num == 1:
+            col = col2
+            m_size = 4
+        elif plot_num == 2:
+            col = col3
+            m_size = 3.5
+        elif plot_num == 3:
+            col = col4
+            m_size = 3
+        elif plot_num == 4:
+            col = col5
+            m_size = 3
+        elif plot_num == 5:
+            col = col6
+            m_size = 3
+
+    ############################################################################
+    
+        if PLOTTYPE =='DEN':
+            fig = make_subplots(
+                rows=1, cols=1,
+                subplot_titles=(['Sampled Orbit Densities']),
+                vertical_spacing = 0.15)
+
+            model_m1 = self.__dict__['global_params']['den_model']
+            print(model_m1)
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input'][:]):
+
+
+                #### INDEX THE DENSITY DF correctly
+                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
+                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+
+                str_run_param = 'run_parameters'+ arc
+                final_iter = self.__dict__[str_run_param]['str_iteration']
+                i_arc = ii+1
+
+                print('----',model_m1,'----')
+                print('     mean:    ',np.mean(self.Density[arc]['rho (kg/m**3)']),'----')
+                print('     variance:',np.std(self.Density[arc]['rho (kg/m**3)']),'----')
+                print()
+
+                if ii==0:
+                    legend_flag = True
+                    name_str    = model_m1+arc
+                else:
+                    legend_flag = False
+                    name_str    = model_m1+arc
+
+
+                fig.add_trace(go.Scattergl(  x=self.Density[arc]['Date'][:index_date][:],
+                                             y=self.Density[arc]['rho (kg/m**3)'][:index_date][:],
+                                             name= name_str,
+                                             mode='markers',
+                                             opacity=1,
+                                             marker=dict(
+                                                color=col, 
+                                                size=m_size,
+                                                        ),
+                                             showlegend=legend_flag,
+                                          ),
+                                              secondary_y=False,
+                                               row=1, col=1,
+                                          )
+
+            fig.update_layout(legend= {'itemsizing': 'constant'})
+            fig.update_yaxes( title="rho (kg/m**3)", type='log', exponentformat= 'power',row=1, col=1)
+            fig.update_xaxes( title="Date", row=1, col=1)       
+            
+            return(fig.show(config=config) )        
+    ############################################################################
+
+        elif PLOTTYPE =='DEN_orbavg':
+
+            def orb_avg(den_df, arc):
+                #### Find the index for the correct date
+                vals  = np.arange(den_df[arc].index[0],den_df[arc].index[-1]+1)
+                df = den_df[arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+                lat = np.asarray(den_df[arc]['Lat'][:index_date])
+                time_pd = pd.to_datetime(den_df[arc]['Date'][:index_date])
+                i = np.nonzero( lat[1:]*lat[0:-1]  <  np.logical_and(0 , lat[1:] > lat[0:-1] )  )
+                i = i[0]
+
+                d_avg = np.zeros(np.size(i))
+                height_avg = np.zeros(np.size(i))
+
+                time_avg = []
+                d_avg_rolling = []
+
+                roll_avg_count = 0
+                for j in range(np.size(i)-1):
+                    d_avg[j]      = np.mean(den_df[arc]['rho (kg/m**3)'  ][i[j] : i[j+1]-1  ]  )
+                    height_avg[j] = np.mean(den_df[arc]['Height (meters)'][i[j] : i[j+1]-1  ]  )
+                    t1 = pd.to_datetime(time_pd[ i[j]    ])
+                    t2 = pd.to_datetime(time_pd[ i[j+1]-1])
+                    datemiddle = pd.Timestamp(t1) + (pd.Timestamp(t2) - pd.Timestamp(t1)) / 2
+
+                    time_avg.append(datemiddle)
+
+                    if roll_avg_count ==1:
+                        d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+                        roll_avg_count =0
+
+                    roll_avg_count+=1 
+                d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+
+                return(time_avg, d_avg, d_avg_rolling )
+            fig = make_subplots(
+                rows=1, cols=1,
+                subplot_titles=(['Orbit Averaged Densities']),
+                vertical_spacing = 0.15)
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
+                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
+                df['i_vals'] = vals
+                index_date = df.loc[df.index.max()]['i_vals'].min()
+
+
+                time_avg,d_avg, d_avg_rolling = orb_avg(self.Density, arc)
+
+
+                fig.add_trace(go.Scattergl(x=time_avg,
+                                         y=d_avg_rolling,
+        #                                  y=d_avg,
+        #                                 name= ' Arc ' +str(i_arc) ,
+                                         mode='markers',
+                                         marker=dict(
+                                         color=col,
+                                         size=7,),
+                                         showlegend=False,
+                                           ),
+                                           row=1, col=1,
+                                           )
+
+
+                fig.update_yaxes(type="log", exponentformat= 'power',row=1, col=1)
+            fig.update_xaxes(title_text="Date", row=1, col=1)
+            fig.update_yaxes(title_text="kg/m^3", row=1, col=1)
+            fig.update_layout(legend= {'itemsizing': 'constant'})
+
+
+            
+            return(fig.show(config=config) )        
+            
+    ############################################################################
+
+        elif PLOTTYPE =='NTW_residuals':
+            
+            coords = ['N','T','W']
+
+            fig = make_subplots(
+                rows=3, cols=1,
+                subplot_titles=(['Normal (N)', 'In-track (T)','Cross-Track (W)']),
+                vertical_spacing = 0.15)
+
+            model_m1 = self.__dict__['global_params']['den_model']
+            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
+
+                data_resids = self.__dict__['OrbitResids'][arc]['resids']
+
+
+                fig.update_layout(title=''.join(coords)+' Orbit Residuals',
+                                autosize=True,
+                                font=dict(size=14),
+                                legend= {'itemsizing': 'constant'})
+
+                for i,val in enumerate(coords):
+                    fig.add_trace(go.Scattergl(
+                                             x=data_resids['Date'][::10],
+                                             y=data_resids[val][::10],
+                                         name=val+' '+model_m1,
+                                         mode='markers',
+                                         marker=dict(
+                                             color=col,
+                                             size=m_size,
+                                                    ),
+                                         showlegend=False),
+                                         secondary_y=False,
+                                         row=i+1, col=1)
+
+
+
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=1, col=1)
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=2, col=1)
+            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=3, col=1)
+            fig.update_xaxes( title="Date",  row=3, col=1)
+
+            
+            
+            return(fig.show(config=config) )        

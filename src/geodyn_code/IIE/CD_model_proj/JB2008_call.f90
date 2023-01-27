@@ -182,24 +182,24 @@
       SUN(2) = SOLDEC
 
             
-      if(kin.eq.1) WRITE(6,*) '*******************************************************'
-      if(kin.eq.1) WRITE(6,*) '****************** [JB2008_call.f90] ******************'
-      if(kin.eq.1) WRITE(6,*) ' '
-      if(kin.eq.1) WRITE(6,*) 'INPUTS to CALL JB2008()     '
-      if(kin.eq.1) WRITE(6,*) '   AMJD      ', AMJD
-      if(kin.eq.1) WRITE(6,*) '   SUN       ', SUN
-      if(kin.eq.1) WRITE(6,*) '   SAT       ', SAT
-      if(kin.eq.1) WRITE(6,*) '   F10       ', F10
-      if(kin.eq.1) WRITE(6,*) '   F10B      ', F10B
-      if(kin.eq.1) WRITE(6,*) '   S10       ', S10
-      if(kin.eq.1) WRITE(6,*) '   S10B      ', S10B
-      if(kin.eq.1) WRITE(6,*) '   XM10      ', XM10
-      if(kin.eq.1) WRITE(6,*) '   XM10B     ', XM10B
-      if(kin.eq.1) WRITE(6,*) '   Y10       ', Y10
-      if(kin.eq.1) WRITE(6,*) '   Y10B      ', Y10B
-      if(kin.eq.1) WRITE(6,*) '   DSTDTC    ', DSTDTC
-      if(kin.eq.1) WRITE(6,*) '   TEMP_jb2008      ', TEMP_jb2008
-      if(kin.eq.1) WRITE(6,*) '   RHO_jb2008       ', RHO_jb2008
+      ! if(kin.eq.1) WRITE(6,*) '*******************************************************'
+      ! if(kin.eq.1) WRITE(6,*) '****************** [JB2008_call.f90] ******************'
+      ! if(kin.eq.1) WRITE(6,*) ' '
+      ! if(kin.eq.1) WRITE(6,*) 'INPUTS to CALL JB2008()     '
+      ! if(kin.eq.1) WRITE(6,*) '   AMJD      ', AMJD
+      ! if(kin.eq.1) WRITE(6,*) '   SUN       ', SUN
+      ! if(kin.eq.1) WRITE(6,*) '   SAT       ', SAT
+      ! if(kin.eq.1) WRITE(6,*) '   F10       ', F10
+      ! if(kin.eq.1) WRITE(6,*) '   F10B      ', F10B
+      ! if(kin.eq.1) WRITE(6,*) '   S10       ', S10
+      ! if(kin.eq.1) WRITE(6,*) '   S10B      ', S10B
+      ! if(kin.eq.1) WRITE(6,*) '   XM10      ', XM10
+      ! if(kin.eq.1) WRITE(6,*) '   XM10B     ', XM10B
+      ! if(kin.eq.1) WRITE(6,*) '   Y10       ', Y10
+      ! if(kin.eq.1) WRITE(6,*) '   Y10B      ', Y10B
+      ! if(kin.eq.1) WRITE(6,*) '   DSTDTC    ', DSTDTC
+      ! if(kin.eq.1) WRITE(6,*) '   TEMP_jb2008      ', TEMP_jb2008
+      ! if(kin.eq.1) WRITE(6,*) '   RHO_jb2008       ', RHO_jb2008
 
             ! Computes density in units of kg/m^3 -- Returns density through RHO
             !           AMJD   : Date and Time, in modified Julian Days
@@ -253,18 +253,18 @@
       n_dens_temp(8) = TEMP_jb2008(1) !   TEMP(1): Exospheric Temperature above Input Position (deg K)
       n_dens_temp(9) = TEMP_jb2008(2) !   TEMP(2): Temperature at Input Position (deg K)
       
-      if(kin.eq.1) WRITE(6,*) 'OUTPUTS ------'
-      if(kin.eq.1) WRITE(6,*) '   N2      ', n_dens_temp(1)
-      if(kin.eq.1) WRITE(6,*) '   O2      ', n_dens_temp(2)
-      if(kin.eq.1) WRITE(6,*) '   O       ', n_dens_temp(3)
-      if(kin.eq.1) WRITE(6,*) '   Ar      ', n_dens_temp(4)
-      if(kin.eq.1) WRITE(6,*) '   He      ', n_dens_temp(5)
-      if(kin.eq.1) WRITE(6,*) '   H       ', n_dens_temp(6)
-      !if(kin.eq.1) WRITE(6,*) ' '
-      if(kin.eq.1) WRITE(6,*) '   RHO_jb2008    ', n_dens_temp(7)
-      if(kin.eq.1) WRITE(6,*) '   Exosph. Temp. ', n_dens_temp(8)
-      if(kin.eq.1) WRITE(6,*) '   Ambient Temp  ', n_dens_temp(9)
-      if(kin.eq.1) WRITE(6,*) '*******************************************************'
+      if(kin.eq.1) WRITE(6,*) '     * JB2008 Outputs '
+      if(kin.eq.1) WRITE(6,*) '          - N2            ', n_dens_temp(1)
+      if(kin.eq.1) WRITE(6,*) '          - O2            ', n_dens_temp(2)
+      if(kin.eq.1) WRITE(6,*) '          - O             ', n_dens_temp(3)
+      if(kin.eq.1) WRITE(6,*) '          - Ar            ', n_dens_temp(4)
+      if(kin.eq.1) WRITE(6,*) '          - He            ', n_dens_temp(5)
+      if(kin.eq.1) WRITE(6,*) '          - H             ', n_dens_temp(6)
+      ! if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) '          - RHO_jb2008    ', n_dens_temp(7)
+      if(kin.eq.1) WRITE(6,*) '          - Exosph. Temp. ', n_dens_temp(8)
+      if(kin.eq.1) WRITE(6,*) '          - Ambient Temp  ', n_dens_temp(9)
+      ! if(kin.eq.1) WRITE(6,*) ' '
 
        ! Return the density back to the DRAG routine
        RHO = RHO_jb2008

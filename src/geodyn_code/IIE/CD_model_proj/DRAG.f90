@@ -303,9 +303,9 @@
         IF(LSTINR) THEN !-----------------------------------
          !IF(IPDDRG.EQ.1) THEN
             kin_2 = kin_2 + 1
-            if(kin_2.eq.1) WRITE(6,*) "=============================="
-            if(kin_2.eq.1)  WRITE(6,*)  '     Last inner iteration     '
-            if(kin_2.eq.1) WRITE(6,*)  '                   search'
+            !if(kin_2.eq.1) WRITE(6,*) "=============================="
+            !if(kin_2.eq.1)  WRITE(6,*)  '     Last inner iteration     '
+            !if(kin_2.eq.1) WRITE(6,*)  '                   search'
          !ENDIF
          !IF(IPDDRG.EQ.2) THEN
          !   IF(kin_2.GT.0).AND.IF(Log_Kin2) kin_2 = 0
@@ -320,15 +320,12 @@
         ENDIF           !-----------------------------------
       FLUSH(6)
       
-    if(kin_2.eq.1) WRITE(6,*) 'IPDDRG   ',IPDDRG
-    if(kin_2.eq.1) WRITE(6,*) 'LSADRG   ',LSADRG   ! adjust drag coeff
-    if(kin_2.eq.1) WRITE(6,*) 'LAJDP    ',LAJDP    !LOGICAL TELLING WHETHER A PARTICULAR PERIOD HAS BEEN ADJUSTED
-    if(kin_2.eq.1) WRITE(6,*) 'LORBIT   ',LORBIT
-    if(kin_2.eq.1) WRITE(6,*) 'STDRG    ',STDRG
+    !if(kin_2.eq.1) WRITE(6,*) 'IPDDRG   ',IPDDRG
+    !if(kin_2.eq.1) WRITE(6,*) 'LSADRG-- adjust drag coeff   ',LSADRG   
+   ! if(kin_2.eq.1) WRITE(6,*) 'LAJDP    ',LAJDP    !LOGICAL TELLING WHETHER A PARTICULAR PERIOD HAS BEEN ADJUSTED
+    !if(kin_2.eq.1) WRITE(6,*) 'LORBIT   ',LORBIT
+    !if(kin_2.eq.1) WRITE(6,*) 'STDRG    ',STDRG
     
-!LORBIT
-!STDRG
-!LAJDP
 
 !-------------------------------------------------------------------------------------------------
 !  
@@ -368,21 +365,21 @@
             read(122,"(A200)") model_path
             read(122,"(A200)") orbitcloud_file
           close (122)             
-          WRITE(6,*) '[DRAG.f90] CHECK--model_path         ', model_path
-          WRITE(6,*) '[DRAG.f90] CHECK--orbitcloud_file    ', orbitcloud_file
-           
           
-          WRITE(6,*) '[DRAG.f90]Drag Coefficient Model (CD)    ', optionsin(4)
+          WRITE(6,*) "======================= DRAG.F90 ======================="
+          WRITE(6,*) '     * model_path                     ', trim(model_path)
+          WRITE(6,*) '     * orbitcloud_file                ', trim(orbitcloud_file)
+          WRITE(6,*) '     * Drag Coefficient Model (CD)    ', optionsin(4)
+
            if(optionsin(4).eq.1)then
-             WRITE(6,*) '       Using the Original CD Model in GEODYN'
+             WRITE(6,*) '          - Using the Original CD Model in GEODYN'
            else if(optionsin(4).eq.2)then
-             WRITE(6,*) '       Using the Modifified DRIA Physical CD model'
+             WRITE(6,*) '          - Using the Modifified DRIA Physical CD model'
              !!!!  IF WE ARE USING DRIA, there are a few things we need:
              !     1) MSIS2.f90 needs to return the consituent densities
            endif
-           
            if(optionsin(5).eq.1)then
-             WRITE(6,*) '       Using a Scaling Factor'
+             WRITE(6,*) '          - Using a Scaling Factor'
              Ldrag_ScalingFactor = .TRUE.
            endif
 
@@ -551,21 +548,21 @@
            
          ! DTM87 case
          case(0)!--------------------------------------------------------------------- case 0 -- DTM87
-            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM87'
             if(kentry.eq.1) then
                 WRITE(6,*) ' '
-                WRITE(6,*) '      DAY:     ', DAY
-                WRITE(6,*) '      FLUXIN:  ', FLUXIN
-                WRITE(6,*) '      FLXAVG:  ', FLXAVG
-                WRITE(6,*) '      FLUXKP:  ', FLUXKP
-                WRITE(6,*) '      ALTI:    ', ALTI
-                WRITE(6,*) '      COSHL:   ', COSHL
-                WRITE(6,*) '      SINHL:   ', SINHL
-                WRITE(6,*) '      COSPHI:  ', COSPHI
-                WRITE(6,*) '      SINPHI:  ', SINPHI
-                WRITE(6,*) '      RHO:     ', RHO
-                WRITE(6,*) '      DRHODZ:  ', DRHODZ
-                WRITE(6,*) '      MJDSEC:  ', MJDSEC
+                WRITE(6,*) '     * model                           DTM87'
+                WRITE(6,*) '          - DAY:     ', DAY
+                WRITE(6,*) '          - FLUXIN:  ', FLUXIN
+                WRITE(6,*) '          - FLXAVG:  ', FLXAVG
+                WRITE(6,*) '          - FLUXKP:  ', FLUXKP
+                WRITE(6,*) '          - ALTI:    ', ALTI
+                WRITE(6,*) '          - COSHL:   ', COSHL
+                WRITE(6,*) '          - SINHL:   ', SINHL
+                WRITE(6,*) '          - COSPHI:  ', COSPHI
+                WRITE(6,*) '          - SINPHI:  ', SINPHI
+                WRITE(6,*) '          - RHO:     ', RHO
+                WRITE(6,*) '          - DRHODZ:  ', DRHODZ
+                WRITE(6,*) '          - MJDSEC:  ', MJDSEC
                 WRITE(6,*) ' '
             endif
             CALL DTM(DAY,FLUXIN,FLXAVG,FLUXKP,    &
@@ -579,8 +576,9 @@
             dtmversion_model='o'
             IMARK = IND3HR
             IKPAP = 1 ! tells FLUXM(1) to contain Kp values
-            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM2020_oper'
-           
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     *  model                           DTM2020_oper'
+            endif
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(10))
 
@@ -600,8 +598,10 @@
             IMARK = IND3HR
             IKPAP = -1  ! tells FLUXM(1) to contain Ap values
 
-            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK -- model=DTM2020_res'
-            
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                           DTM2020_res'
+            endif
+
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(10))
 
@@ -643,10 +643,10 @@
              &       FLUXIN,FLXAVG,FLUXM(1),IMARK,IKPAP,        & !XKP,INDEX,IKPAP,I324
              &       I324,IDRV,RHO,DRHODZ,IERR)
             C(1)=DRHODZ
-            if(kentry.eq.1)then
-               WRITE(6,*) '[DRAG.f90] CHECK-- DRAG.f90: Running w/ MSIS86'
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                           MSIS86'
             endif
-         
+
          
          ! MSIS 00 case
          case(1)!--------------------------------------------------------------------- case 1 -- MSIS00
@@ -660,8 +660,8 @@
                &         FLUXIN,FLXAVG,FLUXM(1),IMARK,IKPAP,    &
                &         I324,IDRV,RHO,DRHODZ,IERR,optionsin)
             C(1)=DRHODZ    
-            if(kentry.eq.1)then
-               WRITE(6,*) '[DRAG.f90] CHECK-- DRAG.f90: Running w/ MSIS00'
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                           MSISe00'
             endif
                  
                  
@@ -680,10 +680,10 @@
               &        I324,IDRV,RHO,DRHODZ,IERR,optionsin,MJDSEC,FSEC,&
               &        n_dens_temp)
             C(1)=DRHODZ          
-            if(kentry.eq.1)then
-               WRITE(6,*) '[DRAG.f90] CHECK-- DRAG.f90: Running w/ MSIS2'
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                           MSIS 2.0'
             endif
-         
+
          
          ! Kamodo command line (NO LONGER USED-- should return a STOP)
          case(3:5)!--------------------------------------------------------------------- case 3-5 -- Kamodo with Commandline
@@ -717,13 +717,18 @@
             if(choose_model.eq.8) kamodo_model='CTIPe'  
             if(choose_model.eq.9) kamodo_model='GITM'  
 
-            if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 -----------------'
-            if(kentry.eq.1) WRITE(6,*) '|  Using the Orbit Cloud method.           '
-            if(kentry.eq.1) WRITE(6,*) '|  Expecting a file with initialized orbit '
-            if(kentry.eq.1) WRITE(6,*) '|  and the orbit uncertainty around it     '
-            if(kentry.eq.1) WRITE(6,*) '|     model=', kamodo_model 
-            if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 -----------------'
-
+            ! if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 -----------------'
+            ! if(kentry.eq.1) WRITE(6,*) '|  Using the Orbit Cloud method.           '
+            ! if(kentry.eq.1) WRITE(6,*) '|  Expecting a file with initialized orbit '
+            ! if(kentry.eq.1) WRITE(6,*) '|  and the orbit uncertainty around it     '
+            ! if(kentry.eq.1) WRITE(6,*) '|     model=', kamodo_model 
+            ! if(kentry.eq.1) WRITE(6,*) '+------- CHECK-- DRAG.f90 -----------------'
+            if(kentry.eq.1) then
+               WRITE(6,*) '     *  model                         ', kamodo_model
+               WRITE(6,*) '          - Using the Orbit Cloud method. Expecting '
+               WRITE(6,*) '            a file with initialized orbit and the   '
+               WRITE(6,*) '            orbit uncertainty around it.            '
+            endif
 
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(6))
@@ -754,7 +759,10 @@
          
          ! jaachia71
          case(0) !--------------------------------------------------------------------- case 0 -- Use jacchia71  
-            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK model=jaachia71'
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                           jaachia71'
+            endif
+
             ! Note- In the F.f90 subroutine, the D71 model was initialized 
             !       by firstcalling IF(LSDRG.AND.ICBDGM.EQ.3) CALL D71TM(MJDSEC,FSEC).
             !       The output from D71TM() is passed to D71() through the COMMON D71CUR
@@ -764,8 +772,10 @@
          
          ! JB2008
          case(1) !--------------------------------------------------------------------- case 1 -- Use JB2008
-            if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] CHECK model=JB2008'
-            
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                           JB2008'
+            endif
+
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(9) )
             
@@ -791,36 +801,40 @@
 
 
       !!! CHECK THE VALUES OF THE DENSITY and DRHODZ
-      if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] rho    =', RHO
-      if(kentry.eq.1) WRITE(6,*) '[DRAG.f90] drhodz =', DRHODZ
+
+      if(kentry.eq.1)then
+          WRITE(6,*) '     *  rho                             ', RHO
+          WRITE(6,*) '     *  drhodz                          ', DRHODZ
+      endif
+      
       
       ! If rho is a nan, stop the program and tell the user
       if (RHO.NE.RHO) then
-        WRITE(6,*) '*****   ERROR in DRAG.f90   *****'
+        WRITE(6,*) '-----   ERROR in DRAG.f90   -----'
         WRITE(6,*) '           RHO is NAN            '
         WRITE(6,*) ' '
         WRITE(6,*) '           RHO    = ', RHO
         WRITE(6,*) '           DRHODZ = ', DRHODZ
         WRITE(6,*) '           KENTRY = ', KENTRY
-        WRITE(6,*) '**********************************'          
+        WRITE(6,*) '================================='          
       endif
       if (RHO.LT.1.0D-30) then
-        WRITE(6,*) '*****   ERROR in DRAG.f90   *****'
+        WRITE(6,*) '-----   ERROR in DRAG.f90   -----'
         WRITE(6,*) '           RHO is way too small  '
         WRITE(6,*) ' '
         WRITE(6,*) '           RHO    = ', RHO
         WRITE(6,*) '           DRHODZ = ', DRHODZ
         WRITE(6,*) '           KENTRY = ', KENTRY
-        WRITE(6,*) '**********************************'          
+        WRITE(6,*) '================================='          
       endif
       if (RHO.GT.1.D0) then
-        WRITE(6,*) '*****   ERROR in DRAG.f90   *****'
+        WRITE(6,*) '-----   ERROR in DRAG.f90   -----'
         WRITE(6,*) '           RHO is way too big  '
         WRITE(6,*) ' '
         WRITE(6,*) '           RHO    = ', RHO
         WRITE(6,*) '           DRHODZ = ', DRHODZ
         WRITE(6,*) '           KENTRY = ', KENTRY
-        WRITE(6,*) '**********************************'          
+        WRITE(6,*) '================================='          
       endif
 
 
@@ -1130,8 +1144,8 @@
 !                                 by calcualating CD      
   200 CONTINUE
     if(kin_2.eq.1) WRITE(6,*) ' '
-    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] PREPARE TERMS FOR COMPUTING DRAG CONTRINUTION'
-    if(kin_2.eq.1) WRITE(6,*) '            ---------------------------------------------'
+    if(kin_2.eq.1) WRITE(6,*) '      * PREPARE TERMS FOR COMPUTING DRAG CONTRIBUTION'
+!     if(kin_2.eq.1) WRITE(6,*) '            ---------------------------------------------'
 
     !!!! Calculate the s/c vel relative to atmosphere
       VEL2 = XDOTR**2+YDOTR**2+ZDOT**2     
@@ -1143,19 +1157,19 @@
       IUP=IORDRG-1
       IF(IUP.LE.0) GO TO 311
       DO 310 I=1,IUP
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - 310     ???     '
+       if(kin_2.eq.1) WRITE(6,*) '           - 310     ???     '
       C1=C1+C3*B(I)*TM(I)
   310 END DO
   311 IF(IPDDRG.GT.0) GO TO 312                  ! 311 is the no adjustment option
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] -311- no drag adjust. option' 
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- no drag adjust. option' 
       C1=C1+C3*B(IORDRG)*TM(IORDRG)
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- C1=C1+C3*B(IORDRG)*TM(IORDRG)'
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- C1       ' , C1
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- C3       ' , C3
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- IORDRG   ' , IORDRG
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- B(IORDRG)' , B(IORDRG)
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- TM(IORDRG)' , TM(IORDRG)
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-311- TM', TM 
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- C1=C1+C3*B(IORDRG)*TM(IORDRG)'
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- C1        ' , C1
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- C3        ' , C3
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- IORDRG    ' , IORDRG
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- B(IORDRG) ' , B(IORDRG)
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- TM(IORDRG)' , TM(IORDRG)
+       if(kin_2.eq.1) WRITE(6,*) '           - 311- TM        ', TM 
 
 
       GO TO 350
@@ -1178,21 +1192,21 @@
       DO 330 I=1,IPDN
       TD=STDRG(I)-T0
       CALL POWER(IORDRG,TD,TDN,.FALSE.)
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90] - 320      '
+       if(kin_2.eq.1) WRITE(6,*) '           - 320      '
       C1=C1+C3*B(IORDRG+I)*TDN
       T0=STDRG(I)
   330 END DO
   340 CONTINUE
       TD=TTEST-T0
       CALL POWER(IORDRG,TD,TDN,.TRUE.)
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- DRAG IS BEING ADJUSTED'
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- C1=C1+C3*B(IORDRG+IPD)*TDN'
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- C1            ', C1
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- B(IORDRG+IPD) ',B(IORDRG+IPD)
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- DRAG IS BEING ADJUSTED'
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- C1=C1+C3*B(IORDRG+IPD)*TDN'
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- C1            ', C1
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- B(IORDRG+IPD) ',B(IORDRG+IPD)
                                !####    Need to hunt down where B is calculated
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- IORDRG        ',IORDRG
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- IPD           ',IPD
-       if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340- TDN           ', TDN
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- IORDRG        ',IORDRG
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- IPD           ',IPD
+       if(kin_2.eq.1) WRITE(6,*) '           - 340- TDN           ', TDN
        !if(kin_2.eq.1) WRITE(6,*) '[DRAG.f90]-340---------------------------'
       C1=C1+C3*B(IORDRG+IPD)*TDN
   350 CONTINUE
@@ -1200,8 +1214,8 @@
       RTAREA=1.D0
     
     if(kin_2.eq.1) WRITE(6,*) ' '
-    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] CALCULATE ACCELERATION DUE TO DRAG'
-    if(kin_2.eq.1) WRITE(6,*) '            ----------------------------------'
+    if(kin_2.eq.1) WRITE(6,*) '      * CALCULATE ACCELERATION DUE TO DRAG'
+!     if(kin_2.eq.1) WRITE(6,*) '            ----------------------------------'
 
 ! CALCULATE ACCELERATION DUE TO DRAG
       !
@@ -1211,9 +1225,9 @@
       ! THEREFORE, TEMPORARILY STORE C1 IN TC1.
       TC1 = C1*RATIO2
  
-      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]- TC1     ', TC1
-      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]- C1      ', C1
-      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]- RATIO2  ', RATIO2
+      if(kin_2.eq.1) WRITE(6,*) '           - TC1     ', TC1
+      if(kin_2.eq.1) WRITE(6,*) '           - C1      ', C1
+      if(kin_2.eq.1) WRITE(6,*) '           - RATIO2  ', RATIO2
 
  
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
@@ -1236,8 +1250,8 @@
       CD_check = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )   
       CDprime = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )   
       if(kin_2.eq.1) WRITE(6,*) '  '
-      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-pre-check- TC1     ', TC1
-      if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-pre-check- CD_check ', CD_check
+      if(kin_2.eq.1) WRITE(6,*) '           - pre-check- TC1      ', TC1
+      if(kin_2.eq.1) WRITE(6,*) '           - pre-check- CD_check ', CD_check
 
       IF(optionsin(4).ne.2 ) THEN  ! BWDRAG-------------------------------------- Pygeodyn options indicate to use BWDRAG
             
@@ -1246,17 +1260,16 @@
                   &     VEL,XDOTR,YDOTR,ZDOT,SCAREA,TC1,         &
                   &     AA(JBWARE),DXDD,PXDDT,JARADJ,II(JARUA),  &
                   &     NFACE,NEQN,TOTARE,ISHFLG,AA(KSDIND))
-                  
-            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- TC1        ', TC1
-            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- SCMASS     ', SCMASS
-            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- TOTARE     ', TOTARE
-            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- C3=VEL*RHO ', C3
+            
+            if(kin_2.eq.1) WRITE(6,*) '      * BWDRAG Outputs'
+            if(kin_2.eq.1) WRITE(6,*) '           - TC1        ', TC1
+            if(kin_2.eq.1) WRITE(6,*) '           - SCMASS     ', SCMASS
+            if(kin_2.eq.1) WRITE(6,*) '           - TOTARE     ', TOTARE
+            if(kin_2.eq.1) WRITE(6,*) '           - C3=VEL*RHO ', C3
             
             ! remove the other values stored in CD and leave only the drag coeff.
             CD_drag = (TC1*(2.0D0*SCMASS)/(TOTARE*C3)  )   
-
-            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- TC1     ', TC1
-            if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90]-BWDRAG- CD_drag ', CD_drag
+            if(kin_2.eq.1) WRITE(6,*) '           - CD_drag ', CD_drag
 
 
 
@@ -1443,7 +1456,6 @@
         DXDD(2)=-TC1*YDOTR
         DXDD(3)=-TC1*ZDOT
       ENDIF                                                         
-      IF(LORBIT) RETURN
       
     ! just an example for ref.  
     ! IJDSEC=MJDSEC+FSEC
@@ -1453,22 +1465,19 @@
     ! WRITE(6,*) ' [Date]  YYMMDD HHMMSS FSSTRT  ', IYMD, IHMS, FSSTRT
     ! WRITE(6,*) '         rho drhodz  ', RHO, DRHODZ
 
-    if(kin_2.eq.1) WRITE(6,*) '  '
-    if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] PRINT TO DENSITY/DRAG FILES'
-    if(kin_2.eq.1) WRITE(6,*) '            ---------------------------'
+    if(kin_2.eq.1) WRITE(6,*) '      * Printing to DENSITY/DRAG files    '
 
 ! *****  PRINT THE DENSITY FILE ***********************************
       IF(LSTINR) THEN
 
-
-        WRITE(99,7000) FSSTRT,IYMD,IHMS,               &  !           FSSTRT -- Elapsed seconds since initial epoch  
-        &              XLATD,XLOND,ALTI,               &  !           IYMD   -- YYMMDD of current epoch  
-        &              RHO,DRHODZ,                     &  !           IHMS   -- HHMMSS of current epoch  
-        &              FLUXIN,FLXAVG,FLUXM(1)             !           XLATD -- Lat of Space craft (degrees)  
-        !                                                 !           XLOND -- Lon of Space craft (degrees)  
-7000   FORMAT(  F12.1,1X, 2(I0.6,1X),                  &  !           ALTI -- Hieght of Space station above elipsoid (M)  
-       &        2(F12.4,1X), F12.3,1X,                 &  !           RHO  -- Density of atmosphere (KG/M^3)  
-       &        2(D20.11,1X),                          &  !           DRHODZ -- Change in density of atmosphere with height (KG/M^3/M)  
+        WRITE(99,7000) FSSTRT,IYMD,IHMS,         &  !  FSSTRT -- Elapsed seconds since initial epoch  
+        &              XLATD,XLOND,ALTI,         &  !  IYMD   -- YYMMDD of current epoch  
+        &              RHO,DRHODZ,               &  !  IHMS   -- HHMMSS of current epoch  
+        &              FLUXIN,FLXAVG,FLUXM(1)       !  XLATD -- Lat of Space craft (degrees)  
+        !                                           !  XLOND -- Lon of Space craft (degrees)  
+7000   FORMAT(  F12.1,1X, 2(I0.6,1X),            &  !  ALTI -- Hieght of Space station above elipsoid (M)  
+       &        2(F12.4,1X), F12.3,1X,           &  !  RHO  -- Density of atmosphere (KG/M^3)  
+       &        2(D20.11,1X),                    &  !  DRHODZ -- Change in density of atmosphere with height (KG/M^3/M)  
        &        3(F6.2,1X)     ) 
       ENDIF                                                           
 !***************************************************************************
@@ -1525,6 +1534,9 @@
        !
       ENDIF 
 !***************************************************************************
+
+! End drag routine if doing an orbgen run (simple orbit propagation.)
+      IF(LORBIT) RETURN
 
 
 !

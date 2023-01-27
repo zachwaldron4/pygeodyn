@@ -1,6 +1,9 @@
-#### ----------------------------------------
-#### Import modules:
-#### -----------------
+"""Module that Reads the raw GEOYDN Output.
+
+"""
+
+
+
 import numpy as np
 import pandas as pd
     #### Computer function
@@ -16,65 +19,26 @@ import copy
 #### ----------------------------------------
 #### ----------------------------------------
 
-# import sys
-# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
-
 ### Import the Classes from the Tools
-# from util_classtools import Util_Tools
-# from common_functions   import MJDS_to_YYMMDDHHMMSS, Convert_ET_TDT_to_UTC
 from pygeodyn.util_dir.time_systems import mjds_to_ymdhms
 from pygeodyn.util_dir.time_systems import time_tdt_to_utc
+from pygeodyn.util_dir.coordinate_systems import Convert_cartesian_to_RSW_returnall
+from pygeodyn.util_dir.coordinate_systems import Convert_cartesian_to_NTW_returnall
 
-# from common_functions   import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
-from pygeodyn.util_dir.coordinate_systems import Convert_cartesian_to_RSW_returnall, Convert_cartesian_to_NTW_returnall
+
+class ReadRawOutput:
+    """ DOCSTRING 
+    
+    """
 
 
-class PygeodynReader:
-    # UtilTools and all of its methods are now inherited in our main functions
-       
-    #### read in the input and store as members
     def __init__(self):  
-#         print('4 ---- check ---- init PygeodynReader class')
         pass
-    
-#         self.request_data = params['request_data'] 
-
-#         self.satellite         = params['satellite']
-#         self.den_model         = params['den_model']
-#         self.SpecialRun_name   = params['SpecialRun_name']
-#         self.verbose           = params['verbose']
-#         self.arc_input         = params['arc']
-#         self.set_density_model_setup_params( self.den_model )
-
-#         #### The below interprets that no input has been given for special name
-#         if self.SpecialRun_name == None:
-#             self.SpecialRun_name = ''
-#         else:
-#             self.SpecialRun_name = params['SpecialRun_name']
-
-
-
-#######         self.empirical_accels = params['empirical_accels']
-#######         self.options_in       = params['options_in']
-#######         self.run_ID           = params['run_ID']        
-#######         self.set_acceleration_params( self.empirical_accels )
-
-
-    
     
     
     def read_binary_ORBFIL(self):
         
         from scipy.io import FortranFile
-#         import numpy as np
-#         import pandas as pd
-#         from collections import namedtuple
-#         import time
-        # Fortran calls
-#         import subprocess
-#         import os
-
-
         orb_fil= self._orbfil_filename
 
         f = FortranFile(orb_fil, 'r')
@@ -618,7 +582,7 @@ class PygeodynReader:
                 line = linecache.getline(self._iieout_filename,val)            
                 if 'CD' in line:
                     check_sat = int(line[24:32])
-                    if check_sat == int(self.SATID):    
+                    if check_sat == int(self.prms['sat_ID']):    
                         if 'T' in line:
                             #### save the list of T##s and strip of whitespaces
                             timedep_Cd_count.append(line[18:24].strip()) 
@@ -629,7 +593,7 @@ class PygeodynReader:
 #                 line = linecache.getline(self._iieout_filename,val)            
 #                 if 'CD' in line:
 #                     check_sat = int(line[24:32])
-#                     if check_sat == int(self.SATID):    
+#                     if check_sat == int(self.prms['sat_ID']):    
 #                         if 'T' in line:
 #                             #### save the list of T##s and strip of whitespaces
 #                             timedep_Cd_count.append(line[18:24].strip()) 
@@ -658,10 +622,10 @@ class PygeodynReader:
         timedep_Cd_dates = []
         for i,val in enumerate(card_inputs_range):
                 line = linecache.getline(self._iieout_filename,val)            
-                if 'DRAG             '+self.SATID in line:    #"DRAG             1807001"
+                if 'DRAG             '+self.prms['sat_ID'] in line:    #"DRAG             1807001"
                     check_sat = int(line[18:26])
 #                     print(check_sat)
-                    if check_sat == int(self.SATID):
+                    if check_sat == int(self.prms['sat_ID']):
 #                         print(line[45:56])
                         timedep_Cd_dates.append(line[45:56].strip())
                 
@@ -806,7 +770,7 @@ class PygeodynReader:
                     line = linecache.getline(self._iieout_filename,val)            
                     if 'ACCEL9    99' in line:
                         check_sat = int(line[18:26])
-                        if check_sat == int(self.SATID):
+                        if check_sat == int(self.prms['sat_ID']):
                             accel_9_dates.append(line[45:56].strip())
             for i,val in enumerate(accel_9_dates):
                 accel_9_dates[i] = val.replace(" ", "0")
@@ -898,16 +862,12 @@ class PygeodynReader:
         return(SatMain_AdjustedParams)
         
     def read_density_file(self):
-        '''
-             Read the density file.  
+        ''' Read the raw density file.
              The density file has a different date format than the other outputs
-                       so it is dealt with here in the method.
+             so it is dealt with here in the method.
 
         '''
         start = time.time()
-        
-        ##### Unzip the density file:
-     
         
         #### The density file is a very simple format
         #### with this it can be loaded using pd.csv very easily
@@ -1066,13 +1026,13 @@ class PygeodynReader:
 #         #### Drop the NaNs
 #         DEN_df = DEN_df.dropna()
         
-#         epoch_end = self.run_settings['epoch_start'][self.arcnumber]
+#         epoch_end = self.prms['epoch_start'][self.arcnumber]
 #         epoch_end_YYMMDD     = epoch_end[:6].strip() 
 #         epoch_end_HHMM       = epoch_end[7:11].strip()
 #         epoch_end_dt = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')
         def nearest(items, pivot):
             return min(items, key=lambda x: abs(x - pivot))
-        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start = self.prms_arc['start_ymdhms']
         epoch_start_YYMMDD     = epoch_start[:6].strip() 
         epoch_start_HHMM       = epoch_start[7:11].strip()
         epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
@@ -1308,7 +1268,7 @@ class PygeodynReader:
 #         drag_df = drag_df.dropna()
         def nearest(items, pivot):
             return min(items, key=lambda x: abs(x - pivot))
-        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start = self.prms_arc['start_ymdhms']
         epoch_start_YYMMDD     = epoch_start[:6].strip() 
         epoch_start_HHMM       = epoch_start[7:11].strip()
         epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
@@ -1521,7 +1481,7 @@ class PygeodynReader:
 #         accel_df = accel_df.dropna()
         def nearest(items, pivot):
             return min(items, key=lambda x: abs(x - pivot))
-        epoch_start = self.run_settings['epoch_start'][self.arcnumber]
+        epoch_start = self.prms_arc['start_ymdhms']
         epoch_start_YYMMDD     = epoch_start[:6].strip() 
         epoch_start_HHMM       = epoch_start[7:11].strip()
         epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
@@ -2276,202 +2236,7 @@ class PygeodynReader:
     def getData_PCE(self):
         return(self.grab_PCE_ascii())
 
-#     def getData_UserChoose(self, inputlist):
-    
-#         '''
-#         determine which datasets to return
-#         '''
-#         print('     Input must be chosen from the following:')
-#         print('           Density', '\n',
-#               '          AdjustedParams','\n',
-#               '          Trajectory_xyz', '\n',
-#               '          Residuals_obs', '\n',
-#               '          Residuals_summary', '\n',
-#               '          Statistics \n')
-        
-#         for choice in inputlist:
 
-#             if choice == 'AdjustedParams':
-#                 self.AdjustedParams      = self.getData_adjustedparams_iieout()
-               
-#             elif choice == 'Trajectory_xyz':
-#                 self.Trajectory_xyz            = self.getData_asciiXYZ()
-                
-#             elif choice == 'Density':
-#                 self.Density             = self.getData_density_denfile()
-             
-#             elif choice == 'Residuals_obs':
-#                 self.Residuals_obs          = self.getData_residsObserved_iieout()
-         
-#             elif choice ==  'Residuals_summary':
-#                 self.Residuals_summary      = self.getData_residsMeasSumm_iieout()
-         
-#             elif choice == 'Statistics':
-#                 self.Statistics = self.getData_stats_endOfFile_iieout()
-         
-#             else:
-#                 print('The requested output [', choice, '] does not match and inputs')
-
-                
-# #             print(self.keys())
-#         return(self)
-    
-
-        
-#     def getData_all(self):
-
-#         data_keys = [
-#                     'AdjustedParams',
-#                     'Trajectory_xyz',
-#                     'Density',
-#                     'Residuals_obs',
-#                     'Residuals_summary',
-#                     'Statistics',
-#                     ]
-
-#         for choice in data_keys:
-#             if choice == 'AdjustedParams':
-#                 self.AdjustedParams      = self.getData_adjustedparams_iieout()
-#             elif choice == 'Trajectory_xyz':
-#                 self.Trajectory_xyz            = self.getData_asciiXYZ()
-#             elif choice == 'Density':
-#                 self.Density                   = self.getData_density_denfile()
-#             elif choice == 'Residuals_obs':
-#                 self.Residuals_obs            = self.getData_residsObserved_iieout()
-#             elif choice ==  'Residuals_summary':
-#                 self.Residuals_summary      = self.getData_residsMeasSumm_iieout()
-#             elif choice == 'Statistics':
-#                 self.Statistics = self.getData_stats_endOfFile_iieout()
-#             else:
-#                 print('The requested output [', choice, '] does not match and inputs')
-
-#         self.organize_output_object_keys(data_keys)
-
-
-
-
-#     def getData_Arc(self):
-
-#         data_keys = [
-#                     'AdjustedParams',
-# #                     'Trajectory_xyz',
-# #                     'Density',
-#                     'Residuals_obs',
-# #                     'Residuals_summary',
-# #                     'Statistics',
-#                     ]
-
-#         self.AdjustedParams    = {}
-#         self.Trajectory_xyz    = {}
-#         self.Density           = {}
-#         self.Residuals_obs     = {}
-#         self.Residuals_summary = {}
-#         self.Statistics        = {}
-        
-#         arc = self.arc_input
-
-        
-#         self.set_file_paths_for_multiple_arcs( arc )
-
-
-#         for choice in data_keys:
-#             if choice == 'AdjustedParams':
-#                 self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
-#             elif choice == 'Trajectory_xyz':
-#                 self.Trajectory_xyz[arc]            = self.getData_asciiXYZ()
-#             elif choice == 'Density':
-#                 self.Density[arc]                   = self.getData_density_denfile()
-#             elif choice == 'Residuals_obs':
-#                 self.Residuals_obs[arc]            = self.getData_residsObserved_iieout()
-#             elif choice ==  'Residuals_summary':
-#                 self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
-#             elif choice == 'Statistics':
-#                 self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
-#             else:
-#                 print('The requested output [', choice, '] does not match and inputs')
-
-#         self.organize_output_object_keys(data_keys)            
-
-        
-        
-        
-        
-        
-#     def getData_ArcList(self):
-
-#         data_keys = [
-#                     'AdjustedParams',
-#                     'Trajectory_xyz',
-#                     'Density',
-#                     'Residuals_obs',
-#                     'Residuals_summary',
-#                     'Statistics',
-#                     ]
-
-#         self.AdjustedParams    = {}
-#         self.Trajectory_xyz    = {}
-#         self.Density           = {}
-#         self.Residuals_obs     = {}
-#         self.Residuals_summary = {}
-#         self.Statistics        = {}
-        
-#         for arc in self.arc_input:
-#             self.set_file_paths_for_multiple_arcs( arc )
-
-            
-#             for choice in data_keys:
-#                 if choice == 'AdjustedParams':
-#                     self.AdjustedParams[arc]      = self.getData_adjustedparams_iieout()
-#                 elif choice == 'Trajectory_xyz':
-#                     self.Trajectory_xyz[arc]            = self.getData_asciiXYZ()
-#                 elif choice == 'Density':
-#                     self.Density[arc]                   = self.getData_density_denfile()
-#                 elif choice == 'Residuals_obs':
-#                     self.Residuals_obs[arc]            = self.getData_residsObserved_iieout()
-#                 elif choice ==  'Residuals_summary':
-#                     self.Residuals_summary[arc]      = self.getData_residsMeasSumm_iieout()
-#                 elif choice == 'Statistics':
-#                     self.Statistics[arc] = self.getData_stats_endOfFile_iieout()
-#                 else:
-#                     print('The requested output [', choice, '] does not match and inputs')
-
-#         self.organize_output_object_keys(data_keys)  # this cleans up the extra keys and puts them in a dictionary key called 'run_parameters'
-    
-    
-    
-    
-    
-    
-#     def getData_ParallelizeArcs(self):
-
-#         data_keys = [
-#                     'AdjustedParams',
-#                     'Trajectory_xyz',
-#                     'Density',
-#                     'Residuals_obs',
-#                     'Residuals_summary',
-# #                     'Statistics',
-#                     ]
-
-#         import multiprocessing
-#         import time
-#         from multiprocessing import set_start_method
-#         set_start_method("spawn")
-
-        
-#         in1 = [
-#                 ( '030914_2wk' ),
-#                 ( '030928_2wk' ),
-# #                 ( '031012_2wk' ),
-# #                 ( '031026_2wk' ),
-# #                 ( '031109_2wk' ),
-# #                 ( '031123_2wk' ),
-# #                 ( '031207_2wk' ),
-# #                 ( '031221_2wk' ),
-#                 ]
-        
-#         pool = multiprocessing.Pool(processes=4)
-#         pool.starmap(self.getData_Arc, in1)
 
 
 
@@ -2481,7 +2246,7 @@ class PygeodynReader:
     def getData(self):
         
     
-        data_keys = self.request_data
+        data_keys = self.prms['request_data']
 
         #### Make dictionaries to store arc in a loop
         self.AdjustedParams    = {}
@@ -2501,23 +2266,27 @@ class PygeodynReader:
         
         for i in ARC_FILES:
 #             print(i)
-            if os.path.exists(self.path_to_model+'DENSITY/'):
-                os.chdir(self.path_to_model+'DENSITY/')
+            if os.path.exists(self.path_to_model+'/DENSITY/'):
+                os.chdir(self.path_to_model+'/DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
                 os.system('bunzip2 -v '+ i +'drag_file.bz2')
 
-            if os.path.exists(self.path_to_model+'ORBITS/'):
-                os.chdir(self.path_to_model+'ORBITS/')
+            if os.path.exists(self.path_to_model+'/ORBITS/'):
+                os.chdir(self.path_to_model+'/ORBITS/')
 #                 print(self.path_to_model+'ORBITS/')
 #                 print(i+'_orb1.bz2')
                 os.system('bunzip2 -v '+i+'_orb1.bz2')
 
         
         for iarc, arc in enumerate(self.arc_input):
+            self.arcnumber = iarc
+
             self.set_file_paths_for_multiple_arcs( arc, iarc, False )
             self.check_if_run_converged(self._iieout_filename)
 
-            print('Loading ', self.den_model , arc )
+            self.get_arc_values_and_dates()
+
+            print('Loading ', self.prms['den_model'] , arc )
             
             for choice in data_keys:                
                 
@@ -2546,7 +2315,7 @@ class PygeodynReader:
 #             os.system('bzip2 -v' +' '+self._density_filename)
             
             self.organize_output_object_keys(data_keys, arc, iarc, num_arcs)
-            
+        return(self)
             
             
         
@@ -2555,8 +2324,8 @@ class PygeodynReader:
     def ResidInvestigation_make_common_residsDF(self):
 
         ###### GET THE PCE DATA:
-        StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
-        SAT_ID = int(self.__dict__['global_params']['SATID'])
+        StateVector_PCE_datafile = self.__dict__['global_params']['file_statevector_ICs']
+        SAT_ID = int(self.__dict__['global_params']['prms']['sat_ID'])
         which_stat = 'CURRENT_VALUE'
 
         C_1 = {}
@@ -2570,14 +2339,7 @@ class PygeodynReader:
 
             arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
             arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
-            
-            
-#             print('arc',arc)
-#             print('arc_first_time    ',arc_first_time)
-#             print('arc_last_time     ',arc_last_time)
-#             print('arc_first_time_str',arc_first_time_str)
-#             print('arc_last_time_str ',arc_last_time_str)
-            
+                       
             
             A=[]
             for i,val in enumerate(np.arange(-20,20)):
@@ -2646,7 +2408,8 @@ class PygeodynReader:
                  right=PCE_data, right_on='Date_pd')
 
 #             print(C_1[arc].columns)
-            C_1[arc] = C_1[arc].rename(columns={"Satellite Inertial X coordinate": "X_orbfil",
+            C_1[arc] = C_1[arc].rename(
+                            columns={"Satellite Inertial X coordinate": "X_orbfil",
                                      "Satellite Inertial Y coordinate": "Y_orbfil",
                                      "Satellite Inertial Z coordinate": "Z_orbfil",
                                      "Satellite Inertial X velocity"  : "Xdot_orbfil",
@@ -2880,7 +2643,7 @@ class PygeodynReader:
             w_RMS_total = np.sqrt( ( np.square(w_rms_PCEX) + np.square(w_rms_PCEY) + np.square(w_rms_PCEZ) )/3  )
             
             ### Get Arc length from the run param settings
-            txt = self.__dict__['global_params']['run_settings']['arc_length']
+            txt = self.__dict__['global_params']['prms']['arc_length']
             chars = [s for s in [char for char in txt] if s.isdigit()]
             arc_length = int(''.join(chars))
 
@@ -2966,7 +2729,7 @@ class PygeodynReader:
        
      ### Free up space by removing any ancillary data from the returned Object
         def Pygeodyn_OBJECT_freeupmemory(OBJ):
-            SAT_ID = int(OBJ.__dict__['global_params']['SATID'])
+            SAT_ID = int(OBJ.__dict__['global_params']['prms']['sat_ID'])
 
             for i,val in enumerate(OBJ.__dict__['Density'].keys()):
 
@@ -3018,306 +2781,7 @@ class PygeodynReader:
                
 
         
-    def QuickLook_plots(self, plot_num, PLOTTYPE):
-        import plotly.graph_objects as go
-        from plotly.offline import plot, iplot
-        from plotly.subplots import make_subplots
-        import plotly.express as px
-        import pandas as pd
-        import numpy as np
-        config = dict({
-                        'displayModeBar': True,
-                        'responsive': False,
-                        'staticPlot': False,
-                        'displaylogo': False,
-                        'showTips': False,
-                        })
-
-        import os
-
-        def get_color(colorscale_name, loc):
-            from _plotly_utils.basevalidators import ColorscaleValidator
-            # first parameter: Name of the property being validated
-            # second parameter: a string, doesn't really matter in our use case
-            cv = ColorscaleValidator("colorscale", "")
-            # colorscale will be a list of lists: [[loc1, "rgb1"], [loc2, "rgb2"], ...] 
-            colorscale = cv.validate_coerce(colorscale_name)
-
-            if hasattr(loc, "__iter__"):
-                return [get_continuous_color(colorscale, x) for x in loc]
-            return get_continuous_color(colorscale, loc)
-
-
-        import plotly.colors
-        from PIL import ImageColor
-
-        def get_continuous_color(colorscale, intermed):
-            """
-            Plotly continuous colorscales assign colors to the range [0, 1]. This function computes the intermediate
-            color for any value in that range.
-
-            Plotly doesn't make the colorscales directly accessible in a common format.
-            Some are ready to use:
-
-                colorscale = plotly.colors.PLOTLY_SCALES["Greens"]
-
-            Others are just swatches that need to be constructed into a colorscale:
-
-                viridis_colors, scale = plotly.colors.convert_colors_to_same_type(plotly.colors.sequential.Viridis)
-                colorscale = plotly.colors.make_colorscale(viridis_colors, scale=scale)
-
-            :param colorscale: A plotly continuous colorscale defined with RGB string colors.
-            :param intermed: value in the range [0, 1]
-            :return: color in rgb string format
-            :rtype: str
-            """
-            if len(colorscale) < 1:
-                raise ValueError("colorscale must have at least one color")
-
-            hex_to_rgb = lambda c: "rgb" + str(ImageColor.getcolor(c, "RGB"))
-
-            if intermed <= 0 or len(colorscale) == 1:
-                c = colorscale[0][1]
-                return c if c[0] != "#" else hex_to_rgb(c)
-            if intermed >= 1:
-                c = colorscale[-1][1]
-                return c if c[0] != "#" else hex_to_rgb(c)
-
-            for cutoff, color in colorscale:
-                if intermed > cutoff:
-                    low_cutoff, low_color = cutoff, color
-                else:
-                    high_cutoff, high_color = cutoff, color
-                    break
-
-            if (low_color[0] == "#") or (high_color[0] == "#"):
-                # some color scale names (such as cividis) returns:
-                # [[loc1, "hex1"], [loc2, "hex2"], ...]
-                low_color = hex_to_rgb(low_color)
-                high_color = hex_to_rgb(high_color)
-
-            return plotly.colors.find_intermediate_color(
-                lowcolor=low_color,
-                highcolor=high_color,
-                intermed=((intermed - low_cutoff) / (high_cutoff - low_cutoff)),
-                colortype="rgb",
-            )
-
-        cols = get_color("Viridis", np.linspace(0, 1, 5))
-        map_cols = np.linspace(0, 1, 5)
-        colorscale=[]
-        for i,val in enumerate(map_cols):
-            colorscale.append([val, cols[i]])
-
-        # Simplify Plotting Schemes:
-        col1 =  px.colors.qualitative.Plotly[0]
-        col2 =  px.colors.qualitative.Plotly[1]
-        col3 =  px.colors.qualitative.Plotly[2]
-        col4 =  px.colors.qualitative.Plotly[3]
-        col5 =  px.colors.qualitative.Plotly[4]
-        col6 =  px.colors.qualitative.Plotly[5]
-
-        if plot_num == 0:
-            col = col1
-            m_size = 4.5
-        elif plot_num == 1:
-            col = col2
-            m_size = 4
-        elif plot_num == 2:
-            col = col3
-            m_size = 3.5
-        elif plot_num == 3:
-            col = col4
-            m_size = 3
-        elif plot_num == 4:
-            col = col5
-            m_size = 3
-        elif plot_num == 5:
-            col = col6
-            m_size = 3
-
-    ############################################################################
     
-        if PLOTTYPE =='DEN':
-            fig = make_subplots(
-                rows=1, cols=1,
-                subplot_titles=(['Sampled Orbit Densities']),
-                vertical_spacing = 0.15)
-
-            model_m1 = self.__dict__['global_params']['den_model']
-            print(model_m1)
-            for ii,arc in enumerate(self.__dict__['global_params']['arc_input'][:]):
-
-
-                #### INDEX THE DENSITY DF correctly
-                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
-                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
-                df['i_vals'] = vals
-                index_date = df.loc[df.index.max()]['i_vals'].min()
-
-
-                str_run_param = 'run_parameters'+ arc
-                final_iter = self.__dict__[str_run_param]['str_iteration']
-                i_arc = ii+1
-
-                print('----',model_m1,'----')
-                print('     mean:    ',np.mean(self.Density[arc]['rho (kg/m**3)']),'----')
-                print('     variance:',np.std(self.Density[arc]['rho (kg/m**3)']),'----')
-                print()
-
-                if ii==0:
-                    legend_flag = True
-                    name_str    = model_m1+arc
-                else:
-                    legend_flag = False
-                    name_str    = model_m1+arc
-
-
-                fig.add_trace(go.Scattergl(  x=self.Density[arc]['Date'][:index_date][:],
-                                             y=self.Density[arc]['rho (kg/m**3)'][:index_date][:],
-                                             name= name_str,
-                                             mode='markers',
-                                             opacity=1,
-                                             marker=dict(
-                                                color=col, 
-                                                size=m_size,
-                                                        ),
-                                             showlegend=legend_flag,
-                                          ),
-                                              secondary_y=False,
-                                               row=1, col=1,
-                                          )
-
-            fig.update_layout(legend= {'itemsizing': 'constant'})
-            fig.update_yaxes( title="rho (kg/m**3)", type='log', exponentformat= 'power',row=1, col=1)
-            fig.update_xaxes( title="Date", row=1, col=1)       
-            
-            return(fig.show(config=config) )        
-    ############################################################################
-
-        elif PLOTTYPE =='DEN_orbavg':
-
-            def orb_avg(den_df, arc):
-                #### Find the index for the correct date
-                vals  = np.arange(den_df[arc].index[0],den_df[arc].index[-1]+1)
-                df = den_df[arc].set_index('Date',drop=False ) 
-                df['i_vals'] = vals
-                index_date = df.loc[df.index.max()]['i_vals'].min()
-
-                lat = np.asarray(den_df[arc]['Lat'][:index_date])
-                time_pd = pd.to_datetime(den_df[arc]['Date'][:index_date])
-                i = np.nonzero( lat[1:]*lat[0:-1]  <  np.logical_and(0 , lat[1:] > lat[0:-1] )  )
-                i = i[0]
-
-                d_avg = np.zeros(np.size(i))
-                height_avg = np.zeros(np.size(i))
-
-                time_avg = []
-                d_avg_rolling = []
-
-                roll_avg_count = 0
-                for j in range(np.size(i)-1):
-                    d_avg[j]      = np.mean(den_df[arc]['rho (kg/m**3)'  ][i[j] : i[j+1]-1  ]  )
-                    height_avg[j] = np.mean(den_df[arc]['Height (meters)'][i[j] : i[j+1]-1  ]  )
-                    t1 = pd.to_datetime(time_pd[ i[j]    ])
-                    t2 = pd.to_datetime(time_pd[ i[j+1]-1])
-                    datemiddle = pd.Timestamp(t1) + (pd.Timestamp(t2) - pd.Timestamp(t1)) / 2
-
-                    time_avg.append(datemiddle)
-
-                    if roll_avg_count ==1:
-                        d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
-                        roll_avg_count =0
-
-                    roll_avg_count+=1 
-                d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
-
-                return(time_avg, d_avg, d_avg_rolling )
-            fig = make_subplots(
-                rows=1, cols=1,
-                subplot_titles=(['Orbit Averaged Densities']),
-                vertical_spacing = 0.15)
-            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
-
-                vals  = np.arange(self.__dict__['Density'][arc].index[0],self.__dict__['Density'][arc].index[-1]+1)
-                df = self.__dict__['Density'][arc].set_index('Date',drop=False ) 
-                df['i_vals'] = vals
-                index_date = df.loc[df.index.max()]['i_vals'].min()
-
-
-                time_avg,d_avg, d_avg_rolling = orb_avg(self.Density, arc)
-
-
-                fig.add_trace(go.Scattergl(x=time_avg,
-                                         y=d_avg_rolling,
-        #                                  y=d_avg,
-        #                                 name= ' Arc ' +str(i_arc) ,
-                                         mode='markers',
-                                         marker=dict(
-                                         color=col,
-                                         size=7,),
-                                         showlegend=False,
-                                           ),
-                                           row=1, col=1,
-                                           )
-
-
-                fig.update_yaxes(type="log", exponentformat= 'power',row=1, col=1)
-            fig.update_xaxes(title_text="Date", row=1, col=1)
-            fig.update_yaxes(title_text="kg/m^3", row=1, col=1)
-            fig.update_layout(legend= {'itemsizing': 'constant'})
-
-
-            
-            return(fig.show(config=config) )        
-            
-    ############################################################################
-
-        elif PLOTTYPE =='NTW_residuals':
-            
-            coords = ['N','T','W']
-
-            fig = make_subplots(
-                rows=3, cols=1,
-                subplot_titles=(['Normal (N)', 'In-track (T)','Cross-Track (W)']),
-                vertical_spacing = 0.15)
-
-            model_m1 = self.__dict__['global_params']['den_model']
-            for ii,arc in enumerate(self.__dict__['global_params']['arc_input']):
-
-                data_resids = self.__dict__['OrbitResids'][arc]['resids']
-
-
-                fig.update_layout(title=''.join(coords)+' Orbit Residuals',
-                                autosize=True,
-                                font=dict(size=14),
-                                legend= {'itemsizing': 'constant'})
-
-                for i,val in enumerate(coords):
-                    fig.add_trace(go.Scattergl(
-                                             x=data_resids['Date'][::10],
-                                             y=data_resids[val][::10],
-                                         name=val+' '+model_m1,
-                                         mode='markers',
-                                         marker=dict(
-                                             color=col,
-                                             size=m_size,
-                                                    ),
-                                         showlegend=False),
-                                         secondary_y=False,
-                                         row=i+1, col=1)
-
-
-
-            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=1, col=1)
-            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=2, col=1)
-            fig.update_yaxes( title="meters" ,type="linear" , exponentformat= 'power',row=3, col=1)
-            fig.update_xaxes( title="Date",  row=3, col=1)
-
-            
-            
-            return(fig.show(config=config) )        
-
         
         
         
@@ -3342,7 +2806,7 @@ class PygeodynReader:
         rsw_bool = True
         
     
-        data_keys = self.request_data
+        data_keys = self.prms['request_data']
 
         #### Make dictionaries to store arc in a loop
         self.AdjustedParams    = {}
@@ -3353,7 +2817,7 @@ class PygeodynReader:
         self.Residuals_summary = {}
         self.RunSummary        = {}
         self.DragFile          = {}
-        self.AccelFile          = {}
+        self.AccelFile         = {}
         
         data_keys.append('Statistics')
         data_keys.append('OrbitResids')
@@ -3369,13 +2833,13 @@ class PygeodynReader:
         
         for i in ARC_FILES:
 #             print('arcfiles',i )
-            if os.path.exists(self.path_to_model+'DENSITY/'):
-                os.chdir(self.path_to_model+'DENSITY/')
+            if os.path.exists(self.path_to_model+'/DENSITY/'):
+                os.chdir(self.path_to_model+'/DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
                 os.system('bunzip2 -v '+ i +'drag_file.bz2')
 
-            if os.path.exists(self.path_to_model+'ORBITS/'):
-                os.chdir(self.path_to_model+'ORBITS/')
+            if os.path.exists(self.path_to_model+'/ORBITS/'):
+                os.chdir(self.path_to_model+'/ORBITS/')
                 os.system('bunzip2 -v '+i+'_orb1.bz2')
 
         
@@ -3388,10 +2852,10 @@ class PygeodynReader:
             
             self.set_file_paths_for_multiple_arcs( arc, iarc, False )
             self.check_if_run_converged(self._iieout_filename)
-
             print('Arc: ',self.arcdate_v2)
-            
             self.arcnumber = iarc
+            self.get_arc_values_and_dates(bool_elems=False)
+
 
             for choice in data_keys:                
                 if choice == 'AdjustedParams':
@@ -3452,11 +2916,8 @@ class PygeodynReader:
             w_RMS_total = np.sqrt( ( np.square(w_rms_PCEX) + np.square(w_rms_PCEY) + np.square(w_rms_PCEZ) )/3  )
             
             ### Get Arc length from the run param settings
-            txt = self.__dict__['global_params']['run_settings']['arc_length']
-            chars = [s for s in [char for char in txt] if s.isdigit()]
-            arc_length = int(''.join(chars))
+            arc_length = int(self.__dict__['global_params']['prms_arc']['arc_length_h'])
 
-            
             data = { 'ARC'             :  [] ,
                      'ArcLength'       :  [] ,
                      'Total_iters'     :  [] ,
@@ -3498,11 +2959,10 @@ class PygeodynReader:
 ############--------------------------------------------------------------------------------------------------        
             #### Get the OrbFil and PCE data for the datapoints that match in time
             CombinedOrbitsDF  = {}
-        
-        
+                
             ###### GET THE PCE DATA:
-            StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
-            SAT_ID = int(self.__dict__['global_params']['SATID'])
+            StateVector_PCE_datafile = self.__dict__['global_params']['file_statevector_ICs']
+            SAT_ID = int(self.__dict__['global_params']['prms']['sat_ID'])
             which_stat = 'CURRENT_VALUE'
 
             ####--------------------- Residual  ---------------------
@@ -3534,7 +2994,7 @@ class PygeodynReader:
                     last_line = first_line +32220
                     print('No matching lastline time: ',arc_last_time_str, last_line )
 
-            ####    IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
+            ####    If you get an error here stating that either first_line or last_line is 
             ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
 #             print('        Loading PCE datafile...')
             PCE_data = pd.read_csv(StateVector_PCE_datafile, 
@@ -3816,4 +3276,91 @@ class PygeodynReader:
             gc.collect()
         
 ### END OF CLASS       
+
+
+
+
+
+def Pygeodyn_OBJECT_freeupmemory(OBJ):
+    SAT_ID = int(OBJ.__dict__['global_params']['SATID'])
+
+    for i,val in enumerate(OBJ.__dict__['Density'].keys()):
+        
+        ####-----------------------------------------------------------------
+        #### DELETE UNNECESSARY VARS IN DENSITY
+        
+        del OBJ.__dict__['Density'][val]['Lat']
+        del OBJ.__dict__['Density'][val]['Lon']
+#         del OBJ.__dict__['Density'][val]['X']
+#         del OBJ.__dict__['Density'][val]['Y']
+#         del OBJ.__dict__['Density'][val]['Z']
+#         del OBJ.__dict__['Density'][val]['XDOT']
+#         del OBJ.__dict__['Density'][val]['YDOT']
+#         del OBJ.__dict__['Density'][val]['ZDOT']
+        del OBJ.__dict__['Density'][val]['Height (meters)']
+        del OBJ.__dict__['Density'][val]['drhodz (kg/m**3/m)']
+        
+        
+        ####-----------------------------------------------------------------
+        #### DELETE UNNECESSARY VARS IN Residuals_obs
+        
+        del OBJ.__dict__['Residuals_obs'][val]['Sat_main']
+        del OBJ.__dict__['Residuals_obs'][val]['track_1']
+        del OBJ.__dict__['Residuals_obs'][val]['track_2']
+        del OBJ.__dict__['Residuals_obs'][val]['Note']
+        del OBJ.__dict__['Residuals_obs'][val]['Elev1']
+        del OBJ.__dict__['Residuals_obs'][val]['Elev2']
+        ####
+        del OBJ.__dict__['Residuals_obs'][val]['StatSatConfig']
+        del OBJ.__dict__['Residuals_obs'][val]['Observation']
+        del OBJ.__dict__['Residuals_obs'][val]['Residual']
+        del OBJ.__dict__['Residuals_obs'][val]['RatiotoSigma']
+
+         
+        
+        
+        
+        
+        
+        ####-----------------------------------------------------------------
+        #### DELETE UNNECESSARY VARIABLES IN AdjustedParams
+        
+        iterations = OBJ.__dict__['run_parameters'+val]['total_iterations']
+        for iters in np.arange(1, iterations):
+#             print(iters)
+            if iters == iterations:
+                del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0XPOS']
+                del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0YPOS']
+                del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0ZPOS']
+#                 del OBJ.__dict__['AdjustedParams'][val][iters][SAT_ID]['0XPOS']
+
+                pass
+            else:
+                try:
+                    del OBJ.__dict__['AdjustedParams'][val][iters]
+                except:
+                    pass
+        
+        
+        ####-----------------------------------------------------------------
+        #### DELETE UNNECESSARY VARIABLES IN Trajectory_orbfil
+        
+        del OBJ.__dict__['Trajectory_orbfil'][val]['header']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Geodetic Latitude']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite East Longitude']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Height']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['MJDSEC ET']
+        
+        
+        
+    #### For big data non-sense
+#     del OBJ.__dict__['AdjustedParams']
+#    del OBJ.__dict__['Trajectory_orbfil']
+    del OBJ.__dict__['Density']
+#     del OBJ.__dict__['Residuals_obs']
+    del OBJ.__dict__['Residuals_summary']
+
+        
+    return(OBJ)
+
         

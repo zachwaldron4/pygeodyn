@@ -16,7 +16,8 @@ import os
 import os.path
 import sys
 import time
-    #### modules for reading and converting data
+import pandas as pd
+import numpy  as np
 from datetime import datetime
 
 
@@ -81,30 +82,30 @@ class Util_Tools:
         ####  Write the data path to a file to be read by fortran.
         ####
         from re import search
-        if search('tiegcm', self.den_model):
-            if self.satellite == 'icesat2':
-                self.model_data_path = self.run_settings['model_data_path']
+        if search('tiegcm', self.prms['den_model']):
+            if self.prms['satellite'] == 'icesat2':
+                self.model_data_path = self.prms['model_data_path']
                 filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
-        elif search('hasdm', self.den_model):
-            if self.satellite == 'icesat2':
-                self.model_data_path = self.run_settings['model_data_path']
+        elif search('hasdm', self.prms['den_model']):
+            if self.prms['satellite'] == 'icesat2':
+                self.model_data_path = self.prms['model_data_path']
                 filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
-        elif search('ctipe', self.den_model):
-            if self.satellite == 'icesat2':
-                self.model_data_path = self.run_settings['model_data_path']
+        elif search('ctipe', self.prms['den_model']):
+            if self.prms['satellite'] == 'icesat2':
+                self.model_data_path = self.prms['model_data_path']
                 filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
                 filemodels.close()
-        elif search('gitm', self.den_model):
-            if self.satellite == 'icesat2':
-                self.model_data_path = self.run_settings['model_data_path']
+        elif search('gitm', self.prms['den_model']):
+            if self.prms['satellite'] == 'icesat2':
+                self.model_data_path = self.prms['model_data_path']
                 filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
@@ -202,22 +203,22 @@ class Util_Tools:
         file1.writelines(model_val +'\n') # 2nd values is for model switching
         #
         #######  ADD AN OPTIONAL INPUT VALUE TO FORTRAN
-        if self.PASS_INPUT_VALUE_TO_fortran  == 'None' :
+        if self.prms['value_io_fortran']  == 'None' :
             file1.writelines('1'+'\n')
         else:
-            file1.writelines(self.PASS_INPUT_VALUE_TO_fortran+'\n')
+            file1.writelines(self.prms['value_io_fortran']+'\n')
         #
         #######  Choose CD Model to be used by GEODYN
-        if self.cd_model  == 'BWDRAG' :
+        if self.prms['cd_model']  == 'BWDRAG' :
             file1.writelines('1'+'\n')
             
-        elif self.cd_model  == 'DRIA' :
+        elif self.prms['cd_model']  == 'DRIA' :
             file1.writelines('2' +'\n')
         else:
             file1.writelines('0' +'\n')
 
         
-        if self.scaling_factor == True:
+        if self.prms['scaling_factor'] == True:
             file1.writelines('1'+'\n')
         else:
             file1.writelines('0'+'\n')
@@ -227,7 +228,7 @@ class Util_Tools:
         
         ##### MAKE CD MODEL INPUT FILE
         
-        if self.cd_model  == 'DRIA' :
+        if self.prms['cd_model']  == 'DRIA' :
             file_CDparams = open(self.path_io_geodyn+"/cd_params.txt","w+")
             file_CDparams.writelines(str(self.cd_model_params['MS'])    + '\n') 
             file_CDparams.writelines(str(self.cd_model_params['TW'])    + '\n')  
@@ -724,7 +725,8 @@ class Util_Tools:
         '''
         
         global_keys = [
-                    'run_settings',
+                    'prms',
+                    'prms_arc',
                     'satellite',
                     'den_model',
                     'empirical_accels',
@@ -748,9 +750,10 @@ class Util_Tools:
                     'atgrav_file',
                     'ephem_file',
                     'gravfield_file',
-                    'arc_length',
+                    'arc_length_h',
                     'path_to_model',
-                    'arcdate_v2']
+                    'arcdate_v2',
+                    'file_statevector_ICs']
         
         data_keys.append('run_parameters'+arc)
         data_keys.append('global_params')
@@ -798,7 +801,7 @@ class Util_Tools:
                 
                 
             ### Delete the extra stuff in to runparams##arc## and globalparams
-            del self.__dict__['global_params']['run_settings']['request_data']
+            del self.__dict__['global_params']['prms']['request_data']
 #             for i_del in to_move_and_delete:         
 
         return(self)
@@ -806,32 +809,21 @@ class Util_Tools:
         
         
     def check_if_run_converged(self, iieout_filename):
-        ''' 
-        Check if the run converged properly. If it did not print to the console.
+        '''Check if IIE converged properly. If it did not print to the console.
         
         Non-convergence options:
-
-            ** ELEM **  CARTESIAN SPACECRAFT COORDINATES EQUIVALENT TO HYPERBOLIC TRAJECTORY.
-                EXECUTION TERMINATING.
-
-
-        
+        ** ELEM **  CARTESIAN SPACECRAFT COORDINATES EQUIVALENT TO HYPERBOLIC TRAJECTORY.
+        EXECUTION TERMINATING.
         '''
         self.convergence_flag = False
-        
         with open(iieout_filename, 'r') as f:
             for line_no, line in enumerate(f):
-                
                 if 'CONVERGENCE' in line:
                     self.convergence_flag = True
 #                     print('File converged... reading the file.')
                     break
-                
                 elif 'HYPERBOLIC TRAJECTORY' in line:
                     self.convergence_flag = False
-#                     index_last_slash = self._iieout_filename.rfind('/')
-#                     print('|',self.tab,'-----','File: ',self._iieout_filename[index_last_slash+1:]  )
-                    
                     longest_line = '|'+' File:'+self._iieout_filename
                     print('+','—'*len(longest_line))
                     print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
@@ -848,188 +840,6 @@ class Util_Tools:
 
                         
                         
-
-
-
-# %load_ext autoreload
-# %autoreload 2
-
-# import pandas as pd
-# import sys
-# sys.path.insert(0,'/data/geodyn_proj/pygeodyn/pygeodyn_develop/util_dir/')
-# from common_functions import Convert_cartesian_to_RSW, Convert_cartesian_to_NTW_getT, Convert_cartesian_to_NTW_returnall
-
-
-# def ResidInvestigation_make_common_residsDF(obj_m1):
-
-
-
-#     ###### GET THE PCE DATA:
-#     StateVector_PCE_datafile = '/data/data_geodyn/inputs/icesat2/setups/PCE_ascii.txt'
-#     SAT_ID = int(obj_m1.__dict__['global_params']['SATID'])
-#     which_stat = 'CURRENT_VALUE'
-
-#     for ii,arc in enumerate(obj_m1.__dict__['global_params']['arc_input']):#[::2]):
-#         print(arc)
-
-#         ####--------------------- Residual  ---------------------
-
-#         arc_first_time  = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[0]
-#         arc_last_time   = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']['Date_UTC'].iloc[-2]
-
-#         arc_first_time_str     =  str(arc_first_time)#.replace( "'",' ') 
-#         arc_last_time_str      =  str(arc_last_time)#.replace( "'",' ') 
-
-
-#         A=[]
-#         for i,val in enumerate(np.arange(-20,20)):
-#             A.append(str(pd.to_datetime(arc_first_time)+pd.to_timedelta(val,'s')))
-#         B=[]
-#         for i,val in enumerate(np.arange(-20,20)):
-#             B.append(str(pd.to_datetime(arc_last_time)+pd.to_timedelta(val,'s')))
-
-#         ####---------------------------------------------------------
-#         last_line = False
-#         with open(StateVector_PCE_datafile, 'r') as f:
-#             for line_no, line_text in enumerate(f):
-#                 if any(times in line_text for times in A):
-#                     first_line = line_no
-#                 if any(times in line_text for times in B):
-#                     last_line = line_no
-#                     break
-
-#             if not last_line:
-#                 last_line = first_line +32220
-#                 print('No matching lastline time: ',arc_last_time_str, last_line )
-
-#         ####   IF YOU GET AN ERROR HERE stating that either first_line or last_line is 
-#         ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
-#         print('Loading PCE data...')
-#         PCE_data = pd.read_csv(StateVector_PCE_datafile, 
-#                     skiprows = first_line, 
-#                     nrows=last_line-first_line,           
-#                     sep = '\s+',
-#                     dtype=str,
-#                     names = [
-#                             'Date',
-#                             'MJDSECs', 
-#                             'RSECS', #(fractional secs)
-#                             'GPS offset', # (UTC - GPS offset (secs))
-#                             'X',
-#                             'Y',
-#                             'Z',
-#                             'X_dot',
-#                             'Y_dot',
-#                             'Z_dot',
-#                             'YYMMDDhhmmss',
-#                                 ],)
-
-#         PCE_data['Date_pd'] = pd.to_datetime(PCE_data['Date'])
-#         orbfil_arc1 = obj_m1.__dict__['Trajectory_orbfil'][arc]['data_record']
-#         orbfil_arc1['Date_pd'] = pd.to_datetime(orbfil_arc1 ['Date_UTC'])
-
-
-#         ### C_1 is a dataframe containing all data between the two files where the dates match
-#         C_1 = pd.merge(left=orbfil_arc1, left_on='Date_pd',
-#              right=PCE_data, right_on='Date_pd')
-
-#     return(C_1)
-
-
-# def ResidInvestigation_get_residuals_coordsystems(C_1):
-
-    
-    
-#     ### Convert the ORBIT FILE data to NTW
-#     print('Converting OrbitFile data to other coordinates...')
-
-#     data_orbfil = {}
-#     data_PCE    = {}
-#     resids      = {}
-
-#     X = C_1['Satellite Inertial X coordinate']
-#     Y = C_1['Satellite Inertial Y coordinate']
-#     Z = C_1['Satellite Inertial Z coordinate']
-#     Xdot = C_1['Satellite Inertial X velocity']
-#     Ydot = C_1['Satellite Inertial Y velocity']
-#     Zdot = C_1['Satellite Inertial Z velocity']
-#     state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
-#     data_orbfil['Date'] = C_1['Date_pd']
-
-#     ##### NTW Coordinate System
-#     NTW_orbfil  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
-#     data_orbfil['N'] = np.array(NTW_orbfil)[:,0]
-#     data_orbfil['T'] = np.array(NTW_orbfil)[:,1]
-#     data_orbfil['W'] = np.array(NTW_orbfil)[:,2]
-#     ##### XYZ Coordinate System
-#     data_orbfil['X'] = X
-#     data_orbfil['Y'] = Y
-#     data_orbfil['Z'] = Z
-#     ##### R theta phi Coordinate System
-#     data_orbfil['R']     = np.sqrt( np.square(X) + 
-#                                     np.square(Y) +
-#                                     np.square(Z) )
-#     data_orbfil['theta'] = np.arctan(Y / X)
-#     data_orbfil['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
-#                                     np.square(Y) +
-#                                     np.square(Z) )))
-
-
-#     ### Convert the PCE data to NTW
-#     print('Converting PCE data to other coordinates...')
-#     X = C_1['X'].astype(float)
-#     Y = C_1['Y'].astype(float)
-#     Z = C_1['Z'].astype(float)
-#     Xdot = C_1['X_dot'].astype(float)
-#     Ydot = C_1['Y_dot'].astype(float)
-#     Zdot = C_1['Z_dot'].astype(float)
-#     state_vector = np.transpose(np.array([X, Y, Z, Xdot, Ydot, Zdot]))
-#     data_PCE['Date'] = C_1['Date_pd']
-
-#     ##### NTW Coordinate System
-#     NTW_PCE  = [Convert_cartesian_to_NTW_returnall(x) for x in state_vector]
-#     data_PCE['N'] = np.array(NTW_PCE)[:,0]
-#     data_PCE['T'] = np.array(NTW_PCE)[:,1]
-#     data_PCE['W'] = np.array(NTW_PCE)[:,2]
-#     ##### XYZ Coordinate System
-#     data_PCE['X'] = X
-#     data_PCE['Y'] = Y
-#     data_PCE['Z'] = Z
-#     ##### R theta phi Coordinate System
-#     data_PCE['R']     = np.sqrt( np.square(X) + 
-#                                     np.square(Y) +
-#                                     np.square(Z) )
-#     data_PCE['theta'] = np.arctan(Y / X)
-#     data_PCE['phi']   = np.arccos(Z / (np.sqrt( np.square(X) + 
-#                                     np.square(Y) +
-#                                     np.square(Z) )))
-
-
-#     ### RESIDUALS:
-#     resids['Date'] = C_1['Date_pd']
-
-#     ##### NTW Coordinate System
-#     resids['N'] = (np.array(data_PCE['N']) - np.array(data_orbfil['N']))
-#     resids['T'] = (np.array(data_PCE['T']) - np.array(data_orbfil['T']))
-#     resids['W'] = (np.array(data_PCE['W']) - np.array(data_orbfil['W']))
-#     ##### XYZ Coordinate System
-#     resids['X'] = (np.array(data_PCE['X']) - np.array(data_orbfil['X']))
-#     resids['Y'] = (np.array(data_PCE['Y']) - np.array(data_orbfil['Y']))
-#     resids['Z'] = (np.array(data_PCE['Z']) - np.array(data_orbfil['Z']))
-#     ##### R theta phi Coordinate System
-#     resids['R']     = (np.array(data_PCE['R'])     - np.array(data_orbfil['R']))
-#     resids['theta'] = (np.array(data_PCE['theta']) - np.array(data_orbfil['theta']))
-#     resids['phi']   = (np.array(data_PCE['phi'])   - np.array(data_orbfil['phi']))
-
-#     orbit_resids = {} 
-#     orbit_resids['data_orbfil'] = data_orbfil
-#     orbit_resids['data_PCE']    = data_PCE
-#     orbit_resids['resids']      = resids
-
-
-
-#     return(orbit_resids)
-
     def set_file_paths_for_multiple_arcs(self, arc_val, iarc, unzip_and_loadpaths=False):
         '''
         Handles the Arc naming conventions
@@ -1040,15 +850,11 @@ class Util_Tools:
         
         '''
         
-        self.run_ID = 'Run # '+ str(iarc+1)
-        
-#         seen = set()
-#         dupes = [x for x in self.arc_input if x in seen or seen.add(x)]         
-        
+        self.run_ID = 'Run #'+ str(iarc+1)
+                
         #### Count how many arcs of this name there are
         for x_arc in self.arc_input:
             if self.arc_input.count(x_arc) == 1:
-#                 print('Only one arc of this name', x_arc)
                 iarc = 0
 #             elif self.arc_input.count(arc_val) > 1:
 #                 self.unique_arc_count+=1
@@ -1057,7 +863,6 @@ class Util_Tools:
             else:
 #                 print('There are multiples of this arc, this is #',iarc+1)
                 pass
-                
         self.arc_name_id = arc_val
         self.YR  = self.arc_name_id[0:4]
         doy = self.arc_name_id[5:]
@@ -1068,41 +873,39 @@ class Util_Tools:
 
 
         ####
-        #### The setup files and the external attitutde files have the same naming convention.
-#         print('self.arc_name_id',self.arc_name_id)
+        #### The setup and external attitude files have same naming convention
         self.setup_file_arc    = 'iisset.'+self.arc_name_id
         # self.external_attitude = 'EXAT01.'+self.arc_name_id+'.gz'
-        self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+        # self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
         ####
-        ### Now specify what we what the output arcs to be named.
-        self.ARC = (self.satellite    + '_' + 
+        ### Now specify what we want the output files to be named, by arc
+
+        self.ARC = (self.prms['satellite']    + '_' + 
                     self.arcdate_for_files+ '_' + 
-                    self.arc_length + '.' +  
-                    self.den_model + '.' +
-                    self.params['file_string'])
+                    # self.prms['arc_length'] + '.' +  
+                    self.prms['den_model'] + '.' +
+                    self.prms['file_string'])
 
         
 #         self.SERIES = self.den_model + '_' + self.ACCELS + self.run_specifier
-        self.series = self.den_model + '_' + self.cd_model + self.run_specifier
+        self.series = self.prms['den_model'] + '_' + self.prms['cd_model'] + self.prms['run_specifier']
         # if iarc ==0:
-        #     dir_out = self.params['path_to_output_directory'] 
+        #     dir_out = self.prms['path_to_output_directory'] 
         # else:
-        dir_out = self.dir_output_raw
-        self.path_to_model = dir_out + '/'+self.den_model+'/'+self.series +'/'
+        # dir_out = self.dir_output_raw
+        self.path_to_model = self.dir_output_raw
                             #('/data/data_geodyn/results/'+
                               #     self.satellite +'/'+
                                #    self.den_model+'/'+  
                                 #   self.den_model+'_'+ self.ACCELS + self.run_specifier +'/')
-        file_name =   self.ARC         
-       
-        
+        # file_name =   self.ARC                
         ####  save the specific file names as "private members" with the _filename convention
-        self._asciixyz_filename = self.path_to_model + 'XYZ_TRAJ/'+ file_name
-        self._orbfil_filename = self.path_to_model + 'ORBITS/'+ file_name+'_orb1'
-        self._iieout_filename   = self.path_to_model + 'IIEOUT/'  + file_name
-        self._density_filename  = self.path_to_model + 'DENSITY/' + file_name     
-        self._drag_filename  = self.path_to_model + 'DENSITY/' + file_name +'drag_file'    
-        self._accel_filename  = self.path_to_model + 'ORBITS/' + file_name +'_accel_file'    
+        self._asciixyz_filename = self.path_to_model+'/XYZ_TRAJ/'+ self.ARC
+        self._orbfil_filename   = self.path_to_model+'/ORBITS/'+ self.ARC+'_orb1'
+        self._iieout_filename   = self.path_to_model+'/IIEOUT/'  + self.ARC
+        self._density_filename  = self.path_to_model+'/DENSITY/' + self.ARC     
+        self._drag_filename     = self.path_to_model+'/DENSITY/' + self.ARC +'drag_file'    
+        self._accel_filename    = self.path_to_model+'/ORBITS/' + self.ARC +'_accel_file'    
 #         self._EXTATTITUDE_filename = self.EXATDIR +'/' +self.external_attitude
 
         
@@ -1112,8 +915,8 @@ class Util_Tools:
     
     def make_list_of_arcfilenames(self):
         '''
-        Handles the Arc naming conventions for the icesat2 satellite
-        Construct a way to read in the satellite specific filenames.
+        Handles the arc naming conventions for the icesat2 satellite files.
+        Construct a way to read in the satellite/arc specific filenames.
         '''
         
         arc_file_list = []
@@ -1145,11 +948,11 @@ class Util_Tools:
 #                         arcdate_for_files+ '_' + 
 #                         self.arc_length + '.' +  
 #                         self.den_model)
-            ARC_file = (self.satellite    + '_' + 
+            ARC_file = (self.prms['satellite']    + '_' + 
                         arcdate_for_files+ '_' + 
-                        self.arc_length + '.' +  
-                        self.den_model + '.' +
-                        self.params['file_string'])
+                        # self.prms['arc_length'] + '.' +  
+                        self.prms['den_model'] + '.' +
+                        self.prms['file_string'])
 
 
             arc_file_list.append(ARC_file)
@@ -1158,3 +961,181 @@ class Util_Tools:
 
         return(arc_file_list)
     
+
+
+    def load_statevectorIC_file(self, epoch_startDT):
+        datetype = 'datetime_string'
+        date_in_file_flag= False
+        import linecache
+
+        ### Only need to use accuracy to within 1 second (ignore the microseconds in the file)
+
+        if datetype == 'datetime_string':
+            date_str = str(epoch_startDT)
+        elif datetype == 'YYMMDDHHMMSS':
+            date_str = datetime.strftime(epoch_startDT, '%y%m%d%H%M%S')
+
+
+        with open(self.file_statevector_ICs, 'r') as f:
+            for line_no, line_text in enumerate(f):
+                if date_str in line_text:
+                    date_in_file_flag= True
+                    print('    ','xyzline',line_no,line_text)
+                    break
+        if date_in_file_flag == False:
+            print(date_str,'not found in file. ')
+
+            ### Find the dates that have the same hour    
+            if datetype == 'datetime_string':
+                date_roundhour_str = str(epoch_startDT)[:13]
+            elif datetype == 'YYMMDDHHMMSS':
+                date_roundhour_str = datetime.strftime(epoch_startDT, '%y%m%d%H')
+
+            # print(date_roundhour_str)
+            ### Scan through IC file and append a list of dates within the same hour
+            line_no_list = []
+            line_list = []
+            with open(self.file_statevector_ICs, 'r') as f:
+                for line_no, line_text in enumerate(f):
+                    if date_roundhour_str in line_text:
+                        line_no_list.append(line_no)
+            
+            # print(line_no_list)
+            for i in np.arange(line_no_list[0]-10, line_no_list[-1]+10):
+                line = linecache.getline(self.file_statevector_ICs,i)
+                line_list.append(line)
+            dates = []
+            for i ,val in enumerate(line_list):
+                if datetype == 'datetime_string':
+                    dates.append(pd.to_datetime(line_list[i][:19],format='%Y-%m-%d %H:%M:%S'))
+                elif datetype == 'YYMMDDHHMMSS':
+                    dates.append(pd.to_datetime(line_list[i][:19],format='%y%m%d%H%M%S.%f'))
+
+            ## NEAREST DATETIME -----------------------------------------------
+
+                    
+            def nearest(items, pivot):
+                return min(items, key=lambda x: abs(x - pivot))
+            date_near = nearest(dates, epoch_startDT)
+            res = (np.array(dates)==date_near).argmax()
+            print("Using ICs from nearest date")
+            print('   date:',date_near)
+            print('   difference:', abs(date_near - epoch_startDT))
+
+        #    date = line_list[res][:19]
+            X     = float(line_list[res][20:37].ljust(20))
+            Y     = float(line_list[res][37:54].ljust(20))
+            Z     = float(line_list[res][54:71].ljust(20))
+            X_dot = float(line_list[res][71:88].ljust(20))
+            Y_dot = float(line_list[res][88:105].ljust(20))
+            Z_dot = float(line_list[res][105:121].ljust(20))
+        else:
+            print('Found date in IC file:', str(epoch_startDT))
+        xyzline = pd.read_csv(self.file_statevector_ICs, 
+                    skiprows = line_no, 
+                    nrows=1,           
+                    sep = '\s+',
+                    dtype=str,
+                    names = [
+                        'Date',
+                        'X',
+                        'Y',
+                        'Z',
+                        'X_dot',
+                        'Y_dot',
+                        'Z_dot',
+                            ],)
+        X     =  float(xyzline['X'].values[0].ljust(20))     #'  -745933.8926940708'
+        Y     =  float(xyzline['Y'].values[0].ljust(20))     #'  -4864983.834066438'
+        Z     =  float(xyzline['Z'].values[0].ljust(20))     #'    4769954.60524261'
+        X_dot =  float(xyzline['X_dot'].values[0].ljust(20)) #'  457.44564954037634'
+        Y_dot =  float(xyzline['Y_dot'].values[0].ljust(20)) #'   5302.381564886811'
+        Z_dot =  float(xyzline['Z_dot'].values[0].ljust(20)) #'    5463.55571622269'
+        print(f"   [X,Y,Z]:          [{X    :15.5f}, {Y    :15.5f}, {Z    :15.5f}]")
+        print(f"   [Xdot,Ydot,Zdot]: [{X_dot:15.5f}, {Y_dot:15.5f}, {Z_dot:15.5f}]")        
+        print()        
+        return(X, Y, Z, X_dot, Y_dot, Z_dot)
+
+    def get_arc_values_and_dates(self, bool_elems=True):
+        ''' Method that retrieves the arc specific values and dates.
+            Must be called before each arc.
+
+            Arc specific values are stored in a attribute dict that gets 
+            overwritten for each arc.
+        '''
+        
+        prms_arc = {}
+    
+        # Initialize the date variables that help with time keeping
+        prms_arc['epoch_start'] = self.prms['epoch_start'][self.arcnumber]
+        prms_arc['epoch_stop']  = self.prms['epoch_stop'][self.arcnumber]
+        #
+        prms_arc['epoch_startDT'] = pd.to_datetime(prms_arc['epoch_start'],\
+                                                    format='%Y-%m-%d %H:%M:%S')
+        prms_arc['epoch_stopDT']  = pd.to_datetime(prms_arc['epoch_stop'],\
+                                                    format='%Y-%m-%d %H:%M:%S')
+        prms_arc['start_ymdhms']= prms_arc['epoch_startDT'].strftime(format='%y%m%d%H%M%S')
+        prms_arc['stop_ymdhms'] = prms_arc['epoch_stopDT'].strftime(format='%y%m%d%H%M%S')
+
+        prms_arc['epoch_delta'] =  pd.to_timedelta(\
+                                        prms_arc['epoch_stopDT'] \
+                                        - prms_arc['epoch_startDT'],\
+                                        'hours')
+        prms_arc['arc_length_h'] = prms_arc['epoch_delta'].total_seconds()/3600
+        
+        
+        X    ,Y    ,    Z,\
+        X_dot,Y_dot,Z_dot = self.load_statevectorIC_file(prms_arc['epoch_startDT'])
+
+        prms_arc['X'] = X
+        prms_arc['Y'] = Y
+        prms_arc['Z'] = Z
+        prms_arc['X_dot'] = X_dot
+        prms_arc['Y_dot'] = Y_dot
+        prms_arc['Z_dot'] = Z_dot
+
+
+    #     # Get the initial conditions in cartesian coords 
+    #     if bool_elems:
+    #         date_in_file_flag= True
+    #         with open(self.file_statevector_ICs, 'r') as f:
+    #             for line_no, line_text in enumerate(f):
+    #                 if str(prms_arc['epoch_startDT']) in line_text:
+    #                     date_in_file_flag= True
+    #                     # print('    ','xyzline',line_no,line_text)
+    #                     break
+    #         if date_in_file_flag == False:
+    #             print(str(prms_arc['epoch_startDT']),'not found in file.  Leaving ELEMS as is.')
+    #             print('Check that the start date:',str(prms_arc['epoch_startDT']))
+    #             print('    is within the PCE date range saved in the file')
+    #             print('       ',self.file_statevector_ICs)
+    # #             sys.exit()
+    #         else:
+    #             # print('Found date in IC file:', str(prms_arc['epoch_startDT']))
+    #             xyzline = pd.read_csv(self.file_statevector_ICs, 
+    #                         skiprows = line_no, 
+    #                         nrows=1,           
+    #                         sep = '\s+',
+    #                         dtype=str,
+    #                         names = self.file_statevector_headers,)
+    #             prms_arc['X']     =  float(xyzline['X'].values[0].ljust(20))     #'  -745933.8926940708'
+    #             prms_arc['Y']     =  float(xyzline['Y'].values[0].ljust(20))     #'  -4864983.834066438'
+    #             prms_arc['Z']     =  float(xyzline['Z'].values[0].ljust(20))     #'    4769954.60524261'
+    #             prms_arc['X_dot'] =  float(xyzline['X_dot'].values[0].ljust(20)) #'  457.44564954037634'
+    #             prms_arc['Y_dot'] =  float(xyzline['Y_dot'].values[0].ljust(20)) #'   5302.381564886811'
+    #             prms_arc['Z_dot'] =  float(xyzline['Z_dot'].values[0].ljust(20)) #'    5463.55571622269'
+
+
+        ### Save as attribute
+        self.prms_arc = prms_arc
+
+
+
+
+
+
+
+
+
+
+    # make_dict_header():

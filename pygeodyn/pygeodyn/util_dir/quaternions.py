@@ -162,112 +162,6 @@ def quat_trans_SBFtoRSW_to_SBFtoECI(pos_eci, vel_eci, q_SBFtoRSW,
 
 
 
-def load_attitude_spire(filename, start_date, stop_date):
-    r"""Load attitude data from the Spire satellite constellation
-    
-           
-    Additional Info (from attitude file header):
-        %spire version 1.3  revision   1 2019 07 05 00:00 Spire     Spire Processing Center
-        +satellite       0  083                
-        +data_____ tim sca
-        +reference gps sbf
-        +first____ 2018  9 23  0 12  0.0300000 
-        +last_____ 2018 12  9 23 43 35.9080000 
-        *comment:  tim: GPS time: yr, mon, day, hr, min, sec
-        *comment:  Defintion of last character of 'tim' field:
-        *comment:      '0': Valid observed data used
-        *comment:      '1': Epoch is missing. Previous valid data used
-        *comment:      '2': Epoch is missing. Default quaterion used
-        *comment:  sca: Quaternion to convert spacecraft reference frame to orbit level frame:
-        *comment:         Z nadir = -r/|r|         (where r is s/c position vector)
-        *comment:         Y = -(r x v) / | r x v | (where v is s/c velocity vector)
-        *comment:         X = Y x Z                (where 'x' is vector cross product)
-        *comment:       A vector, u, in the spacecraft frame, has coordinates u' = quq* in the local
-        *comment:       level frame
-        *comment:       All quaternions are given in order:  qx, qy, qz, qw
-        *comment:  pvi:  Position and velocity in ECI coordinates (km)
-        *comment:        X, Y, Z, Xdot, Ydot, Zdot
-    
-    Parameters
-    ----------
-        filename   : string
-             Full global path to the filename
-        startEpoch  = "2018-11-08 23:00:00"  
-        
-        stopEpoch   = "2018-11-10 01:00:00" 
-    Returns
-    -------
-        SpireDF : Pandas DataFrame
-            Dataframe that contains the Spire attitude information
-    """
-
-
-    dict_data = {}
-    dict_data['tim (gps)'] = []
-    dict_data['q (sbf)'] = []
-    dict_data['pos (eci)'] = []
-    dict_data['vel (eci)'] = []
-
-    ### Loop through the file
-    with open(filename, 'r') as f:
-        for l_no, line in enumerate(f): 
-            ###  Identify the file headers
-    #         if line[0]=="%spire" or line[0]=="*" or line[0]=="+":
-    #             section_HeaderEnd = l_no
-    #         ###  Identify the End Of File
-    #         elif line[0:4]=="%eof":
-    #             section_EOF = l_no
-    #         noSkip_flag=False
-            if line[0:4]=="tim ":
-                yr    = int(line[4:8]   )
-                mon   = int(line[9:11]  )
-                day   = int(line[12:14] )
-                hr    = int(line[15:17] )
-                minute= int(line[18:20] )
-                sec   = int(line[21:23] )
-                msec  = int(line[24:30] )
-                date = datetime(yr,mon, day, hr,minute,sec, msec )
-                if  pd.to_datetime(date) in dict_data['tim (gps)']:
-                    #print('Found a copy, SKIP', date)
-                    noSkip_flag=False
-                    continue # to next line of for loop
-                else:
-                    noSkip_flag = True
-                    dict_data['tim (gps)'].append( pd.to_datetime(date))
-
-            elif line[0:4]=="sca " and noSkip_flag:
-                qx = float(line[4:17] )
-                qy = float(line[18:31])
-                qz = float(line[32:45])
-                qw = float(line[46:59])
-                dict_data['q (sbf)'].append(np.array([qx, qy, qz, qw]))
-
-            elif line[0:4]=="pvi "and noSkip_flag:
-                x    = float(line[4:17] )
-                y    = float(line[18:31])
-                z    = float(line[32:45])
-                xdot = float(line[46:59])
-                ydot = float(line[60:73])
-                zdot = float(line[74:87])
-                dict_data['pos (eci)'].append(np.array([x, y, z]))
-                dict_data['vel (eci)'].append(np.array([xdot,ydot,zdot]))
-
-    #### Make a Dataframe for easier utility                   
-    SpireDF = pd.DataFrame.from_dict(dict_data)
-
-    #### Mask the data according to the time period of interest
-    startDT = pd.to_datetime(start_date, format='%Y-%m-%d %H:%M:%S')
-    stopDT  = pd.to_datetime(stop_date,  format='%Y-%m-%d %H:%M:%S')
-    mask_month = SpireDF['tim (gps)'].dt.month==  startDT.month
-    mask_days = np.logical_and(SpireDF['tim (gps)'].dt.day  >=  startDT.day,
-                                SpireDF['tim (gps)'].dt.day  <=  stopDT.day)
-    mask       = mask_month & mask_days
-    SpireDF =  SpireDF[:][mask].reset_index(drop=True)
-    
-    gc.collect()
-    return(SpireDF)
-
-
 
 
 
@@ -386,7 +280,7 @@ def interpolate_nearest_neighbor():
     for i,dateval in enumerate(Dates_10s):
         ### Find the closest date
         date_near = nearest(Spire_dates, dateval)
-        res = (date_list == pd.Timestamp(date_neafr)).argmax()
+        res = (date_list == pd.Timestamp(date_near)).argmax()
        
         qx_sbf_interpd[i] = SpireDF['qx (sbf)'][res]
         qy_sbf_interpd[i] = SpireDF['qy (sbf)'][res]

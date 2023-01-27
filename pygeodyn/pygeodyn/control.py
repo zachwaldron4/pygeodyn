@@ -3,7 +3,7 @@
 """
 
 
-#### Imports    
+#### Imports
 import numpy as np
 import pandas as pd
 #### Computer/CL functions
@@ -41,7 +41,7 @@ class RunController():
 
     # previously setup_directories_and_geodyn_input
     # setup1_path_pointers
-    def ctrlStage1_setup_path_pointers(self):
+    def ctrlStage1_setup_path_pointers(self, skip_files=False):
         """Sets up directories and GEODYN input files.
         
         Notes:    
@@ -51,45 +51,53 @@ class RunController():
 
 
         #### Setup the directory structure by identifying the numerous paths
-        path_inputs = self.path_data_inputs+'/sat_'+self.satellite        
+        path_inputs = self.path_data_inputs+'/sat_'+self.prms['satellite']        
         #### series is the identifier for the run (i.e. msis2_fixedCD_)
-        self.series = self.den_model+'_'+self.cd_model + self.run_specifier
-        self.dir_output_raw = self.path_data_outputs_raw + '/'+self.den_model \
-                                        +'/'+self.series
+        self.series = self.prms['den_model']+'_'+self.prms['cd_model'] \
+                                        +self.prms['run_specifier']
+        self.dir_output_raw = self.path_data_outputs_raw + '/'   \
+                                    + self.prms['satellite']+ '/'\
+                                    + self.prms['den_model'] +'/'+self.series
         # make output directory if it does not exist
         # self.make_directory_check_exist(self.params['path_output_dir'])
         # self.make_directory_check_exist(self.params['path_output_dir'] 
-        #                                   + '/'+self.den_model)
+        #                                   + '/'+self.prms['den_model'])
         ## Path to Input file directories (ftn 05)
         self.dir_input = path_inputs + '/setups'
         self.dir_exat  = path_inputs + '/external_attitude'
         dir_g2b        = path_inputs + '/g2b'
+
+
+
+
         
-        #### Add temporary fix for spire
-        if self.satellite  == 'spire83':
-            dir_gravfield = self.path_data_inputs +'/common_2018'+''
-            dir_atmograv  = self.path_data_inputs +'/common_2018'+''
-            dir_ephem     = self.path_data_inputs +'/common_2018'+''
+        if skip_files==False:
+            #### Add temporary fix for spire
+            if self.prms['satellite']  == 'spire83':
+                dir_gravfield = self.path_data_inputs +'/common_2018'+''
+                dir_atmograv  = self.path_data_inputs +'/common_2018'+''
+                dir_ephem     = self.path_data_inputs +'/common_2018'+''
+            else:
+                dir_gravfield = path_inputs + '/gravity'
+                dir_atmograv  = path_inputs + '/atgrav'
+                dir_ephem     = path_inputs + '/ephem'
+
+            #--Planetary Ephemeris
+            self.file_ephem      = dir_ephem     +'/'+ self.filename_ephem
+            #--Atmospheric Gravity
+            self.file_atmograv   = dir_atmograv  +'/'+ self.filename_atmograv
+            #--Gravity Field
+            self.file_grav_field = dir_gravfield +'/'+ self.filename_gravfield
+            #--GDYN specific binary tracking data 
+            self.file_G2B        = dir_g2b        +'/'+ self.filename_g2b        
+            #--GDN-table - Solar flux,Ap,Kp,PolarMotion,A1-UTC,A1-UT1
+            self.filename_gdntable = 'gdntable.data'
+            self.file_gdntable = self.path_data_inputs+'/common_2018/'\
+                                +self.filename_gdntable
+            #----- Solar Radiation file. #### I dont have one  ####
+            #        SOLRAD_filename = ARCFIL+'.'+self.GRAVITY
         else:
-            dir_gravfield = path_inputs + '/gravity'
-            dir_atmograv  = path_inputs + '/atgrav'
-            dir_ephem     = path_inputs + '/ephem'
-
-        #--Planetary Ephemeris
-        self.file_ephem      = dir_ephem     +'/'+ self.filename_ephem
-        #--Atmospheric Gravity
-        self.file_atmograv   = dir_atmograv  +'/'+ self.filename_atmograv
-        #--Gravity Field
-        self.file_grav_field = dir_gravfield +'/'+ self.filename_gravfield
-        #--GDYN specific binary tracking data 
-        self.file_G2B        = dir_g2b        +'/'+ self.filename_g2b        
-        #--GDN-table - Solar flux,Ap,Kp,PolarMotion,A1-UTC,A1-UT1
-        self.filename_gdntable = 'gdntable.data'
-        self.file_gdntable = self.path_data_inputs+'/common_2018/'\
-                             +self.filename_gdntable
-        #----- Solar Radiation file. #### I dont have one  ####
-        #        SOLRAD_filename = ARCFIL+'.'+self.GRAVITY
-
+            pass
     
 
 
@@ -110,19 +118,17 @@ class RunController():
         self.verboseprint('Original -- make_output_and_temprun_directories()')
 
 
-        #--External Attitude File handled in the satellite class
-        if not self.filename_exat:
-            pass
-        else:
-            self.file_exat = self.dir_exat +'/' +self.filename_exat
+        #   External Attitude File handled in the prep class
+        # if not self.filename_exat:
+        #     pass
+        # else:
+        #     self.file_exat = self.dir_exat +'/' +self.filename_exat
 
-        
-        
         ####  Make Directories if they do not exists
         #-------------------------------------------------------------
         self.make_directory_check_exist(self.path_data_outputs_raw)
         self.make_directory_check_exist(self.path_data_outputs_raw \
-                                        +'/'+self.den_model)
+                                        +'/'+self.prms['den_model'])
         
         #### Setup the Temporary directory
         dir_tmp = self.path_tmp+'/'+self.series 
@@ -152,142 +158,55 @@ class RunController():
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/XYZ_TRAJ/')
 #         self.make_directory_check_exist(self.OUTPUTDIR+'/KEP_TRAJ/')
 
-        #### Glean fortran version to put into run log
-        A = subprocess.check_output(["gfortran", "--version"])
-        gfortran_v_string = str(A).split('nCopyright')[0][2:-1]
-        linux_v_string = subprocess.check_output(["uname", "-a"])
-
-        self.log_file = self.dir_output_raw+'/pygeodyn_runlog_'+self.ARC+'.txt'
-        with open(self.log_file, 'w') as f:
-            f.write('\n')
-            f.write('RUN LOG')
-            f.write('\n')
-            f.write(' ———————————————————————————————————————————————————————————————————————————————————')
-            f.write('\n')
-            f.write('\n')
-            f.write('\n')
-            f.write('SYSTEM INFORMATION \n')
-            f.write("------------------ \n")
-            f.write(f"    Time of Run        {datetime.now()} \n")
-            f.write(f"    User               {self.user}     \n")
-            f.write(f"    System             CCMC AWS Server  \n")
-            f.write(f"    System info        {linux_v_string} \n")
-            f.write(f"    python version     {sys.version.split('GCC')[0][:-2]} \n")
-            f.write(f"    gcc                [{sys.version.split('GCC')[1]} \n")
-            f.write(f"    gfortran (system)  {gfortran_v_string} \n")
-            f.write('\n')
-            f.write('\n')
-            f.write('\n')                        
-            f.write( "Pygeodyn Run Parameters (Input Call) \n")
-            f.write( "----------------------- \n")
-            f.write( "    run_params = {} \n")
-            f.write(f"    run_params['arc']                      = {self.arc_input}  \n")
-            f.write(f"    run_params['satellite']                = {self.satellite}  \n")
-            f.write(f"    run_params['den_model']                = {self.den_model}  \n")
-            f.write(f"    run_params['run_specifier'] = {self.run_specifier}  \n")
-            f.write(f"    run_params['verbose']                  = {self.verbose}  \n")
-            f.write(f"    run_params['geodyn_StepSize'] = {self.geodyn_StepSize}  \n")           
-            f.write(f"    run_params['action']         = {'run'}  \n")                
-            f.write(f"    #                                        \n")           
-            f.write(f"    ### Load the data into an object         \n")           
-            f.write(f"    Obj_Geodyn = Pygeodyn(run_params)       \n")           
-            f.write(f"    Obj_Geodyn.RUN_GEODYN()                  \n")           
-            f.write('\n')
-            f.write('\n')
-            f.write('\n')                                   
-            f.write( "GEODYN FILE INFORMATION \n")
-            f.write( "----------------------- \n")
-            f.write(f"  DIRECTORIES                                   \n")
-            f.write(f"    Input Directory:                {self.dir_output_raw}/ \n")
-            f.write(f"    Temporary Directory             {self.dir_tmp_arc}/ \n")
-            f.write(f"    Output Directory:               {self.dir_output_raw}/ \n")
-            f.write('\n')
-            f.write(f"  INPUT FILES                                   \n")
-            f.write(f"    Planetery Ephemeris file        {self.filename_ephem} \n")
-            f.write(f"    Atmospheric Gravity file        {self.filename_atmograv} \n")
-            f.write(f"    Gravity Field file              {self.filename_gravfield} \n")
-            f.write(f"    G2B observation file            {self.filename_g2b} \n")
-            f.write(f"    GDN table                       {self.filename_gdntable} \n")
-            f.write(f"    External Attitude file          {self.file_exat} \n")
-            f.write('\n')
-            f.write('\n')
-            f.write('\n')
-            f.write( "RUN PARAMETERS          \n")
-            f.write( "-------------- \n")
-            f.write(f"    Satellite                       {self.satellite} \n")
-            f.write(f"    Arc name                        {self.ARC} \n")
-            f.write(f"    Density model                   {self.den_model} \n")
-            # f.write(f"    GEODYN Version                  {self.GDYN_version} \n")
-            f.write('\n')
-            f.write('\n')
-            f.write('\n')
-            f.write( "SETUP FILE INFO          \n")
-            f.write( "--------------- \n")
-        f.close()
-
-        ### Make an execution log file
-        self.execlog_filename = self.log_file
-        logging.basicConfig(filename=self.execlog_filename,
-                            filemode = 'a',
-                            level=logging.INFO,
-                            format='%(levelname)s(%(asctime)s) --- %(module)s.%(funcName)s() \n       %(message)s \n',
-                            datefmt='%Y-%m-%d %H:%M:%S')
-
 
         ### Construct the setup file for the arc of choice
         #---- Input iisset file (fort.05)
-        if self.satellite  == 'spire83':
-            self.filename_iisset      = self.dir_input  +'/' +self.setup_file_arc +''
-        else:
-            self.filename_iisset      = self.dir_input  +'/' +self.setup_file_arc +'.bz2'
+        # if self.prms['satellite']  == 'spire83':
+        #     self.filename_iisset      = self.dir_input  +'/' +self.setup_file_arc +''
+        # else:
+        #     self.filename_iisset      = self.dir_input  +'/' +self.setup_file_arc +'.bz2'
+
+#         if self.prms['satellite']  == 'spire83':
+#             #### Initialize our variables from user input
+#             (path_to_setupfiles,
+#              setup_file_arc, 
+#              SAT_ID, 
+#              den_model_setupval) = ( self.dir_input,  
+#                                     self.setup_file_arc, 
+#                                     self.prms['sat_ID'], 
+#                                     self.iisset_den)
+
+#             ORIG_iisset_file = self.filename_iisset 
+#             iisset_file      = 'cleaned_setup'+'_'  + self.arcdate_for_files
+#             ####    COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
+#             ####    We copy to a temporary file "cleaned_setup_file"
+#             shutil.copyfile(ORIG_iisset_file, self.dir_tmp_arc +'/'+iisset_file+'')
+#             #### CHANGE TO THE TMPDIR
+#             os.chdir(self.dir_tmp_arc)
+# #             os.system('bunzip2 -v '+ '*.bz2')
+#             os.chdir('/data/geodyn_proj/pygeodyn')
+#             iisset_file = self.dir_tmp_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
+#             print('iisset_file',iisset_file)
+#         else:
+#             self.clean_iisset_file()
+
+#         self.filename_iisset      = self.dir_tmp_arc  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
 
 
-        
-        if self.satellite  == 'spire83':
-            #### Initialize our variables from user input
-            (path_to_setupfiles,
-             setup_file_arc, 
-             SAT_ID, 
-             den_model_setupval) = ( self.dir_input,  
-                                    self.setup_file_arc, 
-                                    self.satellite_id, 
-                                    self.iisset_den)
-
-            ORIG_iisset_file = self.filename_iisset 
-            iisset_file      = 'cleaned_setup'+'_'  + self.arcdate_for_files
-            ####    COPY THE FILE SO THAT YOU DON'T OVERWRITE THE ORIGINAL
-            ####    We copy to a temporary file "cleaned_setup_file"
-            shutil.copyfile(ORIG_iisset_file, self.dir_tmp_arc +'/'+iisset_file+'')
-            #### CHANGE TO THE TMPDIR
-            os.chdir(self.dir_tmp_arc)
-#             os.system('bunzip2 -v '+ '*.bz2')
-            os.chdir('/data/geodyn_proj/pygeodyn')
-            iisset_file = self.dir_tmp_arc+'/' +'cleaned_setup'+'_'  + self.arcdate_for_files
-            print('iisset_file',iisset_file)
-        else:
-            self.clean_iisset_file()
-
-        self.filename_iisset      = self.dir_tmp_arc  +'/'+'cleaned_setup'+'_'  + self.arcdate_for_files
-
-
-        with open(self.log_file, 'a') as log_file:
-            log_file.write('\n')
-            log_file.write('\n')
-            log_file.write(' ——————————————————————————————————————————————————————————————————————————————————— ')
-            log_file.write('\n')
-            log_file.write( "EXECUTION LOG / NOTES  ")
-            log_file.write('\n')
-            log_file.write('\n')
 
         
-    # previously   print_runparameters_to_notebook()
-    #              setup3_print_to_notebook ()
+
+
+
+
     def ctrlStage3_print_to_notebook(self):
-        '''
+        ''' Function that prints run details to the notebook output.
         
         '''
         self.verboseprint('Original -- ctrlStage3_print_to_notebook()')
 
+
+        
         now = datetime.now()-timedelta(hours=7)
         current_time = now.strftime("%H:%M:%S")
         self.verboseprint('=================================================')
@@ -298,75 +217,63 @@ class RunController():
         print(self.run_ID,"    Current Time =     ", current_time, " GMT-7")
         print(self.run_ID)
 
-#                     longest_line = '|'+' File:'+self._iieout_filename
-#                     print('+','—'*len(longest_line))
-#                     print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
-#                     print('|',)
-#                     print('|', ' File:',self._iieout_filename )
-#                     print('|', ' Line number:',line_no )
-#                     print('',)
-#                     print('',line.rstrip("\n"))
-#                     print('',)
-#                     print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
-#                     print('+','—'*len(longest_line))
         
         longest_line = '|      '+self.run_ID+"    Output directory:  " + self.dir_output_raw
         
-        if self.satellite  == 'spire83':
-            if  self.params['epoch_start'] == None :  # if no options given 
-                pass  ## use the defaults from the setup file (parsed above)
-            else:
-                epoch_start            = self.params['epoch_start'][0]
-                epoch_start_YYMMDD     = epoch_start[:6].strip() 
-                epoch_start_HHMM       = epoch_start[7:11].strip()
-                epoch_start_SS_SSSSSSS = epoch_start[11:21].strip()
-                epoch_start            = epoch_start_YYMMDD+epoch_start_HHMM+epoch_start_SS_SSSSSSS
-            if  self.params['epoch_end'] == None :
-                pass
-            else:
-                epoch_end            = self.params['epoch_end'][0]
-                epoch_end_YYMMDD     = epoch_end[:6].strip() 
-                epoch_end_HHMM       = epoch_end[7:11].strip()
-                epoch_end_SS_SSSSSSS = epoch_end[11:21].strip()
-                epoch_end            = epoch_end_YYMMDD+epoch_end_HHMM+epoch_end_SS_SSSSSSS
+        if self.prms['satellite']  == 'spire83':
+            print('ERROR--fix this-- ctrlStage3_print_to_notebook()')
+            # if  self.prms['epoch_start'] == None :  # if no options given 
+            #     pass  ## use the defaults from the setup file (parsed above)
+            # else:
+            #     epoch_start            = self.prms['epoch_start'][0]
+            #     epoch_start_YYMMDD     = epoch_start[:6].strip() 
+            #     epoch_start_HHMM       = epoch_start[7:11].strip()
+            #     epoch_start_SS_SSSSSSS = epoch_start[11:21].strip()
+            #     epoch_start            = epoch_start_YYMMDD+epoch_start_HHMM+epoch_start_SS_SSSSSSS
+            # if  self.prms['epoch_end'] == None :
+            #     pass
+            # else:
+            #     epoch_end            = self.prms['epoch_end'][0]
+            #     epoch_end_YYMMDD     = epoch_end[:6].strip() 
+            #     epoch_end_HHMM       = epoch_end[7:11].strip()
+            #     epoch_end_SS_SSSSSSS = epoch_end[11:21].strip()
+            #     epoch_end            = epoch_end_YYMMDD+epoch_end_HHMM+epoch_end_SS_SSSSSSS
 
-            epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
-            epoch_end_dt   = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')      
-            #### RE-SAVE THE DATE in datetime format for easy printing
-            self.epoch_start_dt = epoch_start_dt
-            self.epoch_end_dt   = epoch_end_dt        
-
+            # epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+            # epoch_end_dt   = pd.to_datetime( epoch_end_YYMMDD+epoch_end_HHMM, format='%y%m%d%H%M%S')      
+            # #### RE-SAVE THE DATE in datetime format for easy printing
+            # self.epoch_start_dt = epoch_start_dt
+            # self.epoch_end_dt   = epoch_end_dt        
         
-        
-#         if len(longest_line) > 110:
-
-        print('+','—'*110)
-#         print('+','—'*len(longest_line))
+        line_nos1 = '|---+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8'
+        print('|'+"—"*len(line_nos1))
+        print('|',self.run_ID,'Parameters')
+        print("| "+ "—"*len(self.run_ID+'Parameters'+' '))
+        print('| '+" Run Specs")
+        print('| '+" --------- ")
+        print('| '+"   Satellite   ",self.prms['satellite'])
+        print('| '+"   Run Type    ",self.prms['run_type'])
+        print('| '+"   CD Type     ",self.prms['cd_type'])
+        print('| '+"   CD Value    ",self.prms['cd_value'])
+        print('| '+"   Density     ",self.prms['den_model'])
         print('|')
-        print('|','---------------------- RUN PARAMETERS  ----------------------')
+        print('| '+" Epoch Info ")
+        print('| '+" ---------- ")
+        print('| '+"   Arc         ",self.arc_name_id)
+        print('| '+"   Arc length  ",str(self.prms_arc['arc_length_h']), "hours")
+        print('| '+"   Epoch Start ",str(self.prms_arc['epoch_startDT']))
+        print('| '+"   Epoch End   ",str(self.prms_arc['epoch_stopDT']) )
+        print('| '+"   Step Size   ",str(self.prms['step']), "seconds")
         print('|')
-        print('| ',self.run_ID,"    IISSET Cleaned     " , 'tmp/.../cleaned_setup'+'_' + self.arcdate_for_files)
-        print('| ',self.run_ID,"    Density Model:     " , self.den_model)
-        # print('| ',self.run_ID,"    GEODYN Version:    " , self.GDYN_version)       
-        if len(longest_line) > 110:
-            A=self.dir_output_raw
-            len_dir = int(len(A.split('/'))/2)
-            print('| ',self.run_ID,"    /".join(A.split('/')[:len_dir])+'/...')
-            print('| ',' '*len(self.run_ID),'           .../'+"/".join(A.split('/')[len_dir:]) )
-        else:
-            print('| ',self.run_ID,"    Output directory:  " , self.dir_output_raw)
-        if not self.filename_exat:
-            print('| ',self.run_ID,"    EXAT File:         " ,'No external attitude file.')
-        else:
-            print('| ',self.run_ID,"    EXAT File:         " , self.file_exat)
+        print('| '+" Files Info")
+        print('| '+" ---------- ")
+        print('| '+"   Arc Name   ",self.ARC)
         print('|')
-        print('| ',self.run_ID,"    Epoch Start: "  , str(self.epoch_start_dt) )
-        print('| ',self.run_ID,"    Epoch End:   "  , str(self.epoch_end_dt)   )
-        print('| ',self.run_ID,"    Step Size:   "  , str(self.geodyn_StepSize)                             )
+        print('| '+"   IISSET     ",".../"+"/".join(self.file_iisset.split('/')[3:]))
+        print('| '+"   EXAT       ",".../"+"/".join(self.file_exat.split('/')[3:]))
+        print('| '+"   Output Raw ",".../"+"/".join(self.dir_output_raw.split('/')[3:])+'/')
         print('|')
-        print('| ',self.run_ID,"    ARC run:     " , self.ARC)
-
-        print('+','—'*110)
+        print('|'+"—"*len(line_nos1))
 
 #         if os.path.exists(self._INPUT_filename):
 #             self.verboseprint(self.tabtab,"FORT.5  (input) file:  ", self._INPUT_filename)
@@ -381,21 +288,18 @@ class RunController():
             
             
                 
-
-    # previously called  prepare_tmpdir_for_geodyn_run()
-    #                    setup4_populate_tmpdir_for_run()
     def ctrlStage4_populate_tmpdir_for_run(self):
-        '''  This it the base version of this method.  It can be overridden in
-             the Satellite Class to be satellite specific. 
+        '''  This is the ICESat-2 version of this method.
              
-             Certain satellites and run types require different data inputs on
-             different fortran units.
+             It is being overridden to include the external attitude
         '''
         
-        logger = logging.getLogger(self.execlog_filename)
-        logger.info(f"ORIGINAL- Construct a tmp directory in which to run IIS and IIE")
+        # logger = logging.getLogger(self.execlog_filename)
+        # logger.info(f"ICESat2 - Construct a tmp directory in which to run IIS and IIE")
+
+        
      
-        #### Navigate to the TMPDIR
+        #### Navigate to the tmp dirdir_tmp_arc
         os.chdir(self.dir_tmp_arc)
         
         ####-------------------------------------------------------------
@@ -405,74 +309,75 @@ class RunController():
         self.verboseprint('-------------------------------------------------')
         self.verboseprint('       Linking files with the command line       ')
         self.verboseprint('-------------------------------------------------')
+        
         self.verboseprint(self.tabtab,'Current DIR',os.getcwd())
-        
-        print(self.run_ID,"    Copying input files to temp directory")
-        
-        if not self.filename_exat:
-            pass
-        else:
-            #### make copy to the External attitude file and save as EXAT01
-            if not os.path.exists(self.dir_tmp_arc +'/EXAT01'):
-                shutil.copyfile(self.file_exat, self.dir_tmp_arc +'/EXAT01')
-                self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01')
-            else:
-                self.verboseprint(self.tabtab,'symlink is set up: EXAT01 file')
 
-        #### make symlink to the G2B file and save as ftn40
-        if not os.path.exists(self.dir_tmp_arc +'/ftn40'):
-            shutil.copyfile(self.file_G2B, self.dir_tmp_arc +'/ftn40'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'.gz')
+        #### make copy to the External attitude file and save as EXAT01
+        if not os.path.exists(self.dir_tmp_arc +'/EXAT01'+'.gz'):
+#             if np.size(self.external_attitude) >= 1:
+# #                 print('dict of EXATfilename: ',np.size(self.external_attitude))
+#                 shutil.copyfile(self._EXTATTITUDE_filename[1], self.TMPDIR_arc +'/EXAT01'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[2], self.TMPDIR_arc +'/EXAT02'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[3], self.TMPDIR_arc +'/EXAT03'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[4], self.TMPDIR_arc +'/EXAT04'+'.gz')
+#                 shutil.copyfile(self._EXTATTITUDE_filename[5], self.TMPDIR_arc +'/EXAT05'+'.gz')
+#                 print('Copied 5 EXAT files')
+#             else:
+            shutil.copyfile(self.file_exat, self.dir_tmp_arc +'/EXAT01'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01'+'.gz')
+            self.verboseprint(self.tabtab,'copied:   '+self.file_exat+' > EXAT01'+'.gz')
         else:
-            self.verboseprint(self.tabtab,'copy is set up:  g2b file')
+            self.verboseprint(self.tabtab,'copy is set up: EXAT01 file')
+
+        
+        #### make symlink to the G2B file and save as ftn40
+        if not os.path.exists(self.dir_tmp_arc +'/ftn40'+''):
+            os.symlink(self.file_G2B, self.dir_tmp_arc +'/ftn40'+'')
+#             shutil.copyfile(self._G2B_filename, self.TMPDIR_arc +'/ftn40'+'')
+            self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'')
+        else:
+            self.verboseprint(self.tabtab,'copy:  g2b file')
 
         #### make symlink to the gravity field and save as ftn12
-        if not os.path.exists(self.dir_tmp_arc +'/ftn12'):
-            shutil.copyfile(self.file_grav_field, self.dir_tmp_arc +'/ftn12'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'.gz')
+        if not os.path.exists(self.dir_tmp_arc +'/ftn12'+''):
+            shutil.copyfile(self.file_grav_field, self.dir_tmp_arc +'/ftn12'+'')
+#             self.verboseprint(self.tabtab,'gravfield:',self._grav_field_filename)
+            self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'')
         else:
             self.verboseprint(self.tabtab,'copy is set up: grav_field file')
 
         #### make symlink to the ephemerides and save as ftn01
-        if not os.path.exists(self.dir_tmp_arc +'/ftn01'):
-            shutil.copyfile(self.file_ephem, self.dir_tmp_arc +'/ftn01'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'.gz')
+        if not os.path.exists(self.dir_tmp_arc +'/ftn01'+''):
+#             os.symlink(self._ephem_filename, self.TMPDIR_arc +'/ftn01')
+            shutil.copyfile(self.file_ephem, self.dir_tmp_arc +'/ftn01'+'')
+            self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'')
         else:
-            self.verboseprint(self.tabtab,'copy is set up: ephem file')
+            self.verboseprint(self.tabtab,'copy is set up: ephem file'+'')
 
         #### make symlink to the gdntable and save as ftn02
         if not os.path.exists(self.dir_tmp_arc +'/ftn02'):
-            shutil.copyfile(self.file_gdntable, self.dir_tmp_arc +'/ftn02'+'')
-            self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02'+'')
+            shutil.copyfile(self.file_gdntable, self.dir_tmp_arc +'/ftn02')
+            self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02')
         else:
             self.verboseprint(self.tabtab,'copy is set up: gdntable file')
 
 
         #### make symlink to the ATGRAVFIL and save as fort.18
-        if not os.path.exists(self.dir_tmp_arc +'/fort.18'):
-            shutil.copyfile(self.file_atmograv, self.dir_tmp_arc +'/fort.18'+'.gz')
-            self.verboseprint(self.tabtab,'copied:   atgrav     > fort.18'+'.gz')
+        if not os.path.exists(self.dir_tmp_arc +'/fort.18'+''):
+#             os.symlink(self._ATGRAV_filename, self.TMPDIR_arc +'/fort.18')
+            shutil.copyfile(self.file_atmograv, self.dir_tmp_arc +'/fort.18'+'')
+#             shutil.copyfile(self._ATGRAV_filename, self.TMPDIR_arc +'/ftn18')
+#             self.verboseprint(self.tabtab,'ATGRAV:',self._ATGRAV_filename)
+            self.verboseprint(self.tabtab,'copied:  atgrav     > fort.18'+'')
         else:
             self.verboseprint(self.tabtab,'symlink is set up: atgrav file')
 
-#         if self.satellite =='starlette':
-#             if not os.path.exists(self.TMPDIR_arc+'/ftn05.bz2'):
-#                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05.bz2')
-#                 self.verboseprint(self.tabtab,'copying          : input file')
-#             else:
-#                 self.verboseprint(self.tabtab,'copied           : input file')
-
-#             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
-#                 os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
-#                 self.verboseprint(self.tabtab,'file not zipped  : input file')
-#             else:
-#                 self.verboseprint(self.tabtab,'file not zipped  : input file')
-#         else:
+            
         if not os.path.exists(self.dir_tmp_arc+'/ftn05'):
-            os.system('cp '+self.filename_iisset+' '+self.dir_tmp_arc+'/ftn05')
-            self.verboseprint(self.tabtab,'copying          : input file')
+            os.system('cp '+self.file_iisset+' '+self.dir_tmp_arc+'/ftn05')
+            self.verboseprint(self.tabtab,'copying          : iieout file')
         else:
-            self.verboseprint(self.tabtab,'copied           : input file')
+            self.verboseprint(self.tabtab,'copied           : iieout file')
 
         if not os.path.exists(self.dir_tmp_arc+'/giis.input'):
             os.system('cp  '+self.dir_tmp_arc+'/ftn05 '+self.dir_tmp_arc+'/giis.input')
@@ -483,9 +388,120 @@ class RunController():
         self.verboseprint('-------------------------------------------------------------------------')
         self.verboseprint('-------------------------------------------------------------------------')
 
-        #### GUNZIP the files:  gzip is fast compression option
+
+        #### GUNZIP the files:  gzip is a very fast compression option.
+#         self.verboseprint(self.tabtab, "gunzipping the input data files")
+        self.verboseprint(self.tabtab, "gunzipping the input data files")
+
         os.system('gunzip -vr *.gz')
-        os.system('bunzip2 -v *.bz2')
+
+
+        
+#         os.system('gunzip -ftn01.gz')
+#     # previously called  prepare_tmpdir_for_geodyn_run()
+#     #                    setup4_populate_tmpdir_for_run()
+#     def ctrlStage4_populate_tmpdir_for_run(self):
+#         '''  This it the base version of this method.  It can be overridden in
+#              the Satellite Class to be satellite specific. 
+             
+#              Certain satellites and run types require different data inputs on
+#              different fortran units.
+#         '''
+        
+#         # logger = logging.getLogger(self.execlog_filename)
+#         # logger.info(f"ORIGINAL- Construct a tmp directory in which to run IIS and IIE")
+     
+#         #### Navigate to the TMPDIR
+#         os.chdir(self.dir_tmp_arc)
+        
+#         ####-------------------------------------------------------------
+#         ####     Construct Common Setup of a GEODYN RUN
+#         ####         this is run in the TMPDIR_arc
+#         ####-------------------------------------------------------------
+#         self.verboseprint('-------------------------------------------------')
+#         self.verboseprint('       Linking files with the command line       ')
+#         self.verboseprint('-------------------------------------------------')
+#         self.verboseprint(self.tabtab,'Current DIR',os.getcwd())
+        
+#         print(self.run_ID,"    Copying input files to temp directory")
+        
+#         if not self.filename_exat:
+#             pass
+#         else:
+#             #### make copy to the External attitude file and save as EXAT01
+#             if not os.path.exists(self.dir_tmp_arc +'/EXAT01'):
+#                 shutil.copyfile(self.file_exat, self.dir_tmp_arc +'/EXAT01')
+#                 self.verboseprint(self.tabtab,'copied:   exat file  > EXAT01')
+#             else:
+#                 self.verboseprint(self.tabtab,'symlink is set up: EXAT01 file')
+
+#         #### make symlink to the G2B file and save as ftn40
+#         if not os.path.exists(self.dir_tmp_arc +'/ftn40'):
+#             shutil.copyfile(self.file_G2B, self.dir_tmp_arc +'/ftn40'+'.gz')
+#             self.verboseprint(self.tabtab,'copied:   g2b file   > ftn40'+'.gz')
+#         else:
+#             self.verboseprint(self.tabtab,'copy is set up:  g2b file')
+
+#         #### make symlink to the gravity field and save as ftn12
+#         if not os.path.exists(self.dir_tmp_arc +'/ftn12'):
+#             shutil.copyfile(self.file_grav_field, self.dir_tmp_arc +'/ftn12'+'.gz')
+#             self.verboseprint(self.tabtab,'copied:   grav field > ftn12'+'.gz')
+#         else:
+#             self.verboseprint(self.tabtab,'copy is set up: grav_field file')
+
+#         #### make symlink to the ephemerides and save as ftn01
+#         if not os.path.exists(self.dir_tmp_arc +'/ftn01'):
+#             shutil.copyfile(self.file_ephem, self.dir_tmp_arc +'/ftn01'+'.gz')
+#             self.verboseprint(self.tabtab,'copied:   ephem file > ftn01'+'.gz')
+#         else:
+#             self.verboseprint(self.tabtab,'copy is set up: ephem file')
+
+#         #### make symlink to the gdntable and save as ftn02
+#         if not os.path.exists(self.dir_tmp_arc +'/ftn02'):
+#             shutil.copyfile(self.file_gdntable, self.dir_tmp_arc +'/ftn02'+'')
+#             self.verboseprint(self.tabtab,'copied:   gdntable   > ftn02'+'')
+#         else:
+#             self.verboseprint(self.tabtab,'copy is set up: gdntable file')
+
+
+#         #### make symlink to the ATGRAVFIL and save as fort.18
+#         if not os.path.exists(self.dir_tmp_arc +'/fort.18'):
+#             shutil.copyfile(self.file_atmograv, self.dir_tmp_arc +'/fort.18'+'.gz')
+#             self.verboseprint(self.tabtab,'copied:   atgrav     > fort.18'+'.gz')
+#         else:
+#             self.verboseprint(self.tabtab,'symlink is set up: atgrav file')
+
+# #         if self.satellite =='starlette':
+# #             if not os.path.exists(self.TMPDIR_arc+'/ftn05.bz2'):
+# #                 os.system('cp '+self._INPUT_filename+' '+self.TMPDIR_arc+'/ftn05.bz2')
+# #                 self.verboseprint(self.tabtab,'copying          : input file')
+# #             else:
+# #                 self.verboseprint(self.tabtab,'copied           : input file')
+
+# #             if not os.path.exists(self.TMPDIR_arc+'/ftn05'):
+# #                 os.system('bunzip2 '+self.TMPDIR_arc+'/ftn05.bz2')
+# #                 self.verboseprint(self.tabtab,'file not zipped  : input file')
+# #             else:
+# #                 self.verboseprint(self.tabtab,'file not zipped  : input file')
+# #         else:
+#         if not os.path.exists(self.dir_tmp_arc+'/ftn05'):
+#             os.system('cp '+self.filename_iisset+' '+self.dir_tmp_arc+'/ftn05')
+#             self.verboseprint(self.tabtab,'copying          : input file')
+#         else:
+#             self.verboseprint(self.tabtab,'copied           : input file')
+
+#         if not os.path.exists(self.dir_tmp_arc+'/giis.input'):
+#             os.system('cp  '+self.dir_tmp_arc+'/ftn05 '+self.dir_tmp_arc+'/giis.input')
+#             self.verboseprint(self.tabtab,'copying          : giis.input file')
+#         else:
+#             self.verboseprint(self.tabtab,'copied              : giis.input file')   
+
+#         self.verboseprint('-------------------------------------------------------------------------')
+#         self.verboseprint('-------------------------------------------------------------------------')
+
+#         #### GUNZIP the files:  gzip is fast compression option
+#         os.system('gunzip -vr *.gz')
+#         os.system('bunzip2 -v *.bz2')
 
 
     # previously called  run_geodyn_in_tmpdir()
@@ -496,21 +512,20 @@ class RunController():
         ####-------------------------------------
         ####     RUN GEODYN IIS
         ####-------------------------------------        
-        logger = logging.getLogger(self.execlog_filename)
-        logger.info(f" chdir to tmp dir: {self.dir_tmp_arc} ")
 
         ### Must change directory to run the IIS executable
         os.chdir(self.dir_tmp_arc)
         time.sleep(1)
 
-        #### Before running GEODYN, populate the geodyn_options.txt file with the run options:
-        self.geodyn_modify_inputs(self.DRHODZ_update, self.den_model)      
+        #### Populate the geodyn_options.txt file with the run options:
+        self.geodyn_modify_inputs( self.prms['DRHODZ_update'],
+                                   self.prms['den_model']      )      
         
         #### Run the IIS (geodyn II-Scheduler) executable 
         print()
         print(self.run_ID,"         Running IIS" )
         command_IIS = self.dir_IIS+'/giis2002_gfortran > '+'iisout 2> '+'iiserr'
-        logger.info(f" Running IIS: {command_IIS} ")
+        # logger.info(f" Running IIS: {command_IIS} ")
         
         subprocess.run(command_IIS, shell = True)
         ####  Because of memory issues if running lots of arcs in a loop, we 
@@ -584,7 +599,7 @@ class RunController():
 #         os.system("touch gmon.out")
         command_IIE = self.dir_IIE+'/giie2002_gfortran > '+'iieout 2> '+'iieerr' 
         time.sleep(0.5)
-        logger.info(f" Running IIE: {command_IIE} ")
+        # logger.info(f" Running IIE: {command_IIE} ")
         subprocess.run(command_IIE, shell = True)
                
             
@@ -647,16 +662,14 @@ class RunController():
 
 
 
-    # previously called post_geodynrun_savefiles_and_cleanup()
+    # previously called post_geodyn
+    # avefiles_and_cleanup()
     #                   run2_save_rawoutputs_and_cleanup()
     def ctrlStage6_save_rawoutputs_and_cleanup(self):
         """docstring
 
          After the IIS and IIE runs:
         """
-
-        self.verboseprint('Original -- ctrlStage6_save_rawoutputs_and_cleanup()')
-        self.verboseprint('ctrlStage6_save_rawoutputs_and_cleanup',os.getcwd())
 
         #### Remove files that won't be needed...
             # fort.11 and fort.12 are iis->iie interface files
@@ -676,13 +689,13 @@ class RunController():
                     f.write(line)     
 
             #### Add a note at the end of the IIS file
-            f.write('\n')      
-            f.write('    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **      \n')      
-            f.write('    ** NOTE ** -- PYGEODYN USER REMOVED THE DELETE LINES FROM  \n')      
-            f.write('             -- THIS SAVED FILE BUT THE DELETE LINES WERE      \n')      
-            f.write('             -- IN THE SETUP DECK AT THE TIME OF THE RUN.      \n')      
-            f.write('    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **      \n')      
-            f.write('\n')      
+            # f.write('\n')      
+            # f.write('    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **      \n')      
+            # f.write('    ** NOTE ** -- PYGEODYN USER REMOVED THE DELETE LINES FROM  \n')      
+            # f.write('             -- THIS SAVED FILE BUT THE DELETE LINES WERE      \n')      
+            # f.write('             -- IN THE SETUP DECK AT THE TIME OF THE RUN.      \n')      
+            # f.write('    ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **      \n')      
+            # f.write('\n')      
 
         
         #### Combine the iisout, iiserr and the new iieout files...
@@ -743,19 +756,21 @@ class RunController():
         
 #         print("self.save_drag_file", self.save_drag_file)
 
-        if self.save_drag_file:
+        if self.prms['save_drag_file']:
             print("Saving fort.103 as drag_file")
             print("Saving fort.104 as SatGeometry_file")
             os.system('mv fort.103 drag_file')     
             os.system('mv fort.104 SatGeometry_file')     
 
-        if self.save_accel_file:
+        if self.prms['save_accel_file']:
             os.system('mv fort.105 accel_file')     
 
         
         
         
         os.system('rm -f slvtmp* ftn* fort.*')
+
+
 
         print(self.run_ID,'               Finished renaming files')      
         
@@ -798,10 +813,12 @@ class RunController():
         os.system('bzip2 -v orbfil')
         os.system('bzip2 -v densityfil')
         
-        if self.save_drag_file:
-            os.system('bzip2 -v drag_file')
+        if self.prms['save_drag_file']:
+            #os.system('bzip2 -v drag_file')
 #             os.system('bzip2 -v SatGeometry_file')
-        if self.save_accel_file:
+            pass
+            
+        if self.prms['save_accel_file']:
             os.system('bzip2 -v accel_file')
 
         
@@ -815,12 +832,12 @@ class RunController():
 
         os.system('cp orbfil.bz2 '     +dir_out+'/ORBITS/'  +self.ARC+'_orb1.bz2')
         
-        if self.save_accel_file:
+        if self.prms['save_accel_file']:
             os.system('cp accel_file '     +dir_out+'/ORBITS/'  +self.ARC+'_accel_file')
         
         os.system('cp densityfil.bz2 ' +dir_out+'/DENSITY/' +self.ARC+     '.bz2')
         
-        if self.save_drag_file:
+        if self.prms['save_drag_file']:
             os.system('cp drag_file.bz2 ' +dir_out+'/DENSITY/' +self.ARC+     'drag_file.bz2')
             os.system('cp drag_file.bz2 ' +dir_out+'/DENSITY/' +self.ARC+     'SatGeometry_file')
 #         os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
@@ -898,8 +915,8 @@ class RunController():
         ##### --------------------------------------------------------------------------------------------
         #### Import the INIT_ORBIT that was constructed from the initializing run of MSIS2 through GEODYN
         import sys
-        logger = logging.getLogger(self.execlog_filename)
-        logging.info(f'in make_orbit_cloud_csv()   \n       Path to DEN_CSV file:  {self.msis2_file_path}')
+        # logger = logging.getLogger(self.execlog_filename)
+        # logging.info(f'in make_orbit_cloud_csv()   \n       Path to DEN_CSV file:  {self.msis2_file_path}')
           
         DEN_csv = pd.read_csv(self.msis2_file_path, 
                             dtype=object,
@@ -911,10 +928,7 @@ class RunController():
                                          ],
                             sep = '\s+',
                             )
-        
-        
-        
-        
+               
         #### Fix the formatting of the dates in the density file
         #####   The following is a bit archaic but it works so I haven't messed with it
         sat_time1 = list(DEN_csv['YYMMDD'])  #"031115" #  
@@ -1007,8 +1021,8 @@ class RunController():
         #### Set the perturbation amounts for the coordinates for making the size of the cube
         delta_deg = 2    # degrees
         delta_m = 1000.*1e-3 # meters to kilometers
-        logging.info(f'LON and LAT cube size of orbit_cloud_file: {delta_deg} degrees')
-        logging.info(f'Altitude size of orbit_cloud_file:  {delta_m} kilometers')
+        # logging.info(f'LON and LAT cube size of orbit_cloud_file: {delta_deg} degrees')
+        # logging.info(f'Altitude size of orbit_cloud_file:  {delta_m} kilometers')
 
         #### Open the file
         #### We will loop thru the DEN CSV and if the file already contains the the date, don't overwrite.
@@ -1114,7 +1128,7 @@ class RunController():
             #### Import Coordinates to Kamodo
             ##
             #### Kamodo static inputs:
-            if self.den_model == 'tiegcm_oc':
+            if self.prms['den_model'] == 'tiegcm_oc':
 #                 model          = 'TIEGCM'
 #                 file_dir       = self.model_data_path+'/'
 #                 logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
@@ -1129,7 +1143,7 @@ class RunController():
                 den_var = 'rho'
 
 
-            elif self.den_model == 'ctipe_oc':
+            elif self.prms['den_model'] == 'ctipe_oc':
                 #### Kamodo static inputs:
                 model          = 'CTIPe'
                 file_dir       = self.model_data_path+'/'
@@ -1146,7 +1160,7 @@ class RunController():
                 temp_var = 'T'
                 den_var = 'rho'
             
-            elif self.den_model == 'gitm':
+            elif self.prms['den_model'] == 'gitm':
                 #### Kamodo static inputs:
                 model          = 'GITM'
                 file_dir       = self.model_data_path+'/'
@@ -1189,7 +1203,7 @@ class RunController():
                 for ii, valrho in enumerate(results[den_var]):
                     
                     #### For tiegcm, we convert mmrs to number densities and put into cgs units
-                    if self.den_model == 'tiegcm_oc':
+                    if self.prms['den_model'] == 'tiegcm_oc':
                         nden_O =  (results['psi_O'][ii]  * results['rho'][ii])/(mp_cgs*16)
                         nden_O2 = (results['psi_O2'][ii] * results['rho'][ii])/(mp_cgs*32)
                         nden_He = (results['psi_He'][ii] * results['rho'][ii])/(mp_cgs*4)
@@ -1197,7 +1211,7 @@ class RunController():
                     
                     #### For ctipe, we convert from SI to CGS 
                     ##              ctipe only has O1, O2, and N2
-                    elif self.den_model == 'ctipe_oc':
+                    elif self.prms['den_model'] == 'ctipe_oc':
                         nden_O =  (results['N_O'][ii]  / 1000.)
                         nden_O2 = (results['N_O2'][ii] / 1000.)
                         nden_N2 = (results['N_N2'][ii] / 1000.)
@@ -1208,7 +1222,7 @@ class RunController():
                     #### For GITM, we convert from SI to CGS 
                     ##              gitm output can be upgraded to have more than 
                     ##                                        rho and temp
-                    elif self.den_model == 'gitm':
+                    elif self.prms['den_model'] == 'gitm':
                         nden_O  = 0.
                         nden_O2  = 0.
                         nden_N2  = 0.
@@ -1275,8 +1289,8 @@ class RunController():
         self.set_density_model_setup_params('msis2' )
         self.ctrlStage1_setup_path_pointers()
         self.ctrlStage2_make_tmp_and_output_dirs()
-        logger = logging.getLogger(self.execlog_filename)
-        logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
+        # logger = logging.getLogger(self.execlog_filename)
+        # logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
 
         #### RUN 1st WITH MSIS2 IF THE FILE DOES NOT EXIST
         self.set_density_model_setup_params( 'msis2' )
@@ -1287,10 +1301,10 @@ class RunController():
             
             
 #             self.orbitcloud_csv_file =(self.OUTPUTDIR+'/OrbitCloud_Step'+
-#                                    str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+#                                    str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
 
             self.orbitcloud_csv_file = ('/data/data_geodyn/atmos_models_data/OrbitCloud_Arcs/ICESat2_FixedCD_2.5/' +
-                                          '/OrbitCloud_Step'+str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+                                          '/OrbitCloud_Step'+str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
 
 
             self.msis2_file_path = self.dir_output_raw+'/DENSITY/'+self.ARC+'_msisin'
@@ -1305,7 +1319,7 @@ class RunController():
             file_exists = exists(self.msis2_file_path)
             if file_exists:
 #                 print('****** file_exists (msis2 density file):',self.msis2_file_path )
-                logging.info('A similar MSIS2 output has been made. Check to see if its stepsize is consistent.')
+                # logging.info('A similar MSIS2 output has been made. Check to see if its stepsize is consistent.')
                 msis2_log_file =  self.dir_output_raw+'/pygeodyn_runlog_'+self.ARC+'.txt'
 
                 with open(msis2_log_file, 'r') as f:
@@ -1314,11 +1328,11 @@ class RunController():
                             check_stepsizeline = line
 
                 check_stepsize = float(check_stepsizeline[-5:])
-                if self.geodyn_StepSize == check_stepsize:
-                    logging.info(f'The MSIS2 run has the correct STEP size of {self.geodyn_StepSize}')
+                if self.prms['step'] == check_stepsize:
+                    logging.info(f"The MSIS2 run has the correct STEP size of {self.prms['step']}")
 
                 else:
-                    logging.info(f'The existing MSIS2 run has the wrong stepsize  (found STEP to be {check_stepsize}, but need {self.geodyn_StepSize}). Running MSIS2 thru GEODYN with correct step size.')
+                    # logging.info(f"The existing MSIS2 run has the wrong stepsize  (found STEP to be {check_stepsize}, but need {self.prms['step']}). Running MSIS2 thru GEODYN with correct step size.")
                     self.ctrlStage1_setup_path_pointers()
                     self.ctrlStage2_make_tmp_and_output_dirs()
                     self.ctrlStage3_print_to_notebook()
@@ -1327,7 +1341,7 @@ class RunController():
                     self.ctrlStage6_save_rawoutputs_and_cleanup()
 
             else:
-                logging.info(f'No similar runs of MSIS2 exist on this arc. Running MSIS2 thru GEODYN...')
+                # logging.info(f'No similar runs of MSIS2 exist on this arc. Running MSIS2 thru GEODYN...')
                 self.ctrlStage1_setup_path_pointers()
                 self.ctrlStage2_make_tmp_and_output_dirs()
                 self.ctrlStage3_print_to_notebook()
@@ -1336,7 +1350,7 @@ class RunController():
                 self.ctrlStage6_save_rawoutputs_and_cleanup()
 
 
-            logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud tiegcm data. ')
+            # logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud tiegcm data. ')
 
             ## TODO: make the tiegcm files an input option
             orbitcloud_csv_check = exists(self.orbitcloud_csv_file)
@@ -1346,9 +1360,9 @@ class RunController():
                 print('****** 3- construct orbit cloud file', arc)
 
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
-                series = self.den_model + '_' + self.cd_model + self.directory_name_specifier
-#                 OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.den_model+'/'+series
-                OUTPUTDIR   = self.params['path_output_dir'] + '/'+self.den_model+'/'+self.series
+                series = self.prms['den_model'] + '_' + self.cd_model + self.directory_name_specifier
+#                 OUTPUTDIR   = '/data/data_geodyn/results/'+self.SATELLITE_dir + '/'+self.prms['den_model']+'/'+series
+                OUTPUTDIR   = self.prms['path_output_dir'] + '/'+self.prms['den_model']+'/'+self.series
 
 
 #                 logging.info(f'Orbit Cloud exists:  {self.orbitcloud_csv_file }')
@@ -1399,7 +1413,8 @@ class RunController():
         
     def RUN_GEODYN(self):
         '''
-        This is the main run function that calls the above functions in the Pygeodyn Controller class.
+        This is the main run function that calls the above functions in the
+        Pygeodyn Controller class.
                 
         '''
         
@@ -1411,9 +1426,9 @@ class RunController():
         
         ####   If we are using one of the models that require Kamodo, we will want to
         ####   do a pre-run initialization to get the orbit output along the satellite using MSISe2
-        if  self.den_model == 'tiegcm_oc'  or \
-            self.den_model == 'ctipe_oc'   or \
-            self.den_model == 'gitm'       :
+        if  self.prms['den_model'] == 'tiegcm_oc'  or \
+            self.prms['den_model'] == 'ctipe_oc'   or \
+            self.prms['den_model'] == 'gitm'       :
                      
             
             ### Make an execution log file
@@ -1422,15 +1437,15 @@ class RunController():
             self.arcnumber = iarc
 
             self.set_file_paths_for_multiple_arcs( arc , iarc)            
-            self.set_density_model_setup_params(self.den_model)
+            self.set_density_model_setup_params(self.prms['den_model'])
             self.ctrlStage1_setup_path_pointers()
             self.ctrlStage2_make_tmp_and_output_dirs()
             
             print(f'+==================================================')
             print(f'|     Running GEODYN with Orbit Cloud Method     ',)
             print(f'|                                                ',)
-            logger = logging.getLogger(self.execlog_filename)
-            logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
+            # logger = logging.getLogger(self.execlog_filename)
+            # logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
 
             #### RUN FIRST WITH MSIS2 IF THE FILE DOES NOT EXIST
             self.set_density_model_setup_params( 'msis2' )
@@ -1439,10 +1454,10 @@ class RunController():
                 self.set_file_paths_for_multiple_arcs( arc , iarc) 
 
                 #### identify supposed location of msis2 run
-                series = self.den_model + '_' + self.cd_model + self.directory_name_specifier
-                OUTPUTDIR   = self.params['path_output_dir'] + '/'+self.den_model+'/'+self.series
+                series = self.prms['den_model'] + '_' + self.cd_model + self.directory_name_specifier
+                OUTPUTDIR   = self.prms['path_output_dir'] + '/'+self.prms['den_model']+'/'+self.series
                 self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
-                                       str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+                                       str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
                 self.msis2_file_path = OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin'
 
 #                 self.arcdate_for_files = str(iarc+1)+'.'+ self.YR + doy 
@@ -1455,7 +1470,7 @@ class RunController():
                     print(f'|          - {self.ARC}_msisin ',)
                     #                     os.system('bunzip2 -v '+self.msis2_file_path)
                     #                     self.msis2_file_path =  OUTPUTDIR+'/DENSITY/'+self.ARC
-                    logging.info('A similar MSIS2 output has been made. Check to see if its stepsize is consistent.')
+                    # logging.info('A similar MSIS2 output has been made. Check to see if its stepsize is consistent.')
                     msis2_log_file =  OUTPUTDIR+'/pygeodyn_runlog_'+self.ARC+'.txt'
 
                     #### Check the stepsize of the density file...
@@ -1464,12 +1479,12 @@ class RunController():
                             if 'STEP             ' in line:
                                 check_stepsizeline = line
                     check_stepsize = float(check_stepsizeline[-5:])
-                    if self.geodyn_StepSize == check_stepsize:
-                        logging.info(f'The MSIS2 run has the correct STEP size of {self.geodyn_StepSize}')
+                    if self.prms['step'] == check_stepsize:
+                        logging.info(f"The MSIS2 run has the correct STEP size of {self.prms['step']}")
                     else:
                         print(f'|     The MSIS2 Density file has the wrong stepsize, running again.')
 
-                        logging.info(f'The existing MSIS2 run has the wrong stepsize  (found STEP to be {check_stepsize}, but need {self.geodyn_StepSize}). Running MSIS2 thru GEODYN with correct step size.')
+                        # logging.info(f"The existing MSIS2 run has the wrong stepsize  (found STEP to be {check_stepsize}, but need {self.prms['step']}). Running MSIS2 thru GEODYN with correct step size.")
                         self.ctrlStage1_setup_path_pointers()
                         self.ctrlStage2_make_tmp_and_output_dirs()
                         self.ctrlStage3_print_to_notebook()
@@ -1478,7 +1493,7 @@ class RunController():
                         self.ctrlStage6_save_rawoutputs_and_cleanup()
                 else:
                     print(f'|     Running MSIS2 through GEODYN to construct a initialized orbit')
-                    logging.info(f'No similar runs of MSIS2 exist on this arc. Running MSIS2 thru GEODYN...')
+                    # logging.info(f'No similar runs of MSIS2 exist on this arc. Running MSIS2 thru GEODYN...')
                     self.ctrlStage1_setup_path_pointers()
                     self.ctrlStage2_make_tmp_and_output_dirs()
                     self.ctrlStage3_print_to_notebook()
@@ -1487,19 +1502,19 @@ class RunController():
                     self.ctrlStage6_save_rawoutputs_and_cleanup()
                 
                                 
-                logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud  data. ')
+                # logging.info(f'Running GEODYN with initialized orbit + uncertainty cloud  data. ')
 
                 ### Construct the orbit cloud CSV
-                logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
+                # logging.info(f'Constructing orbit file:  {self.orbitcloud_csv_file }')
 
                 ### Use the msis2 run to identify the density file that 
                 ###    will be used to index the satellite ephemeris within kamodo
                 
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
-                series = self.den_model + '_' + self.cd_model + self.directory_name_specifier
-                OUTPUTDIR   = self.params['path_output_dir'] + '/'+self.den_model+'/'+self.series
+                series = self.prms['den_model'] + '_' + self.cd_model + self.directory_name_specifier
+                OUTPUTDIR   = self.prms['path_output_dir'] + '/'+self.prms['den_model']+'/'+self.series
                 self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
-                                       str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
+                                       str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
 
                 #### ONLY RERUN ORBITCLOUD if PATH NOT EXIST or if file is super small (i.e. empty)
                 file_exists = exists(self.orbitcloud_csv_file)                           
@@ -1539,17 +1554,17 @@ class RunController():
 
             ### Once you have the orbitcloud csv, re-run GEODYN with the TIEGCM and orbit cloud csv
             #### RUN 2nd TIME WITH TIEGCM_oc (inputting the CSV orbitcloud) 
-            self.set_density_model_setup_params( self.den_model )
+            self.set_density_model_setup_params( self.prms['den_model'] )
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
-                if self.satellite == 'icesat2':
+                if self.prms['satellite'] == 'icesat2':
                 
                     print(f'|     Running GEODYN with orbit cloud')
                     self.set_file_paths_for_multiple_arcs( arc , iarc)            
                     self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
-                                   str(int(self.geodyn_StepSize))+'_'+self.arcdate_for_files+'.csv')
-                    self.model_data_path = self.params['model_data_path']
-                    logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
+                                   str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
+                    self.model_data_path = self.prms['model_data_path']
+                    # logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
                     
                        #### Write the model path and orbitcloud filename to a file for GEODYN
                     filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
@@ -1558,7 +1573,7 @@ class RunController():
                     filemodels.close()
                 else:
                     print(f'| ********* Not using a valid satellite ********* ')
-                    logging.info(f'Not using correct sat?  {self.satellite}')
+                    # logging.info(f"Not using correct sat?  {self.prms['satellite']}")
 
                 self.set_file_paths_for_multiple_arcs( arc , iarc)      
 #                 print(f'|     Running GEODYN with TIEGCM orbit cloud')
@@ -1571,16 +1586,16 @@ class RunController():
                 gc.collect()
         
         ### Case for the HASDM model that uses the orbit cloud
-        elif self.den_model == 'hasdm_oc':  
+        elif self.prms['den_model'] == 'hasdm_oc':  
              
             #### setup the hasdm case
             self.set_density_model_setup_params(  'hasdm_oc'  )
             for iarc, arc in enumerate(self.arc_input):
                 self.arcnumber = iarc
-                if self.satellite == 'icesat2':
+                if self.prms['satellite'] == 'icesat2':
 
                     self.set_file_paths_for_multiple_arcs( arc , iarc)  
-                    self.model_data_path = self.params['model_data_path']
+                    self.model_data_path = self.prms['model_data_path']
 
                     print('self.model_data_path:  ', self.model_data_path)
     
@@ -1591,7 +1606,7 @@ class RunController():
                                                  '.csv' )
         
 
-                    logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
+                    # logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
                     
                 #### Write the model path and orbitcloud filename to a file for GEODYN
                     filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
@@ -1599,7 +1614,7 @@ class RunController():
                     filemodels.write(self.orbitcloud_csv_file+  '\n')
                     filemodels.close()
                 else:
-                    logging.info(f'Not using correct sat?  {self.satellite}')
+                    logging.info(f"Not using correct sat?  {self.prms['satellite']}")
 
                 self.set_file_paths_for_multiple_arcs( arc , iarc)      
                 self.ctrlStage1_setup_path_pointers()
@@ -1622,7 +1637,6 @@ class RunController():
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
                 self.ctrlStage1_setup_path_pointers()
                 self.ctrlStage2_make_tmp_and_output_dirs()
-
                 self.ctrlStage3_print_to_notebook()
                 self.ctrlStage4_populate_tmpdir_for_run()
                 self.ctrlStage5_execute_geodyn_in_tmpdir()
@@ -1631,7 +1645,18 @@ class RunController():
                 gc.collect()
 
                 
-                
+
+
+
+    def call_control_sequence(self):
+        self.ctrlStage1_setup_path_pointers()
+        self.ctrlStage2_make_tmp_and_output_dirs()
+        self.ctrlStage3_print_to_notebook()
+        self.ctrlStage4_populate_tmpdir_for_run()
+        self.ctrlStage5_execute_geodyn_in_tmpdir()
+        self.ctrlStage6_save_rawoutputs_and_cleanup()
+        gc.collect()
+
                 
                 
                 
