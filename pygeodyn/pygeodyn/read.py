@@ -148,15 +148,15 @@ class ReadRawOutput:
         count_while = 0
 
         data_dict_sat_packets['MJDSEC ET']                       =[]
-        data_dict_sat_packets['Satellite Inertial X coordinate'] =[]
-        data_dict_sat_packets['Satellite Inertial Y coordinate'] =[]
-        data_dict_sat_packets['Satellite Inertial Z coordinate'] =[]
-        data_dict_sat_packets['Satellite Inertial X velocity']   =[]
-        data_dict_sat_packets['Satellite Inertial Y velocity']   =[]
-        data_dict_sat_packets['Satellite Inertial Z velocity']   =[]
-        data_dict_sat_packets['Satellite Geodetic Latitude']     =[]
-        data_dict_sat_packets['Satellite East Longitude']        =[]
-        data_dict_sat_packets['Satellite Height']                =[]
+        data_dict_sat_packets['X j2000'] =[]
+        data_dict_sat_packets['Y j2000'] =[]
+        data_dict_sat_packets['Z j2000'] =[]
+        data_dict_sat_packets['X_dot j2000']   =[]
+        data_dict_sat_packets['Y_dot j2000']   =[]
+        data_dict_sat_packets['Z_dot j2000']   =[]
+        data_dict_sat_packets['Geodetic Latitude']     =[]
+        data_dict_sat_packets['East Longitude']        =[]
+        data_dict_sat_packets['Height']                =[]
 #         data_dict_sat_packets['Satellite ECF X coordinate']      =[]
 #         data_dict_sat_packets['Satellite ECF Y coordinate']      =[]
 #         data_dict_sat_packets['Satellite ECF Z coordinate']      =[]
@@ -212,15 +212,15 @@ class ReadRawOutput:
                     index = int(i)
 
                     data_dict_sat_packets['MJDSEC ET'].append(data_dict_times[counter])
-                    data_dict_sat_packets['Satellite Inertial X coordinate'].append(a[(index +1) - 2])
-                    data_dict_sat_packets['Satellite Inertial Y coordinate'].append(a[(index +2) - 2])
-                    data_dict_sat_packets['Satellite Inertial Z coordinate'].append(a[(index +3) - 2])
-                    data_dict_sat_packets['Satellite Inertial X velocity'].append(a[(index +4) - 2])
-                    data_dict_sat_packets['Satellite Inertial Y velocity'].append(a[(index +5) - 2])
-                    data_dict_sat_packets['Satellite Inertial Z velocity'].append(a[(index +6) - 2])
-                    data_dict_sat_packets['Satellite Geodetic Latitude'].append(a[(index +7) - 2])
-                    data_dict_sat_packets['Satellite East Longitude'].append(a[(index +8) - 2])
-                    data_dict_sat_packets['Satellite Height'].append(a[(index +9) - 2])
+                    data_dict_sat_packets['X j2000'].append(a[(index +1) - 2])
+                    data_dict_sat_packets['Y j2000'].append(a[(index +2) - 2])
+                    data_dict_sat_packets['Z j2000'].append(a[(index +3) - 2])
+                    data_dict_sat_packets['X_dot j2000'].append(a[(index +4) - 2])
+                    data_dict_sat_packets['Y_dot j2000'].append(a[(index +5) - 2])
+                    data_dict_sat_packets['Z_dot j2000'].append(a[(index +6) - 2])
+                    data_dict_sat_packets['Geodetic Latitude'].append(a[(index +7) - 2])
+                    data_dict_sat_packets['East Longitude'].append(a[(index +8) - 2])
+                    data_dict_sat_packets['Height'].append(a[(index +9) - 2])
 #                     data_dict_sat_packets['Satellite ECF X coordinate'].append(a[(index +10) - 2])
 #                     data_dict_sat_packets['Satellite ECF Y coordinate'].append(a[(index +11) - 2])
 #                     data_dict_sat_packets['Satellite ECF Z coordinate'].append(a[(index +12) - 2])
@@ -1929,9 +1929,9 @@ class ReadRawOutput:
     def read_RunSummary_iieout(self):
         start = time.time()
 
-        model = self.den_model  
-        sat_name = self.SATELLITE_dir       
-        data_type = self.DATA_TYPE
+        model = self.prms['den_model']  
+        sat_name = self.prms['satellite']       
+        data_type = self.tracking_data_type
 #         if 'Verbose_Stats' in self.params:
 #             Verbose_Stats = self.params['Verbose_Stats'] 
 #         else:
@@ -2280,13 +2280,15 @@ class ReadRawOutput:
         
         for iarc, arc in enumerate(self.arc_input):
             self.arcnumber = iarc
+            print()
+            print(arc, ',  loading ', self.prms['den_model'] , sep='')
 
             self.set_file_paths_for_multiple_arcs( arc, iarc, False )
             self.check_if_run_converged(self._iieout_filename)
+            # print(self._iieout_filename)
 
             self.get_arc_values_and_dates()
 
-            print('Loading ', self.prms['den_model'] , arc )
             
             for choice in data_keys:                
                 
@@ -2397,9 +2399,9 @@ class ReadRawOutput:
             
             del orbfil_arc1['Date_UTC']
             del orbfil_arc1['MJDSEC ET']
-            del orbfil_arc1['Satellite Geodetic Latitude']
-            del orbfil_arc1['Satellite East Longitude']
-            del orbfil_arc1['Satellite Height']
+            del orbfil_arc1['Geodetic Latitude']
+            del orbfil_arc1['East Longitude']
+            del orbfil_arc1['Height']
             del orbfil_arc1['MJDS_UTC']
 
 
@@ -2409,12 +2411,12 @@ class ReadRawOutput:
 
 #             print(C_1[arc].columns)
             C_1[arc] = C_1[arc].rename(
-                            columns={"Satellite Inertial X coordinate": "X_orbfil",
-                                     "Satellite Inertial Y coordinate": "Y_orbfil",
-                                     "Satellite Inertial Z coordinate": "Z_orbfil",
-                                     "Satellite Inertial X velocity"  : "Xdot_orbfil",
-                                     "Satellite Inertial Y velocity"  : "Ydot_orbfil",
-                                     "Satellite Inertial Z velocity"  : "Zdot_orbfil",
+                            columns={"X j2000": "X_orbfil",
+                                     "Y j2000": "Y_orbfil",
+                                     "Z j2000": "Z_orbfil",
+                                     "X_dot j2000"  : "Xdot_orbfil",
+                                     "Y_dot j2000"  : "Ydot_orbfil",
+                                     "Z_dot j2000"  : "Zdot_orbfil",
                                     })
 #             print(C_1[arc].columns)
 
@@ -3029,24 +3031,28 @@ class ReadRawOutput:
             
             del orbfil_arc1['Date_UTC']
             del orbfil_arc1['MJDSEC ET']
-            del orbfil_arc1['Satellite Geodetic Latitude']
-            del orbfil_arc1['Satellite East Longitude']
-            del orbfil_arc1['Satellite Height']
+            del orbfil_arc1['Geodetic Latitude']
+            del orbfil_arc1['East Longitude']
+            del orbfil_arc1['Height']
             del orbfil_arc1['MJDS_UTC']
 
 
             ### CombinedOrbitsDF is a dataframe containing all data between the two files where the dates match
-            CombinedOrbitsDF[self.arcdate_v2] = pd.merge(left=orbfil_arc1, left_on='Date_pd',
-                 right=PCE_data, right_on='Date_pd')
+            CombinedOrbitsDF[self.arcdate_v2] = pd.merge(\
+                                        left=orbfil_arc1, left_on='Date_pd',
+                                        right=PCE_data, right_on='Date_pd')
 
 #             print(CombinedOrbitsDF[arc].columns)
-            CombinedOrbitsDF[self.arcdate_v2] = CombinedOrbitsDF[self.arcdate_v2].rename(columns={"Satellite Inertial X coordinate": "X_orbfil",
-                                     "Satellite Inertial Y coordinate": "Y_orbfil",
-                                     "Satellite Inertial Z coordinate": "Z_orbfil",
-                                     "Satellite Inertial X velocity"  : "Xdot_orbfil",
-                                     "Satellite Inertial Y velocity"  : "Ydot_orbfil",
-                                     "Satellite Inertial Z velocity"  : "Zdot_orbfil",
-                                    })
+            CombinedOrbitsDF[self.arcdate_v2] = CombinedOrbitsDF[\
+                                                    self.arcdate_v2].rename(\
+                                                        columns={\
+                                                    "X j2000" : "X_orbfil"   ,
+                                                    "Y j2000" : "Y_orbfil"   ,
+                                                    "Z j2000" : "Z_orbfil"   ,
+                                                "X_dot j2000" : "Xdot_orbfil",
+                                                "Y_dot j2000" : "Ydot_orbfil",
+                                                "Z_dot j2000" : "Zdot_orbfil",
+                                                                })
 ############--------------------------------------------------------------------------------------------------        
 #             OrbitResids = self.ResidInvestigation_get_residuals_coordsystems(CombinedOrbitsDF)
 
@@ -3346,9 +3352,9 @@ def Pygeodyn_OBJECT_freeupmemory(OBJ):
         #### DELETE UNNECESSARY VARIABLES IN Trajectory_orbfil
         
         del OBJ.__dict__['Trajectory_orbfil'][val]['header']
-        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Geodetic Latitude']
-        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite East Longitude']
-        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Satellite Height']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Geodetic Latitude']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['East Longitude']
+        del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['Height']
         del OBJ.__dict__['Trajectory_orbfil'][val]['data_record']['MJDSEC ET']
         
         

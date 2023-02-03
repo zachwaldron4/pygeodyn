@@ -26,3 +26,7 @@ path_data_outputs_clean = Path(path_project+'/data/outputs_clean')
 
 # Temporary Run Directory
 path_tmp = Path(path_project+'/data/tmp')
+
+# Utility Directories
+path_util    = Path(path_project+'/pygeodyn/pygeodyn/util_dir')
+path_utilpce = Path(path_project+'/pygeodyn/pygeodyn/util_dir/pce')

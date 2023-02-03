@@ -15,6 +15,7 @@ from pygeodyn.config_paths import path_data_outputs_raw
 from pygeodyn.config_paths import path_tmp
 from pygeodyn.config_paths import path_IIS_exec
 from pygeodyn.config_paths import path_IIE_exec
+from pygeodyn.config_paths import path_utilpce
 ## level 1
 from pygeodyn.util_classtools   import Util_Tools
 from pygeodyn.prep_inputs import PrepareInputs
@@ -77,10 +78,14 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         self.path_io_geodyn        = str(path_io_geodyn)
         self.dir_IIS               = str(path_IIS_exec)
         self.dir_IIE               = str(path_IIE_exec)
-        # Set environment variables to be read in by GEODYN:       
+        self.path_utilpce          = str(path_utilpce)
+        # Set environment variables to be read in by GEODYN/fortran:       
         os.environ["PATH_IO_GEODYN"] = str(self.path_io_geodyn)
         os.environ["PATH_IIELOCAL"]  = str(self.dir_IIE)
         self.user                    = os.environ["USER"]
+        # Set pce converter environ vars 
+        os.environ["PATH_UTIL_PCE"] = str(self.path_utilpce)
+
 
         
 
@@ -94,7 +99,13 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
             # remove the auxiliary items in the input dict
             for key in run_settings_input.keys():
                 self.prms[key] = run_settings_input[key]['input']
+
+        if 'initial_conditions' not in  self.prms.keys():
+            self.prms['initial_conditions'] = None
+            # print('Setting IC to None')
         
+        # else:
+            # self.prms['initial_conditions'] = run_settings_input['initial_conditions']['input']
         # Store some commonly used settings into their own attributes
         self.arc_input        = self.prms['arc']
         #### Set some more permanant default options.
@@ -160,7 +171,7 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
             self.prep_exat_check()
             #
             # Locate G2B data (In the Satellite __init__() for now. )
-            # self.prep_G2B_write()
+            self.prep_g2b_check()
 
 
             ## Run the GEODYN code 
@@ -180,17 +191,6 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
 
 #==============================================================================
         
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -20,6 +20,8 @@ import pandas as pd
 import numpy  as np
 from datetime import datetime
 
+import textwrap
+
 
 class Util_Tools:
     
@@ -553,49 +555,52 @@ class Util_Tools:
         
         '''
         self.convergence_flag = False
-        
+        line_nos1 = '|---+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8'
+
         with open(iieout_filename, 'r') as f:
             for line_no, line in enumerate(f):
                 
-                if 'CONVERGENCE' in line:
+                if 'CONVERGENCE WITHIN  2.0 PERCENT' in line:
                     self.convergence_flag = True
-#                     print('File converged... reading the file.')
+                    print(self.tab,'- convergence achieved', sep='')
                     break
                 
                 elif 'HYPERBOLIC TRAJECTORY' in line:
                     self.convergence_flag = False
 #                     index_last_slash = self._iieout_filename.rfind('/')
 #                     print('|',self.tab,'-----','File: ',self._iieout_filename[index_last_slash+1:]  )
-                    
-                    longest_line = '|'+' File:'+self._iieout_filename
-                    print('+','—'*len(longest_line))
-                    print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
-                    print('|',)
-                    print('|', ' File:',self._iieout_filename )
-                    print('|', ' Line number:',line_no )
-                    print('',)
-                    print('',line.rstrip("\n"))
-                    print('',)
-                    print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
-                    print('+','—'*len(longest_line))
+                    # print("—"*len(line_nos1))
+                    print(self.tab,'- Execution terminated in IIE before convergence.', sep='')
+                    # print('|',)
+                    # print('File:',self._iieout_filename )
+                    # print('Line number:',line_no )
+                    # print(line.rstrip("\n"))
+                    # print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+                    # print('+','—'*len(longest_line))
 
 
                 elif 'FAILED  2.0 PERCENT CONVERGENCE' in line:
 
-                    longest_line = '|'+' File:'+self._iieout_filename
-                    print('+','—'*len(longest_line))
-                    print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
-                    print('|',)
-                    print('|', ' File:',self._iieout_filename )
-                    print('|', ' Line number:',line_no )
-                    print('',)
-                    print('',line.rstrip("\n"))
-                    print('',)
-                    print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
-                    print('+','—'*len(longest_line))
+                    # print("—"*len(line_nos1))
+                    # print('+','—'*len(longest_line))
+                    print(self.tab,'- FAILED  2.0 PERCENT CONVERGENCE', sep='')
+                    print(self.tabtab+' - iieout file: '+textwrap.fill(\
+                                            self._iieout_filename, 70, \
+                                            break_long_words=True,     \
+                                            subsequent_indent=self.tabtab*2), sep='')
+                    print(self.tabtab+' - '+textwrap.fill(\
+                                            line.rstrip("\n"), 70,     \
+                                            break_long_words=True,     \
+                                            subsequent_indent=self.tabtab*2), sep='')
+                    # print('',)
+                    # print('',)
+                    # print('',)
+                    # print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+                    # print('+','—'*len(longest_line))
 
 
-
+                # else:
+                #     print(self.tab,'-'+"-- run did not report information on convergence.")
 
 
 
@@ -808,33 +813,33 @@ class Util_Tools:
             
         
         
-    def check_if_run_converged(self, iieout_filename):
-        '''Check if IIE converged properly. If it did not print to the console.
+#     def check_if_run_converged(self, iieout_filename):
+#         '''Check if IIE converged properly. If it did not print to the console.
         
-        Non-convergence options:
-        ** ELEM **  CARTESIAN SPACECRAFT COORDINATES EQUIVALENT TO HYPERBOLIC TRAJECTORY.
-        EXECUTION TERMINATING.
-        '''
-        self.convergence_flag = False
-        with open(iieout_filename, 'r') as f:
-            for line_no, line in enumerate(f):
-                if 'CONVERGENCE' in line:
-                    self.convergence_flag = True
-#                     print('File converged... reading the file.')
-                    break
-                elif 'HYPERBOLIC TRAJECTORY' in line:
-                    self.convergence_flag = False
-                    longest_line = '|'+' File:'+self._iieout_filename
-                    print('+','—'*len(longest_line))
-                    print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
-                    print('|',)
-                    print('|', ' File:',self._iieout_filename )
-                    print('|', ' Line number:',line_no )
-                    print('',)
-                    print('',line.rstrip("\n"))
-                    print('',)
-                    print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
-                    print('+','—'*len(longest_line))
+#         Non-convergence options:
+#         ** ELEM **  CARTESIAN SPACECRAFT COORDINATES EQUIVALENT TO HYPERBOLIC TRAJECTORY.
+#         EXECUTION TERMINATING.
+#         '''
+#         self.convergence_flag = False
+#         with open(iieout_filename, 'r') as f:
+#             for line_no, line in enumerate(f):
+#                 if 'CONVERGENCE' in line:
+#                     self.convergence_flag = True
+# #                     print('File converged... reading the file.')
+#                     break
+#                 elif 'HYPERBOLIC TRAJECTORY' in line:
+#                     self.convergence_flag = False
+#                     longest_line = '|'+' File:'+self._iieout_filename
+#                     print('+','—'*len(longest_line))
+#                     print('|',self.tab,'----------- Execution terminated in IIE before convergence -----------')
+#                     print('|',)
+#                     print('|', ' File:',self._iieout_filename )
+#                     print('|', ' Line number:',line_no )
+#                     print('',)
+#                     print('',line.rstrip("\n"))
+#                     print('',)
+#                     print('|',self.tab,'---------------- Continue to the next arc in the list ----------------')
+#                     print('+','—'*len(longest_line))
 
                                        
 
@@ -964,6 +969,10 @@ class Util_Tools:
 
 
     def load_statevectorIC_file(self, epoch_startDT):
+        """
+        Get the initial conditions for the epoch start time.
+        
+        """
         datetype = 'datetime_string'
         date_in_file_flag= False
         import linecache
@@ -987,7 +996,7 @@ class Util_Tools:
 
             ### Find the dates that have the same hour    
             if datetype == 'datetime_string':
-                date_roundhour_str = str(epoch_startDT)[:13]
+                date_roundhour_str = str(epoch_startDT)[:10]
             elif datetype == 'YYMMDDHHMMSS':
                 date_roundhour_str = datetime.strftime(epoch_startDT, '%y%m%d%H')
 
@@ -999,7 +1008,7 @@ class Util_Tools:
                 for line_no, line_text in enumerate(f):
                     if date_roundhour_str in line_text:
                         line_no_list.append(line_no)
-            
+            # print(date_roundhour_str)
             # print(line_no_list)
             for i in np.arange(line_no_list[0]-10, line_no_list[-1]+10):
                 line = linecache.getline(self.file_statevector_ICs,i)
@@ -1012,7 +1021,6 @@ class Util_Tools:
                     dates.append(pd.to_datetime(line_list[i][:19],format='%y%m%d%H%M%S.%f'))
 
             ## NEAREST DATETIME -----------------------------------------------
-
                     
             def nearest(items, pivot):
                 return min(items, key=lambda x: abs(x - pivot))
@@ -1031,26 +1039,27 @@ class Util_Tools:
             Z_dot = float(line_list[res][105:121].ljust(20))
         else:
             print('Found date in IC file:', str(epoch_startDT))
-        xyzline = pd.read_csv(self.file_statevector_ICs, 
-                    skiprows = line_no, 
-                    nrows=1,           
-                    sep = '\s+',
-                    dtype=str,
-                    names = [
-                        'Date',
-                        'X',
-                        'Y',
-                        'Z',
-                        'X_dot',
-                        'Y_dot',
-                        'Z_dot',
-                            ],)
-        X     =  float(xyzline['X'].values[0].ljust(20))     #'  -745933.8926940708'
-        Y     =  float(xyzline['Y'].values[0].ljust(20))     #'  -4864983.834066438'
-        Z     =  float(xyzline['Z'].values[0].ljust(20))     #'    4769954.60524261'
-        X_dot =  float(xyzline['X_dot'].values[0].ljust(20)) #'  457.44564954037634'
-        Y_dot =  float(xyzline['Y_dot'].values[0].ljust(20)) #'   5302.381564886811'
-        Z_dot =  float(xyzline['Z_dot'].values[0].ljust(20)) #'    5463.55571622269'
+            xyzline = pd.read_csv(self.file_statevector_ICs, 
+                        skiprows = line_no, 
+                        nrows=1,           
+                        sep = '\s+',
+                        dtype=str,
+                        names = [
+                        'DateYMD',
+                        'DateHMS',
+                            'X',
+                            'Y',
+                            'Z',
+                            'X_dot',
+                            'Y_dot',
+                            'Z_dot',
+                                ],)
+            X     =  float(xyzline['X'].values[0].ljust(20))     #'  -745933.8926940708'
+            Y     =  float(xyzline['Y'].values[0].ljust(20))     #'  -4864983.834066438'
+            Z     =  float(xyzline['Z'].values[0].ljust(20))     #'    4769954.60524261'
+            X_dot =  float(xyzline['X_dot'].values[0].ljust(20)) #'  457.44564954037634'
+            Y_dot =  float(xyzline['Y_dot'].values[0].ljust(20)) #'   5302.381564886811'
+            Z_dot =  float(xyzline['Z_dot'].values[0].ljust(20)) #'    5463.55571622269'
         print(f"   [X,Y,Z]:          [{X    :15.5f}, {Y    :15.5f}, {Z    :15.5f}]")
         print(f"   [Xdot,Ydot,Zdot]: [{X_dot:15.5f}, {Y_dot:15.5f}, {Z_dot:15.5f}]")        
         print()        
@@ -1084,8 +1093,17 @@ class Util_Tools:
         prms_arc['arc_length_h'] = prms_arc['epoch_delta'].total_seconds()/3600
         
         
-        X    ,Y    ,    Z,\
-        X_dot,Y_dot,Z_dot = self.load_statevectorIC_file(prms_arc['epoch_startDT'])
+        if self.prms['initial_conditions'] is not None:
+            ICs=self.prms['initial_conditions'][self.arcnumber]
+
+            X, Y, Z,\
+            X_dot,Y_dot,Z_dot = map(float,ICs)
+            # print('Using imported initial_conditions')
+        else:
+            X, Y, Z,\
+            X_dot,Y_dot,Z_dot = self.load_statevectorIC_file(prms_arc['epoch_startDT'])
+            # print('Using Initial conditions from file.')
+
 
         prms_arc['X'] = X
         prms_arc['Y'] = Y
@@ -1094,7 +1112,14 @@ class Util_Tools:
         prms_arc['Y_dot'] = Y_dot
         prms_arc['Z_dot'] = Z_dot
 
+        # print('X    ',X)
+        # print('Y    ',Y)
+        # print('Z    ',Z)
+        # print('X_dot',X_dot)
+        # print('Y_dot',Y_dot)
+        # print('Z_dot',Z_dot)
 
+        # sys.exit(0)
     #     # Get the initial conditions in cartesian coords 
     #     if bool_elems:
     #         date_in_file_flag= True

@@ -67,7 +67,7 @@ class RunController():
         self.dir_exat  = path_inputs + '/external_attitude'
         dir_g2b        = path_inputs + '/g2b'
 
-
+        self.dir_makeg2b = dir_g2b
 
 
         
@@ -220,8 +220,8 @@ class RunController():
         
         longest_line = '|      '+self.run_ID+"    Output directory:  " + self.dir_output_raw
         
-        if self.prms['satellite']  == 'spire83':
-            print('ERROR--fix this-- ctrlStage3_print_to_notebook()')
+        # if self.prms['satellite']  == 'spire83':
+            # print('ERROR--fix this-- ctrlStage3_print_to_notebook()')
             # if  self.prms['epoch_start'] == None :  # if no options given 
             #     pass  ## use the defaults from the setup file (parsed above)
             # else:
@@ -838,8 +838,8 @@ class RunController():
         os.system('cp densityfil.bz2 ' +dir_out+'/DENSITY/' +self.ARC+     '.bz2')
         
         if self.prms['save_drag_file']:
-            os.system('cp drag_file.bz2 ' +dir_out+'/DENSITY/' +self.ARC+     'drag_file.bz2')
-            os.system('cp drag_file.bz2 ' +dir_out+'/DENSITY/' +self.ARC+     'SatGeometry_file')
+            os.system('cp drag_file '        +dir_out+'/DENSITY/' +self.ARC+     'drag_file')
+            os.system('cp SatGeometry_file ' +dir_out+'/DENSITY/' +self.ARC+     'SatGeometry_file')
 #         os.system('cp ascii_xyz.bz2 '  +self.OUTPUTDIR+'/XYZ_TRAJ/'+self.ARC+     '.bz2')
 #         os.system('cp ascii_kep.bz2 '  +self.OUTPUTDIR+'/KEP_TRAJ/'+self.ARC+     '.bz2')
         os.system('mv IIEOUT.'+ self.ARC+' '+dir_out+'/IIEOUT/'+ self.ARC+'')

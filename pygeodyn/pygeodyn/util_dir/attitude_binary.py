@@ -170,12 +170,12 @@ def write_EXAT_binary(filename, params, quat_xyzw, quat_dates, writetxt=False):
             freq_str = str(int(params['interval']))+"S"
             times_linspace = pd.date_range(start=startDT, end=stopDT, freq=freq_str)
 
-            print('startDT', startDT)
-            print('stopDT', stopDT)
-            print(times_linspace)
+            # print('startDT', startDT)
+            # print('stopDT', stopDT)
+            # print(times_linspace)
 
-            print(len(times_linspace))
-            print(len(quat_xyzw))
+            # print(len(times_linspace))
+            # print(len(quat_xyzw))
         
             for i, val in enumerate(quat_xyzw):
                 record4_Data = [#0. ,     #       Not used at present time

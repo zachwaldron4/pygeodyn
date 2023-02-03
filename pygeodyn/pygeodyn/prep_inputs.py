@@ -5,6 +5,11 @@ import numpy   as np
 from   os.path import exists
 import gc
 import os
+from  datetime   import datetime,timedelta
+from  math       import modf as math_modf
+from  subprocess import run  as subprocess_run
+
+
 #
 from pygeodyn.util_dir.time_systems     import mjds_to_ymdhms
 from pygeodyn.util_dir.time_systems     import time_gps_to_tdt
@@ -195,30 +200,291 @@ class PrepareInputs():
 
         ### Check if exists:
         ###     Edit-1/25/23, write exat every run
-        # if not exists(self.file_exat):
-        self.filename_exat = 'EXAT01.'+self.arc_name_id+''
-        ## full path to file
-        self.file_exat = self.dir_exat +'/' +self.filename_exat
+        if not exists(self.file_exat):
+            self.filename_exat = 'EXAT01.'+self.arc_name_id+''
+            ## full path to file
+            self.file_exat = self.dir_exat +'/' +self.filename_exat
 
-        print('Making an external attitude file.')
-        self.make_write_exat()
-    
-        os.system(f"gzip -vr {self.file_exat}")
+            print('Making an external attitude file.')
+            self.make_write_exat()
+        
+            os.system(f"gzip -vr {self.file_exat}")
 
-        self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
-        ## full path to file
-        self.file_exat = self.dir_exat +'/' +self.filename_exat
-        #### If doesn't exist, we need to write them....
+            self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+            ## full path to file
+            self.file_exat = self.dir_exat +'/' +self.filename_exat
+            #### If doesn't exist, we need to write them....
 
 
    
 
-    '''
-    --------------------------------------------------------------
-    PLACE HOLDER --- CHECK/WRITE G2B File
-    --------------------------------------------------------------
-    '''
+    def prep_g2b_check(self):
+        """Check for g2b/PCE data, write if doesn't exist 
+        """
 
+        self.ctrlStage1_setup_path_pointers(skip_files=False)
+
+        ### Check if G2B exists:
+        if not exists(self.file_G2B):
+            print('Making a PCE g2b file.')
+            self.make_write_g2b()
+        else:
+            print("G2B file exists:", self.file_G2B)
+
+
+
+    def make_write_g2b(self):
+        """Write a G2B binary file containing the PCE inputs.
+        
+        """
+        from pygeodyn.util_dir.time_systems import  time_utc_to_gps,\
+                                                    ymdhms_to_mjds
+
+        ###  Load inital conditions file
+        
+        #inputs----------------------------------
+        # datetype = 'datetime_string'
+        # epoch_startDT = self.prms_arc['epoch_startDT']
+        #inputs----------------------------------
+        
+        # date_in_file_flag= False
+        # import linecache
+        #
+        ### Only need to use accuracy to within 1 second (ignore the microseconds)
+        # if datetype == 'datetime_string':
+        #     date_str = str(self.prms_arc['epoch_startDT'])
+        # elif datetype == 'YYMMDDHHMMSS':
+        #     date_str = datetime.strftime(self.prms_arc['epoch_startDT'],\
+        #                                                     '%y%m%d%H%M%S')
+        #
+        # with open(self.file_statevector_ICs, 'r') as f:
+        #     for line_no, line_text in enumerate(f):
+        #         if date_str in line_text:
+        #             date_in_file_flag= True
+        #             print('    ','xyzline',line_no,line_text)
+        #             break
+        # if date_in_file_flag == False:
+        #     ### Find the dates that have the same hour    
+        #     if datetype == 'datetime_string':
+        #         date_roundhour_str=str(self.prms_arc['epoch_startDT'])[:10]
+        #     elif datetype == 'YYMMDDHHMMSS':
+        #         date_roundhour_str=datetime.strftime(\
+        #                                 self.prms_arc['epoch_startDT'],\
+        #                                         '%y%m%d%H%M%S')
+        #     ### Scan through IC file and append a list of dates within the same hour
+        #     line_no_list = []
+        #     line_list = []
+        #     with open(self.file_statevector_ICs, 'r') as f:
+        #         for line_no, line_text in enumerate(f):
+        #             if date_roundhour_str in line_text:
+        #                 line_no_list.append(line_no)
+        #     for i in np.arange(line_no_list[0]-10, line_no_list[-1]+10):
+        #         line = linecache.getline(self.file_statevector_ICs,i)
+        #         line_list.append(line)
+        #     dates = []
+        #     for i ,val in enumerate(line_list):
+        #         if datetype == 'datetime_string':
+        #             dates.append(pd.to_datetime(line_list[i][:19],format='%Y-%m-%d %H:%M:%S'))
+        #         elif datetype == 'YYMMDDHHMMSS':
+        #             dates.append(pd.to_datetime(line_list[i][:19],format='%y%m%d%H%M%S.%f'))
+        #
+        xyzline = pd.read_csv(self.file_statevector_ICs, 
+                    skiprows =23, 
+                    # nrows=line_no_list[-1]- line_no_list[0],           
+                    sep = '\s+',
+                    dtype=object,
+                    names = [
+                        'DateYMD',
+                        'DateHMS',
+                        'X',
+                        'Y',
+                        'Z',
+                        'X_dot',
+                        'Y_dot',
+                        'Z_dot',
+                            ],)
+        #
+        xyzline['Date'] =  pd.to_datetime(\
+                                    xyzline['DateYMD']  \
+                                + xyzline['DateHMS'], \
+                                    format='%Y-%m-%d%H:%M:%S')
+        del xyzline['DateYMD'], xyzline['DateHMS']
+    
+        ### Prepare the data to be in the correct input format for 
+        ###  the fortran routine, pce_converter.f
+        pce_in = {}
+
+        ### Convert UTC to GPS time and convert to MJDsec in one step
+        mjdsec_gps = [ymdhms_to_mjds(time_utc_to_gps(date, 37).year,
+                                     time_utc_to_gps(date, 37).month,
+                                     time_utc_to_gps(date, 37).day,
+                                     time_utc_to_gps(date, 37).hour,
+                                     time_utc_to_gps(date, 37).minute,
+                                     time_utc_to_gps(date, 37).second)
+                                            for date in xyzline['Date'].values]
+
+        pce_in['mjdsec_gps'],\
+        pce_in['frac_sec']    = map(list,  \
+                                    zip(*[[int(math_modf(date)[1]),\
+                                        math_modf(date)[0]]\
+                                        for date in mjdsec_gps ]))
+        pce_in['gps_offset'] = -18.0  # GPS is 18 seconds ahead of UTC
+        pce_in['X_j2000_m']          = xyzline['X'].values.astype(float)
+        pce_in['Y_j2000_m']          = xyzline['Y'].values.astype(float)
+        pce_in['Z_j2000_m']          = xyzline['Z'].values.astype(float)
+
+
+        ### Write the prepared inputs to a txt file to be read by fortran code
+        ##     TRAJ.txt for input to PCE_converter.f
+
+        ## Requirements:
+        ##     - File titled TRAJ.txt
+        ##     - Each line of TRAJ.txt has 1 integer and 4 float point words
+        ##
+        ##         Word #     Fmt     Description    
+        ##         ------     ---     -----------
+        ##            1       int     MJDSEC_secs_timeGPS
+        ##            2      float    fraction seconds + GPS_offset_secs_utc
+        ##            3      float    X   (j2000)
+        ##            4      float    Y   (j2000)
+        ##            5      float    Z   (j2000)
+        ##
+        ## The integer and the first floating point word form the time tag of  
+        ##  the record.
+        ##  The first float is the precise time/correction for time tag
+        ##  The last three words are the X, Y and Z coordinates of the satellite
+        ##       in the J2000 coordinate system.
+
+        pce_in_df = pd.DataFrame(pce_in)
+        pce_in_df.insert(1, 'utc_offset' ,\
+                         pce_in_df['frac_sec'] + pce_in_df['gps_offset'])
+        del pce_in_df['frac_sec']
+        del pce_in_df['gps_offset']
+
+
+        
+        ##### Save as an unadorned txt file
+        pce_in_df.to_csv(self.dir_makeg2b+'/TRAJ.txt',      \
+                            sep=' ',      \
+                            index = False,\
+                            header=False)
+
+
+
+        ### change dir to where the fortran code is hosted
+        os.chdir(self.path_utilpce)
+
+
+        ### Write the inputs to the fortran code as environment variables
+        os.environ["PATH_UTIL_PCE"]    = str(self.path_utilpce)
+        os.environ["PATH_pcemake_in"]  = self.dir_makeg2b + '/TRAJ.txt'
+        os.environ["PATH_pcemake_out"] = self.file_G2B
+        os.environ["in_SATID"] = self.prms['sat_ID'] 
+
+
+
+        #### Compile the pce code
+        command_1 = './compile_pce_f.sh'
+        subprocess_run(command_1, shell = True)
+        print('pce_fortran.f compiled')
+
+        ### delete any already constructed PCE data in the folder...
+        subprocess_run("rm "+ self.file_G2B, shell = True)
+
+        #### Execute the pce code
+        command_2 = './ExecutePCE.exe > out_pce 2> err_execute'
+        subprocess_run(command_2, shell = True)
+        print('pce_fortran.f executed')
+        print('')
+
+
+        del os.environ['PATH_UTIL_PCE']
+        del os.environ['PATH_pcemake_in']
+        del os.environ['PATH_pcemake_out']
+        del os.environ['in_SATID']
+
+# os.system('gzip -vr '+ path_to_data+'/'+out_filename)
+
+# os.system('mv '+ path_to_data+'/'+out_filename+'.gz'+ ' '+'/data/data_geodyn/inputs/icesat2/g2b/')
+# os.system('rm'+' '+path_preprocessing + '/TRAJ.txt')
+
+# if os.path.exists('/data/data_geodyn/inputs/icesat2/g2b/'+out_filename+'.gz'):
+#     print('The G2B file has been saved to: ','/data/data_geodyn/inputs/icesat2/g2b/',out_filename,'.gz')
+# else:
+#     print('The G2B binary file has been saved to: ',path_to_data,'/',out_filename, sep='')
+
+
+        '''
+        from scipy.io import FortranFile
+        file_pce =  '/data/SatDragModelValidation/data/inputs/sat_spire83/g2b/'\
+                + 'g2b_pce_leoOrb_nov2018'
+        # file_pce =  '/data/SatDragModelValidation/data/inputs/sat_icesat2/g2b/'\
+        #           + 'g2b_pce_fullset_nomaneuver'
+
+        # Read PCE Binary Data:
+        # def read_pce_binary():
+
+
+        f = FortranFile(file_pce, 'r')
+
+        sp = '    '
+        header= {}
+        header['master']={}
+        ### ----------------------------------------------------
+        ### ------------- 1) GENERAL HEADER RECORD -------------
+        ###
+        ###      Read the first record, this is the header buffer
+        a = f.read_record(np.float64).reshape(10,200)
+
+        header['master']['mjds__utc'] = a[0][0]
+        header['master']['fsec_strt'] = a[1][0]
+        header['master']['fsec__end'] = a[2][0]
+        header['master']['speed___c'] = a[3][0]
+        header['master']['meas_type'] = a[4][0]
+        header['master']['vers__num'] = a[5][0]
+        header['master']['recs__obs'] = a[6][0]
+        header['master']['recs__aux'] = a[7][0]
+        header['master']['prepro__9'] = a[8][0]
+        header['master']['rec__type'] = a[9][0]
+
+        # pce has N=1 blocks
+        header['block']={}
+        header['block']['station_n']         = a[0][1]
+        header['block']['range_amb']         = a[1][1]
+        header['block']['ref_freq']          = a[2][1]
+        header['block']['dopfreq_bias']      = a[3][1]
+        header['block']['coordsys_ref_date'] = a[4][1]
+        header['block']['date_created']      = a[5][1]
+        header['block']['station_id']        = a[6][1]
+        header['block']['satellite_id']      = a[7][1]
+        header['block']['prepro_word']       = a[8][1]
+        header['block']['rec__type']         = a[9][1]
+        
+            # while a[1 -1] ==  0:
+        #     data[set_count]['q1'].append(a[3 -1])  ###  sin (/2)n1
+        #     data[set_count]['q2'].append(a[4 -1])  ###  sin (/2)n2
+        #     data[set_count]['q3'].append(a[5 -1])  ###  sin (/2)n3
+        #     data[set_count]['q4'].append(a[6 -1])  ###  cos (/2)
+
+        #     ### Move to next data record while in the loop
+        #     a = f.read_record(float)
+        # else:
+        #     if a[1 -1] !=  0:
+        # #             print('Back to a header?')
+        #         (set_count, header) = read_QUAT_SET_HEADER(set_count, header, a)
+        #         try:
+        #             a = f.read_record(float)
+        #             (a, data, set_count) = read_QUAT_DATA(a, data, set_count, header)
+
+        #         except:
+        #             print('End of File')
+        #             f.close()  #### be sure to close the file
+
+        # return(a, data, set_count)
+
+
+
+        '''
 
 
     def prep_iisset_write(self):
@@ -326,7 +592,7 @@ class PrepareInputs():
         
         # orbfil
         orbfil_unit = 131
-        orbfil_step = 120
+        orbfil_step = self.prms['orbfil_step']  #60#120
         # sigma Observation standard deviation = 1
         # sigma Observation editing sigma      = 1
 
@@ -742,4 +1008,6 @@ class PrepareInputs():
         return(arc_options_cards)
 
 
-        
+
+
+#---+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8

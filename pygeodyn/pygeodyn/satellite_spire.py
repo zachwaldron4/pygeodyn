@@ -42,7 +42,7 @@ class Spire(RunController, ReadRawOutput):
         InheritControlStages.__init__(self)
         InheritReadRaw.__init__(self)
 
-        print('CHECK, SPIRE class')
+        # print('Running Pygeodyn with SPIRE')
 
 
         # Call the control path pointer to establish attributed paths
@@ -88,11 +88,13 @@ class Spire(RunController, ReadRawOutput):
         list_run_types = ["DataReduction_PCE" , "OrbitPropagation"] 
         # Fill in the appropriate settings based on the run_type.
         if self.prms['run_type'] == "DataReduction_PCE":
-            self.tracking_data_type = 'PCE'
+            self.tracking_data_type   = 'PCE'
             #### G2B file name
-            self.filename_g2b               = 'NOT FINISHED' 
+            self.filename_g2b         = 'g2b_pce_leoOrb_nov2018' 
             #### PCE Ascii textfile name
-            self.file_statevector_ICs       = 'NOT FINISHED'
+            self.file_statevector_ICs = self.dir_input+'/'\
+                                    +'Spire83_initialconditions_Nov2018_v1.txt'
+                                    # +'Spire83_initialconditions_Nov2018_v2.txt'
             ### Identify all the header names in the file
             self.file_statevector_headers   = ['Date',
                                                 'X',
@@ -104,7 +106,7 @@ class Spire(RunController, ReadRawOutput):
         #
         elif self.prms['run_type']  == "OrbitPropagation":
                 self.filename_g2b = 'None'
-                self.file_statevector_ICs   = self.dir_input+'/statevector_ICs_eci.txt'
+                self.file_statevector_ICs   = self.dir_input+'/Spire83_initialconditions_Nov2018_v2.txt'
                 print("self.file_statevector_ICs",self.file_statevector_ICs)
                 #'/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
 #                        + '/statevector_ICs.txt'

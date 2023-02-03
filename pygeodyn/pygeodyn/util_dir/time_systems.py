@@ -6,6 +6,8 @@ def mjds_to_ymdhms(input_ModJulianDay_secs):
     '''
     This function takes modified julian day seconds (MJDS) as input 
     and returns a date string in the format YYMMDDHHMMSS.
+    
+    
     '''
 
     #########################################
@@ -72,6 +74,33 @@ def mjds_to_ymdhms(input_ModJulianDay_secs):
     YYMMDDHHMMSS = str(yymmdd) + '-' + str(hhmmss)
 
     return(YYMMDDHHMMSS)
+
+
+
+
+def ymdhms_to_mjds(year, month, day, hour, minute, second):
+    '''convert calendar date to MJDS
+
+    This function takes year, month, day, hour, minute, second as input 
+    and returns modified julian day seconds (MJDS).
+    '''
+
+    from pygeodyn.util_dir.time_systems import jday
+
+    SECDAY               = 86400   #seconds in a day
+    geodyn_ref_time_mjd  = 30000   # ref time in MJD
+
+    
+    jd , jdfrac = jday(year, month, day, hour, minute, second)
+    mjd = ((jd+jdfrac) - 2400000.5)  
+    mjdsec = (mjd - geodyn_ref_time_mjd ) * SECDAY
+
+    return(mjdsec)
+    #print(f"")
+    #print(f'mjd                :  {mjd}')
+    #print(f'mjdsec             :  {mjdsec}')
+
+
 
 
 def get_leapseconds(year, mon, day):
@@ -244,7 +273,7 @@ def time_gps_to_utc(tim_gps, leap_sec):
         leap_sec (int): integer leap seconds as of 2017 is 37 sec.
 
     Returns:
-        tim_tdt (pandas datetime): pandas datetime TDT date.
+        tim_utc (pandas datetime): pandas datetime universal coord. time date.
     """
 
 #     dAT = 37  # total algebraic sum of leap seconds 
@@ -254,47 +283,25 @@ def time_gps_to_utc(tim_gps, leap_sec):
     tim_utc = tim_gps + pd.to_timedelta(18,'s')
     return(tim_utc)
 
+def time_utc_to_gps(tim_utc, leap_sec):
+    r"""Convert from UTC time to GPS time
+            GPS -> GPS Time
+            UTC -> Universal Coordinated Time
+            
+    Args:
+        tim_utc (pandas datetime): pandas datetime universal coord. time date.
+        leap_sec (int): integer leap seconds as of 2017 is 37 sec.
 
-# !     YMD TO MJD
-# !
-#   200 CONTINUE
-#       IY=IYMD/10000
-#       IM=(IYMD-IY*10000)/100
-#       ID=IYMD-IY*10000-IM*100
-# !
-# !
-#       if( iy .lt. 1900 ) then
-#          if( iy .gt. 50 ) then
-#             y = 1900 + iy - 1
-# !     write (6,*)'in 200 block: y ', y
-#          else
-#             y = 2000 + iy - 1
-# !     write (6,*)'in 200 block: y ', y
-#          endif
-#       endif
-# !
-#       if( im .gt. 2 ) then
-#          m = im
-# !   write (6,*)'in 200 block: m ', m
-#          y = y + 1
-#       else
-#          m = im + 12
-# !   write (6,*)'in 200 block: m ', m
-#       endif
-# !
-#       xjd = INT( d36525 * y ) + INT( d30600 * (m + 1) ) + ib            &
-#      &    + d17209 + id
-# !     write(6,*) ' xjd ', xjd
-# !
-#       modjd = xjd - xjd0
-# !     write(6,*) ' modjd ', modjd
-# !
-# !     ....below line not needed for iflag=2
-# !cc      fsec = ih * d3600 + imin * d60 + sec
-# !
-# !     write(6,*) ' iy, im, id ', iy, im, id, '  mjd ', mjd
-# !
-#       RETURN
+    Returns:
+        tim_gps (pandas datetime): pandas datetime GPS date.
+    """
+
+    leap_sec = pd.to_timedelta(leap_sec,'s')
+
+    #### utc to gps---gps ahead of utc by 18 secs. 
+    tim_gps = tim_utc - pd.to_timedelta(18,'s')
+    return(tim_gps)
+
 
 
 
