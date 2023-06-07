@@ -79,6 +79,12 @@ class Util_Tools:
             self.SETUP_DEN_DIR = 'orbit_cloud'
             self.iisset_den = '00'
 
+        
+        
+        elif 'manual' in den_model:
+            self.SETUP_DEN_DIR = den_model
+            self.iisset_den = '71'  # use the jaachia case in Fortran and then flow down a separate if statement.
+
         #### -------------------------------------------------------    
         #### For the Physics models that are connected via Kamodo,
         ####  Write the data path to a file to be read by fortran.
@@ -111,13 +117,23 @@ class Util_Tools:
                 filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
                 filemodels.writelines(self.model_data_path+'\n')
                 filemodels.writelines('none'+'\n')
-                filemodels.close()                
+                filemodels.close()     
         else:
             self.model_data_path = " "
             filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
             filemodels.writelines(self.model_data_path+'\n')
             filemodels.writelines('none'+'\n')
             filemodels.close()  
+        
+        # This snippet supercedes the above
+        if search('manual', self.prms['den_model']):
+            if self.prms['satellite'] == 'icesat2':
+                self.model_data_path = self.prms['model_data_path']
+                filemodels = open(self.path_io_geodyn+"/geodyn_modelpaths.txt","w+")
+                filemodels.writelines(self.model_data_path+'\n')
+                filemodels.writelines('none'+'\n')
+                filemodels.close()     
+
 
 
 
@@ -179,6 +195,8 @@ class Util_Tools:
             model_val = '0'       
         elif density_model== 'jb2008':
             model_val = '1' 
+        elif 'manual' in density_model:
+            model_val = '2' 
         #
         # The following models are run with 87 (dtm87) as the input to IIS on
         # the ATMDEN CARD    
@@ -731,7 +749,7 @@ class Util_Tools:
         
         global_keys = [
                     'prms',
-                    'prms_arc',
+                    # 'prms_arc',
                     'satellite',
                     'den_model',
                     'empirical_accels',
@@ -755,7 +773,7 @@ class Util_Tools:
                     'atgrav_file',
                     'ephem_file',
                     'gravfield_file',
-                    'arc_length_h',
+                    # 'arc_length_h',
                     'path_to_model',
                     'arcdate_v2',
                     'file_statevector_ICs']
@@ -968,7 +986,7 @@ class Util_Tools:
     
 
 
-    def load_statevectorIC_file(self, epoch_startDT):
+    def load_statevectorIC_file(self, epoch_startDT, verbose=False):
         """
         Get the initial conditions for the epoch start time.
         
@@ -976,6 +994,8 @@ class Util_Tools:
         datetype = 'datetime_string'
         date_in_file_flag= False
         import linecache
+
+
 
         ### Only need to use accuracy to within 1 second (ignore the microseconds in the file)
 
@@ -985,14 +1005,18 @@ class Util_Tools:
             date_str = datetime.strftime(epoch_startDT, '%y%m%d%H%M%S')
 
 
+        if verbose: print(f"{self.tab} Loading Values from IC file")
+
+        # print("IC FILE:", self.file_statevector_ICs )
+
         with open(self.file_statevector_ICs, 'r') as f:
             for line_no, line_text in enumerate(f):
                 if date_str in line_text:
                     date_in_file_flag= True
-                    print('    ','xyzline',line_no,line_text)
+                    
                     break
         if date_in_file_flag == False:
-            print(date_str,'not found in file. ')
+            if verbose: print(f"{self.tabtab} - Date not in IC file: {date_str}")
 
             ### Find the dates that have the same hour    
             if datetype == 'datetime_string':
@@ -1012,7 +1036,10 @@ class Util_Tools:
             # print(line_no_list)
             for i in np.arange(line_no_list[0]-10, line_no_list[-1]+10):
                 line = linecache.getline(self.file_statevector_ICs,i)
-                line_list.append(line)
+                if '#' in line:
+                    pass
+                else:
+                    line_list.append(line)
             dates = []
             for i ,val in enumerate(line_list):
                 if datetype == 'datetime_string':
@@ -1026,9 +1053,8 @@ class Util_Tools:
                 return min(items, key=lambda x: abs(x - pivot))
             date_near = nearest(dates, epoch_startDT)
             res = (np.array(dates)==date_near).argmax()
-            print("Using ICs from nearest date")
-            print('   date:',date_near)
-            print('   difference:', abs(date_near - epoch_startDT))
+            if verbose: print(f"{self.tabtab} - Using ic from nearest date {date_near}")
+            # if verbose: print(f"{self.tabtab}    difference:", abs(date_near - epoch_startDT))
 
         #    date = line_list[res][:19]
             X     = float(line_list[res][20:37].ljust(20))
@@ -1038,7 +1064,7 @@ class Util_Tools:
             Y_dot = float(line_list[res][88:105].ljust(20))
             Z_dot = float(line_list[res][105:121].ljust(20))
         else:
-            print('Found date in IC file:', str(epoch_startDT))
+            if verbose: print(f"{self.tabtab} - Found date in IC file:{str(epoch_startDT)}")
             xyzline = pd.read_csv(self.file_statevector_ICs, 
                         skiprows = line_no, 
                         nrows=1,           
@@ -1060,12 +1086,13 @@ class Util_Tools:
             X_dot =  float(xyzline['X_dot'].values[0].ljust(20)) #'  457.44564954037634'
             Y_dot =  float(xyzline['Y_dot'].values[0].ljust(20)) #'   5302.381564886811'
             Z_dot =  float(xyzline['Z_dot'].values[0].ljust(20)) #'    5463.55571622269'
-        print(f"   [X,Y,Z]:          [{X    :15.5f}, {Y    :15.5f}, {Z    :15.5f}]")
-        print(f"   [Xdot,Ydot,Zdot]: [{X_dot:15.5f}, {Y_dot:15.5f}, {Z_dot:15.5f}]")        
-        print()        
+        # if verbose: print(f"{self.tabtab} - [X   ,Y   ,Z]   : [{X    :15.5f}, {Y    :15.5f}, {Z    :15.5f}]")
+        # if verbose: print(f"{self.tabtab} - [Xdot,Ydot,Zdot]: [{X_dot:15.5f}, {Y_dot:15.5f}, {Z_dot:15.5f}]")        
+        # if verbose: print(f"{self.tabtab}")     
         return(X, Y, Z, X_dot, Y_dot, Z_dot)
 
-    def get_arc_values_and_dates(self, bool_elems=True):
+    def get_arc_values_and_dates(self, bool_elems=True, skip_ic=False,\
+                                                         verbose=False):
         ''' Method that retrieves the arc specific values and dates.
             Must be called before each arc.
 
@@ -1092,26 +1119,28 @@ class Util_Tools:
                                         'hours')
         prms_arc['arc_length_h'] = prms_arc['epoch_delta'].total_seconds()/3600
         
-        
-        if self.prms['initial_conditions'] is not None:
-            ICs=self.prms['initial_conditions'][self.arcnumber]
+        if skip_ic==False:
+            if self.prms['initial_conditions'] is not None:
+                ICs=self.prms['initial_conditions'][self.arcnumber]
 
-            X, Y, Z,\
-            X_dot,Y_dot,Z_dot = map(float,ICs)
-            # print('Using imported initial_conditions')
+                X, Y, Z,\
+                X_dot,Y_dot,Z_dot = map(float,ICs)
+                print('Using imported initial_conditions')
+            else:
+                X, Y, Z,\
+                X_dot,Y_dot,Z_dot = self.load_statevectorIC_file(     \
+                                            prms_arc['epoch_startDT'],\
+                                            verbose=self.verbose        )
+                # print('Using Initial conditions from file.')
+            prms_arc['X'] = X
+            prms_arc['Y'] = Y
+            prms_arc['Z'] = Z
+            prms_arc['X_dot'] = X_dot
+            prms_arc['Y_dot'] = Y_dot
+            prms_arc['Z_dot'] = Z_dot
         else:
-            X, Y, Z,\
-            X_dot,Y_dot,Z_dot = self.load_statevectorIC_file(prms_arc['epoch_startDT'])
-            # print('Using Initial conditions from file.')
-
-
-        prms_arc['X'] = X
-        prms_arc['Y'] = Y
-        prms_arc['Z'] = Z
-        prms_arc['X_dot'] = X_dot
-        prms_arc['Y_dot'] = Y_dot
-        prms_arc['Z_dot'] = Z_dot
-
+            pass
+            # print(f"{self.tabtab} - skip loading initial conditions.")
         # print('X    ',X)
         # print('Y    ',Y)
         # print('Z    ',Z)

@@ -127,7 +127,8 @@
       real(8) :: ALPHA 
       real(8) :: KL
       real(8) :: FRACOX
-      
+      CHARACTER(len=255) :: PATH_IO_GEODYN
+
       
 ! ********************************* 
 !  BEGIN EXECUTABLE CODE
@@ -139,14 +140,16 @@
       ICNT = ICNT+1
       MS   = 26.980D0   ! aluminum atomic weight
       MS(13) = 60.08D0
-      MS(14) = 60.08D0
+      MS(14) = 60.08D0     ! THIS NEEDS TO BE CHANGED!
 !      !!!!   SET THE CD OPTIONS FROM INPUTS:
       if(ICNT.eq.1) then
+          !!! Read the path to the options file from am environment variable
+          CALL get_environment_variable("PATH_IO_GEODYN", PATH_IO_GEODYN)      
+          !     
           WRITE(6,*) ' [MODDRIA.f90] - Reading Parameters from file'
-          open (121,                                                &
- & file='/data/geodyn_proj/pygeodyn/temp_runfiles/cd_params.txt',   &
- &       status='old')
- 
+          open (121,                                                 &
+                    & file=trim(PATH_IO_GEODYN)//'/cd_params.txt',   &
+                    &       status='old')
           do i=1,5   !#### Loop through the param file and save the values to an array.
              read(121,*) array_params(i)
           end do

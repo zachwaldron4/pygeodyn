@@ -2,6 +2,58 @@ import pandas as pd
 import numpy as np
 
 
+
+
+#### FINISH THE BELOW AT SOME POINT:
+# def convert_timesystem(input_time,                   \
+#                        in_dateformat, out_dateformat \
+#                        input_timesys, output_timesys):
+#     """
+#         input_time         time value  
+#         in_dateformat      format (MJD, JD, pandas_datetime)
+#         out_dateformat     format (MJD, JD, pandas_datetime)
+#         input_timesys      (UTC, GPS, TDT, etc.)
+#         output_timesys     (UTC, GPS, TDT, etc.) 
+
+#     """
+    
+    
+#     if dateformat == 'pandas_datetime':
+#         pass
+#     elif dateformat == 'mjdsecs':
+#         pass
+#         ### deal with MJD stuff
+    
+#     if input_timesys == 'UTC':
+#         UTC = input_time
+#         ### Find the atomic time
+#         #  ------Notice that TAI and GPS time are always within an integer 
+#         #        number of seconds of UTC.
+#         TAI = UTC + dAT 
+#         ### GPS time
+#         GPS = UTC + dAT − 19
+#         ### Dynamical time
+#         TT = TAI + 32.184
+
+#         if output_timesys == 'GPS':
+#             return(GPS)
+#         if output_timesys == 'TDT':
+#             return(TT)
+
+#     elif input_timesys == 'GPS':
+#         pass
+#         ### TO UTC
+
+#     elif input_timesys == 'TDT':
+#         pass
+#         ### TO UTC
+
+#     else:
+#         pass
+#         # throw error plz
+
+
+
 def mjds_to_ymdhms(input_ModJulianDay_secs):
     '''
     This function takes modified julian day seconds (MJDS) as input 
@@ -87,7 +139,7 @@ def ymdhms_to_mjds(year, month, day, hour, minute, second):
 
     from pygeodyn.util_dir.time_systems import jday
 
-    SECDAY               = 86400   #seconds in a day
+    SECDAY               = 86400   # seconds in a day
     geodyn_ref_time_mjd  = 30000   # ref time in MJD
 
     
@@ -187,11 +239,10 @@ def get_leapseconds(year, mon, day):
 
 
 
-def time_tdt_to_utc(terrestrial_time_mjdsec, leap_seconds):
-    """
-    time_tdt_to_utc Converts time TDT (TT) to UTC
+def time_mjdsecs_tdt_to_utc(mjdsec_tt, leap_seconds):
+    """ Converts time TDT (aka TT) to UTC
 
-    Converts the time system from terrestrial dynamic time (TDT, TT) to
+    Converts the time system from terrestrial dynamic time (TDT or TT) to
     universal coordinated time.  ET is Ephemeris Time and has been 
     numerically equivalent to Terrestral Time (TT) or Terrestral Dynamic
     Time (TDT) since ~1975. TT is distinct from the time scale often 
@@ -199,29 +250,40 @@ def time_tdt_to_utc(terrestrial_time_mjdsec, leap_seconds):
     TT is indirectly the basis of UTC, via International Atomic Time (TAI).
     Because of the historical difference between TAI and ET when TT 
     was introduced, TT is approximately 32.184secs ahead of TAI.
-        ??ET - A1 = 32.1496183??
-        TDT = TAI + 32.184  
-        TAI = UTC + dAT  
-            where dAT is the total algebraic sum of leap seconds 
-            As of 1 January 2017,
-            TAI is ahead of UTC   by 37 seconds.
-            TAI is ahead of GPS   by 19 seconds.
-            GPS is ahead of UTC   by 18 seconds.
-        Convert ET to UTC: UTC  =  TT - dAT - 32.184 s  
-    
-    Args:
-        terrestrial_time_mjdsec (_type_): _description_
-        leap_seconds (_type_): _description_
+        
+        # If given UTC
+        #
+        # We find UT1 as:
+        # UT1 = UTC + dUT1 
+        # ------As a check, UTC and UT1 should be within 0.9 seconds. 
+        #
+        # Next, find the atomic time:
+        # TAI = UTC + dAT 
+        #  ------Notice that TAI and GPS time are always within an integer 
+        #        number of seconds of UTC. 
+        # 
+        # GPS = UTC + dAT − 19s 
+        # 
+        # Dynamical time is then:
+        # TT = TAI + 32.184s 
+        # 
+        # -----TDB depends on the Julian centuries of TT, which you can 
+        #      calculate knowing the Julian date of TT:
+        #      DMY HMS -> JD_TT 
     """
-    '''
-     '''
-    
-    TT  = terrestrial_time_mjdsec
+
+    TT  = mjdsec_tt
     dAT = leap_seconds
 
-    UTC = TT - dAT - 32.184
+    # UTC = TT - dAT - 32.184
+    # mjdsecs_UTC = UTC
+
+    # TT = (UTC + dAT) + 32.184
+
+    UTC = (TT - 32.184) - dAT 
     mjdsecs_UTC = UTC
 
+    #### Checked on Feb 28,2023
     return(mjdsecs_UTC)
 
 
@@ -231,16 +293,25 @@ def time_gps_to_tdt(tim_gps, leap_sec):
             TDT -> Terrestral Dynamic Time
             GPS -> GPS Time
     
-    dAT = 37
-    TDT = TAI + 32.184  
-    TAI = UTC + dAT  
-        where dAT is the total algebraic sum of leap seconds 
-    As of 1 January 2017,
-        TAI is ahead of UTC   by 37 seconds.
-        TAI is ahead of GPS   by 19 seconds.
-        GPS is ahead of UTC   by 18 seconds.
-    Convert ET to UTC:
-        UTC  =  TT - dAT - 32.184 s 
+        # If given UTC
+        #
+        # We find UT1 as:
+        # UT1 = UTC + dUT1 
+        # ------As a check, UTC and UT1 should be within 0.9 seconds. 
+        #
+        # Next, find the atomic time:
+        # TAI = UTC + dAT 
+        #  ------Notice that TAI and GPS time are always within an integer 
+        #        number of seconds of UTC. 
+        # 
+        # GPS = UTC + dAT − 19s 
+        # 
+        # Dynamical time is then:
+        # TT = TAI + 32.184s 
+        # 
+        # -----TDB depends on the Julian centuries of TT, which you can 
+        #      calculate knowing the Julian date of TT:
+        #      DMY HMS -> JD_TT 
         
     Args:
         tim_gps (pandas datetime): pandas datetime GPS date.
@@ -250,15 +321,16 @@ def time_gps_to_tdt(tim_gps, leap_sec):
         tim_tdt (pandas datetime): pandas datetime TDT date.
     """
 
-#     dAT = 37  # total algebraic sum of leap seconds 
-    leap_sec = pd.to_timedelta(leap_sec,'s')
+    # total algebraic sum of leap seconds 
+    dAT = pd.to_timedelta(leap_sec,'s')
 
     #### GPS to UTC---gps ahead of utc by 18 secs. 
-    tim_utc = tim_gps + pd.to_timedelta(18,'s')
+    tim_utc = tim_gps - (dAT - pd.to_timedelta(19,'s'))
 
     ### UTC to TDT---utc ahead of tdt by 32.184
-    tim_tdt = tim_utc+leap_sec+pd.to_timedelta(32.184,'s')
-
+    #    TT =         TAI          +       32.184        
+    tim_tdt = (tim_utc + dAT) + pd.to_timedelta(32.184,'s')
+    #### Checked on Feb 28,2023
     return(tim_tdt)
 
 
@@ -275,15 +347,12 @@ def time_gps_to_utc(tim_gps, leap_sec):
     Returns:
         tim_utc (pandas datetime): pandas datetime universal coord. time date.
     """
-
-#     dAT = 37  # total algebraic sum of leap seconds 
-    leap_sec = pd.to_timedelta(leap_sec,'s')
-
-    #### GPS to UTC---gps ahead of utc by 18 secs. 
-    tim_utc = tim_gps + pd.to_timedelta(18,'s')
+    dAT = pd.to_timedelta(leap_sec,'s')
+    tim_utc = tim_gps - (dAT - pd.to_timedelta(19,'s'))
+    #### Checked on Feb 28,2023
     return(tim_utc)
 
-def time_utc_to_gps(tim_utc, leap_sec):
+def time_utc_to_gps(tim_utc,leap_sec):
     r"""Convert from UTC time to GPS time
             GPS -> GPS Time
             UTC -> Universal Coordinated Time
@@ -296,10 +365,9 @@ def time_utc_to_gps(tim_utc, leap_sec):
         tim_gps (pandas datetime): pandas datetime GPS date.
     """
 
-    leap_sec = pd.to_timedelta(leap_sec,'s')
-
-    #### utc to gps---gps ahead of utc by 18 secs. 
-    tim_gps = tim_utc - pd.to_timedelta(18,'s')
+    dAT = pd.to_timedelta(leap_sec,'s')
+    tim_gps = tim_utc +  (dAT - pd.to_timedelta(19,'s'))
+    #### Checked on Feb 28,2023
     return(tim_gps)
 
 

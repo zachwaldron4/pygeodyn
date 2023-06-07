@@ -134,8 +134,10 @@
 !! Print to UNIT6 so the user can confirm the correct 
 !! subroutine is being used.
       if(ICNT.eq.1)then
-          WRITE(6,*) 'CHECK-- KamodoModels_oc.f90: using Kamodo '
-          WRITE(6,*) 'kamodo_model:             ', kamodo_model
+          ! WRITE(6,*) '     * Drag Coefficient Model (CD)    ', optionsin(4)
+          ! WRITE(6,*) '          - Using the Original CD Model in GEODYN'
+          WRITE(6,*) '     * KamodoModels_oc.f90: using Kamodo '
+          WRITE(6,*) '          - kamodo_model:             ', kamodo_model
           
           !!!! Open the file on the first entry
           orbit_cloud_path = trim(orbitcloud_file)
@@ -144,13 +146,23 @@
           !!! Read thru the file once to find how long it is.
           n = 0
           do
-            read(123,*,end=1)
+            read(123,*,end=10)
             n = n+1
           end do
           
           !!! set the pointer back to the start of file
-          1 rewind(123)
-            
+          ! 1 rewind(123)
+          10 rewind(unit= 123)
+
+          rewind(unit= 123)
+          ! close(123)
+
+
+          ! open (123,  file=trim(orbit_cloud_path), status='old',action="read")   
+
+
+          if(ICNT.eq.1) WRITE(6,*) '          - n               :',n
+          
           !!! Allocate arrays that are length of file
           allocate(datearray(n))
           allocate(lonarray(n))
@@ -183,17 +195,19 @@
 
           end do
           close(123)
-        WRITE(6,*) 'File read in correctly?'
-        WRITE(6,*) '     datearray       :',datearray(1)
-        WRITE(6,*) '     lonarray        :',lonarray(1)
-        WRITE(6,*) '     latarray        :',latarray(1)
-        WRITE(6,*) '     altarray        :',altarray(1)
-        WRITE(6,*) '     rho_inarray     :',rho_inarray(1)
-        WRITE(6,*) '     nden_O1_inarray :',nden_O1_inarray(1)
-        WRITE(6,*) '     nden_O2_inarray :',nden_O2_inarray(1)
-        WRITE(6,*) '     nden_HE_inarray :',nden_HE_inarray(1)
-        WRITE(6,*) '     nden_N2_inarray :',nden_N2_inarray(1)
-        WRITE(6,*) '     Temp_inarray    :',Temp_inarray(1)
+        WRITE(6,*) '     * File read in correctly?'
+        WRITE(6,*) '          - datearray       :',datearray(1)
+        WRITE(6,*) '          - lonarray        :',lonarray(1)
+        WRITE(6,*) '          - latarray        :',latarray(1)
+        WRITE(6,*) '          - altarray        :',altarray(1)
+        WRITE(6,*) '          - rho_inarray     :',rho_inarray(1)
+        WRITE(6,*) '          - nden_O1_inarray :',nden_O1_inarray(1)
+        WRITE(6,*) '          - nden_O2_inarray :',nden_O2_inarray(1)
+        WRITE(6,*) '          - nden_HE_inarray :',nden_HE_inarray(1)
+        WRITE(6,*) '          - nden_N2_inarray :',nden_N2_inarray(1)
+        WRITE(6,*) '          - Temp_inarray    :',Temp_inarray(1)
+        WRITE(6,*) ' '
+        WRITE(6,*) '          - n               :',n
 
       endif
       
@@ -221,21 +235,32 @@
       write(i_YYMMDD,'(I0.6)')   IYMD
       write(i_HHMMSS,'(I0.6)')   IHMS
       i_YYMMDDHHMMSS =  trim(i_YYMMDD//i_HHMMSS)
+    if(ICNT.eq.1)then
+      WRITE(6,*) "   look for: ", i_YYMMDDHHMMSS
+    endif
 
+
+   i_row=0
 !!!!! Gather the input date for this timestep as as string 
-  !!!  concatenate the two portion
-      
-   
-
-   
+  !!!  concatenate the two portion    
    nrows=n
-   !#####  Read the file, looping through the rows and compare the date in each row to the date GEODYN is requesting
+   !#####  Read the file, looping through the rows and compare the date in 
+   !       each row to the date GEODYN is requesting
    do i_row = 1, nrows    
-      !#####  If the date of the row matches the requested date, load the remaining values in that row into the save arrays
+  !  do i_row = 1, 80    
+      !#####  If the date of the row matches the requested date, load the 
+      !       remaining values in that row into the save arrays
       date = datearray(i_row)
+      ! WRITE(6,*) "   date  ", date
+
+
       if (i_YYMMDDHHMMSS == date ) then
+        if(ICNT.eq.1)then
+          WRITE(6,*) "   found date ", i_YYMMDDHHMMSS
+        endif
         
-        !#####  Read the next 8 rows in to form the cube around our ephemeris point on this Time
+        !#####  Read the next 8 rows in to form the cube around our ephemeris
+        !       point on this time
           !WRITE(6,*) ' '
           do iloop=1,9
             dates(iloop) = datearray(  i_row + (iloop-1))
@@ -286,6 +311,15 @@
 !    endif
     if(ALTKM.gt.max_alt)then
         WRITE(6,*) "OrbitCloudError-- alt ABOVE bounds:    ", ALTKM, max_alt
+        WRITE(6,*) ' i_YYMMDDHHMMSS             ', i_YYMMDDHHMMSS
+        WRITE(6,*) ' geodyn_GLON                ', GLON
+        WRITE(6,*) ' geodyn_GLAT                ', GLAT
+        WRITE(6,*) ' geodyn_ALTKM               ', ALTKM
+        WRITE(6,*) ' '
+        WRITE(6,*) ' date                       ', dates
+        WRITE(6,*) ' orbitcloud_lons center     ', lons(1)
+        WRITE(6,*) ' orbitcloud_lats center     ', lats(1)
+        WRITE(6,*) ' orbitcloud_alts center     ', alts(1)
         STOP 16
     endif
     if(ALTKM.lt.min_alt)then
@@ -303,7 +337,7 @@
     endif
 
     
-
+                ! 502.867004
 
         !########    EXIT if you got the right date
            exit  !!!! CHANGE HERE
@@ -311,7 +345,29 @@
            
            endif
 
-       end do   !!!! CHANGE HERE
+  end do   !!!! CHANGE HERE
+
+      if(ICNT.eq.1)then
+          WRITE(6,*) "     * Before Interpolation: ", i_YYMMDDHHMMSS
+          WRITE(6,*) '          - GLON          ',  GLON
+          WRITE(6,*) '          - GLAT          ',  GLAT
+          WRITE(6,*) '          - ALTKM         ',  ALTKM
+          WRITE(6,*) '    ' 
+          WRITE(6,*) '          - rhos          ',  rhos  
+          WRITE(6,*) '          - ndens_O1      ',  ndens_O1  
+          WRITE(6,*) '          - ndens_O2      ',  ndens_O2  
+          WRITE(6,*) '          - ndens_HE      ',  ndens_HE  
+          WRITE(6,*) '          - ndens_N2      ',  ndens_N2  
+          WRITE(6,*) '          - Temps         ',  Temps  
+
+      
+
+
+
+
+
+      endif
+
 
     if(kamodo_model=='TIEGCM') then  
         !!!! Interpolate the various FIELDS stored in the "data cube"
@@ -321,13 +377,15 @@
         call trilinear_interp(GLON,GLAT,ALTKM,ndens_HE, n_dens_temp(4))
         call trilinear_interp(GLON,GLAT,ALTKM,ndens_N2, n_dens_temp(5))
         call trilinear_interp(GLON,GLAT,ALTKM,Temps,    n_dens_temp(6))
+      
       if(ICNT.eq.1)then
-          WRITE(6,*) 'rho_interpd      ',  n_dens_temp(1) ! g/cm^3
-          WRITE(6,*) 'ndenO1_interpd   ',  n_dens_temp(2)  ! #/cm^3
-          WRITE(6,*) 'ndenO2_interpd   ',  n_dens_temp(3)  ! #/cm^3
-          WRITE(6,*) 'ndenHE_interpd   ',  n_dens_temp(4)  ! #/cm^3
-          WRITE(6,*) 'ndenN2_interpd   ',  n_dens_temp(5)  ! #/cm^3
-          WRITE(6,*) 'Temp_interpd     ',  n_dens_temp(6)  ! Kelvin
+          WRITE(6,*) "     * After Interpolation:    "
+          WRITE(6,*) '          - rho_interpd      ',  n_dens_temp(1) ! g/cm^3
+          WRITE(6,*) '          - ndenO1_interpd   ',  n_dens_temp(2)  ! #/cm^3
+          WRITE(6,*) '          - ndenO2_interpd   ',  n_dens_temp(3)  ! #/cm^3
+          WRITE(6,*) '          - ndenHE_interpd   ',  n_dens_temp(4)  ! #/cm^3
+          WRITE(6,*) '          - ndenN2_interpd   ',  n_dens_temp(5)  ! #/cm^3
+          WRITE(6,*) '          - Temp_interpd     ',  n_dens_temp(6)  ! Kelvin
       endif
     endif
      

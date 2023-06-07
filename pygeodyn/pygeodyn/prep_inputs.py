@@ -20,6 +20,8 @@ from pygeodyn.util_dir.quaternions      import call_slerp_SpireAtt
 #
 from pygeodyn.util_dir.attitude_binary  import write_EXAT_binary
 
+from pygeodyn.util_dir.time_systems import  get_leapseconds
+from pygeodyn.util_dir.time_systems import  time_utc_to_gps, ymdhms_to_mjds
 
 
 # class InheritIcesat2(ICESat2):
@@ -36,92 +38,176 @@ class PrepareInputs():
     def __init__(self):  
         pass
 
-
-    def make_write_exat(self):
-
-        from pygeodyn.util_dir.time_systems       import get_leapseconds
-        from pygeodyn.util_dir.time_systems       import time_gps_to_utc
-        from pygeodyn.util_dir.coordinate_systems import call_teme2eci
+## =============================================================================
 
 
-        path_attitude     = "/data/SatDragModelValidation/data/inputs/"\
-                           +"sat_spire83/data_Spire/attitude/"\
-                           +"20180923_20181209_TaskOrder3Data/"
-        filename          = "leoAtt_2018-09-23T00-12-00Z.9999999.083.log"
-        file__AttitudeLog = path_attitude+filename
-        interval    = 10  # seconds
+    def prep_exat_check(self, raw_satinput,  bool_overwrite=False, verbose=False):
+        """Check for External Attitude File and write if doesn't exist 
+        """
+
+        ### External Attitude File must have name as follows
+        self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+        ## full path to file
+        self.file_exat = self.dir_exat +'/' +self.filename_exat
+
+
+
+        ### Check if exists, or overwrite for initialization:
+        if not exists(self.file_exat) or bool_overwrite==True:
+            
+            ### If writing, use unzipped binary filenames
+            self.filename_exat = 'EXAT01.'+self.arc_name_id+''
+            ## full path to file
+            self.file_exat = self.dir_exat +'/' +self.filename_exat
+
+
+            print(f"{self.tab} Making an external attitude file: {self.filename_exat}")
+            self.make_write_exat(raw_satinput, verbose)
         
+
+            ### On the exit, change the biaries to be gunzipped
+            os.system(f"gzip -vr {self.file_exat}")
+            self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+            ## full path to file
+            self.file_exat = self.dir_exat +'/' +self.filename_exat
+            #### If doesn't exist, we need to write them....
+
+
+## =============================================================================
+
+
+    def make_write_exat(self,raw_satinput,  verbose=False):
+        from astropy import coordinates as coord
+        from astropy import units as u
+        from astropy.time import Time
+        from astropy import time
+        # from pygeodyn.util_dir.coordinate_systems import call_teme2eci
+
+
+        # path_attitude     = "/data/SatDragModelValidation/data/inputs/"\
+        #                    +"sat_spire83/data_Spire/attitude/"\
+        #                    +"20180923_20181209_TaskOrder3Data/"
+        # filename          = "leoAtt_2018-09-23T00-12-00Z.9999999.083.log"
+        file__AttitudeRaw = raw_satinput['att_path']
+        interval          = raw_satinput['att_interval']  # seconds
+
+        if raw_satinput['att_date'] == 'date_gps':
+            date_ref = "date_gps"
+        else:
+            print('ERROR in prepinputs.make_write_exat()')
+            print('   Input data not in reference date:', 'date_gps')
+            print('   Need to make considerations for input reference frame')
+            sys.exit(0)
+
+
         one_hour = pd.to_timedelta(1,'h')
         startEpoch  = self.prms_arc['epoch_startDT']  - one_hour  
         stopEpoch   = self.prms_arc['epoch_stopDT']   + one_hour
  
         #### 1. Load the attitude data that corresponds to the entire timeperiod
-        SpireDF = load_attitude_spire(file__AttitudeLog,
+                                    # note: the start and end epoch are expanded
+                                    #       by an hour on either side
+        SpireDF = load_attitude_spire(file__AttitudeRaw,
                                         startEpoch,
                                         stopEpoch)
+        # print(SpireDF.head())
 
+        # print(exists(file__AttitudeRaw))
+        # print(startEpoch, stopEpoch)
 
         #### 2. Convert from GPS time to TDT time
-        SpireDF['tim (tdt)'] = [time_gps_to_tdt(tim, leap_sec=37) 
-                                        for tim in SpireDF['tim (gps)'] 
-                                                ]
+        if date_ref == "date_gps":
+            if verbose: print(f"{self.tabtab} - converting dates from GPS to TDT.")
+            SpireDF['date_tdt'] = [time_gps_to_tdt(tim, leap_sec=37) 
+                                        for tim in SpireDF[date_ref]  ]
+                                                
         ### 2.5) Prerequisite transformation for pos and vel
         ###      from eci-teme-ofepoch to eci-j2000 for 
-        # x, y, z = map(list,  \
-        #     zip(*[[xyz[0],xyz[1],xyz[2]]\
-        #           for xyz in SpireDF['pos (eci)'] ]))
+        # r_j2000_list = []
+        # v_j2000_list = []
 
-        # xdot,ydot,zdot = map(list,\
-        #              zip(*[[xyz_dot[0],xyz_dot[1],xyz_dot[2]] \
-        #               for xyz_dot in SpireDF['vel (eci)'] ]))
-
-        r_j2000_list = []
-        v_j2000_list = []
-        for i,val in enumerate(SpireDF['tim (gps)']):
+        # # print(SpireDF[date_ref].head())
+        # for i,val in enumerate(SpireDF[date_ref]):
             
-            #### First convert to UTC
-            ####   get the leapseconds for time of interest
-            dat = get_leapseconds(SpireDF['tim (gps)'][0].year,\
-                                SpireDF['tim (gps)'][0].month,\
-                                SpireDF['tim (gps)'][0].day)
-            date_utc = time_gps_to_utc(SpireDF['tim (gps)'][i], dat)
-            #
-            year   = date_utc.year
-            mon    = date_utc.month
-            day    = date_utc.day
-            hr     = date_utc.hour
-            minute = date_utc.minute
-            sec    = date_utc.second
+        #     #### First convert to UTC
+        #     ####   get the leapseconds for time of interest
+        #     dat = get_leapseconds(SpireDF[date_ref][0].year,\
+        #                           SpireDF[date_ref][0].month,\
+        #                           SpireDF[date_ref][0].day)
+        #                           #
+        #     date_utc = time_gps_to_utc(SpireDF[date_ref][i], dat)
+        #     #
+        #     year   = date_utc.year
+        #     mon    = date_utc.month
+        #     day    = date_utc.day
+        #     hr     = date_utc.hour
+        #     minute = date_utc.minute
+        #     sec    = date_utc.second
 
-            # position vector earth fixed  ( km )
-            r_teme = list(SpireDF['pos (eci)'][i]) 
-            v_teme = list(SpireDF['vel (eci)'][i]) 
+        #     if raw_satinput['att_posvel_refsys'] == 'eci_teme':
+        #         if i==0: 
+        #             if verbose: print(f"{self.tabtab} - converting position and velocity from "\
+        #                               +"ECI-TEME to ECI-J2000")
 
-            r_j2000, v_j2000 = call_teme2eci(r_teme, v_teme, None,\
-                                            year, mon, day,        \
-                                            hr, minute, sec,       \
-                                            calc_accel=False)
+        #         # position vector earth fixed  ( km )
+        #         r_teme = list(SpireDF['pos (eci)'][i]) 
+        #         v_teme = list(SpireDF['vel (eci)'][i]) 
+
+        #         r_j2000, v_j2000 = call_teme2eci(r_teme, v_teme, None,\
+        #                                         year, mon, day,        \
+        #                                         hr, minute, sec,       \
+        #                                         calc_accel=False)
             
-            r_j2000_list.append(r_j2000.transpose().squeeze())
-            v_j2000_list.append(v_j2000.transpose().squeeze())
+        #         r_j2000_list.append(r_j2000.transpose().squeeze())
+        #         v_j2000_list.append(v_j2000.transpose().squeeze())
+        #     else:
+        #         print('ERROR in prepinputs.make_write_exat()')
+        #         print('   Input data not in reference coordinate:', 'eci_teme')
+        #         print('   Need to make considerations for new type of coordinate system')
+        #         sys.exit(0)
+
+        # ZACH NOTE!! COORDINATE TRANSFORM HERE!!! CHECK!
+        x_teme, y_teme, z_teme = map(list,  \
+            zip(*[[xyz[0]*1000,xyz[1]*1000,xyz[2]*1000]\
+                for xyz in SpireDF['pos (eci)'] ]))
+        xdot_teme,ydot_teme,zdot_teme = map(list,\
+                    zip(*[[xyz_dot[0]*1000,xyz_dot[1]*1000,xyz_dot[2]*1000] \
+                    for xyz_dot in SpireDF['vel (eci)'] ]))
+        teme = coord.TEME(x  = x_teme   *u.m,
+                        y  = y_teme   *u.m,
+                        z  = z_teme   *u.m,
+                        v_x= xdot_teme*u.m/u.s,
+                        v_y= ydot_teme*u.m/u.s,
+                        v_z= zdot_teme*u.m/u.s, 
+                        representation_type='cartesian', 
+                        differential_type='cartesian', 
+                        obstime=Time(SpireDF[date_ref]))
+        j2000 = teme.transform_to(coord.GCRS(obstime=Time(SpireDF[date_ref])))
+        r_j2000 = j2000.cartesian.xyz.value.transpose()
+        v_j2000 = j2000.cartesian.differentials['s'].d_xyz.value.transpose()
+
 
         #### 3. Perform a coordinate transformation from SBF-->RSW to SBF-->ECI(j2000)
-        q_SBFtoECI = [quat_trans_SBFtoRSW_to_SBFtoECI(r_j2000_list[i], 
-                                                      v_j2000_list[i], 
-                                                    SpireDF['q (sbf)'].iloc[i]) 
-                                                for i,val in enumerate(SpireDF['tim (gps)'])]
+        if verbose: print(f"{self.tabtab} - converting quaternions from SBF-->RSW"\
+                              +" to SBF-->J2000")
+        q_SBFtoECI = [quat_trans_SBFtoRSW_to_SBFtoECI(r_j2000[i], 
+                                                      v_j2000[i], 
+                                                    SpireDF['q_SBF_to_RSW'].iloc[i]) 
+                                                for i,val in enumerate(SpireDF[date_ref])]
         # q_SBFtoECI = [quat_trans_SBFtoRSW_to_SBFtoECI(SpireDF['pos (eci)'].iloc[i], 
         #                                             SpireDF['vel (eci)'].iloc[i], 
         #                                             SpireDF['q (sbf)'].iloc[i]) 
         #                                         for i,val in enumerate(SpireDF['tim (gps)'])]
         # Fix the negatives such that no scalar component is negative
-        SpireDF['q (SBFtoECI)'] = [-1*x if x[3]<0
+        SpireDF['q_SBF_to_J2000'] = [-1*x if x[3]<0
                                         else x
                                         for x in q_SBFtoECI]
         
 
         
         #### 4. Interpolate Quaternions to linearly spaced time series
+        if verbose: print(f"{self.tabtab} - Interpolate Quaternions to linearly "\
+                                         +f"spaced time series from {startEpoch} to {stopEpoch}")
         exatt_quats = call_slerp_SpireAtt(SpireDF, 
                                         startEpoch, 
                                         stopEpoch, 
@@ -129,18 +215,24 @@ class PrepareInputs():
         ##### Free up some memory:
         del SpireDF
         del q_SBFtoECI
-        del r_j2000_list, v_j2000_list
-
+        # del tim_tdt, quats
+        del r_j2000, v_j2000
+        del x_teme, y_teme, z_teme
+        del xdot_teme, ydot_teme, zdot_teme
+        del teme, j2000
         gc.collect()
 
 
         #### 5. Write the External Attitude Binary File:
         #       Initialize the satellite specific settings 
         #       for the external attitude file conditions
+        if verbose: print(f"{self.tabtab} - Write to a binary EXAT file.")
+
         exat_param={}
         
         sat = self.prms['satellite']
-        if sat =='spire83':
+        
+        if 'spire'in sat:
             exat_param[sat]={}
             exat_param[sat]['SATID']    = self.prms['sat_ID'] 
             exat_param[sat]['num_sat']  = float(self.prms['number_of_satellites'])
@@ -180,115 +272,57 @@ class PrepareInputs():
             
         write_EXAT_binary(self.file_exat, 
                         exat_param[sat], 
-                        exatt_quats['q (SBFtoECI)'],
-                        exatt_quats['tim (tdt)'],
-                        writetxt=True)
+                        exatt_quats['q_SBF_to_J2000'],
+                        exatt_quats['date_tdt'],
+                        writetxt=True,
+                        verbose=verbose)
         
         return
 
 
-    def prep_exat_check(self):
-        """Check for External Attitude File and write if doesn't exist 
-        """
-
-        ### External Attitude File must have name as follows
-        self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
-        ## full path to file
-        self.file_exat = self.dir_exat +'/' +self.filename_exat
+## =============================================================================
 
 
-
-        ### Check if exists:
-        ###     Edit-1/25/23, write exat every run
-        if not exists(self.file_exat):
-            self.filename_exat = 'EXAT01.'+self.arc_name_id+''
-            ## full path to file
-            self.file_exat = self.dir_exat +'/' +self.filename_exat
-
-            print('Making an external attitude file.')
-            self.make_write_exat()
-        
-            os.system(f"gzip -vr {self.file_exat}")
-
-            self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
-            ## full path to file
-            self.file_exat = self.dir_exat +'/' +self.filename_exat
-            #### If doesn't exist, we need to write them....
-
-
-   
-
-    def prep_g2b_check(self):
+    def prep_g2b_check(self,raw_satinput,  bool_overwrite=False, verbose=False):
         """Check for g2b/PCE data, write if doesn't exist 
         """
 
         self.ctrlStage1_setup_path_pointers(skip_files=False)
 
         ### Check if G2B exists:
-        if not exists(self.file_G2B):
-            print('Making a PCE g2b file.')
-            self.make_write_g2b()
+        if not exists(self.file_G2B) or bool_overwrite==True:
+            if verbose: print(f"{self.tab} Making PCE g2b file: {self.file_G2B}")
+            self.make_write_g2b(raw_satinput, bool_overwrite, verbose=verbose)
         else:
-            print("G2B file exists:", self.file_G2B)
+            if verbose: print("G2B file exists:", self.file_G2B)
+
+## =============================================================================
 
 
 
-    def make_write_g2b(self):
+
+## =============================================================================
+
+
+    def make_write_g2b(self, raw_satinput,  bool_overwrite=False, verbose=False):
         """Write a G2B binary file containing the PCE inputs.
         
         """
-        from pygeodyn.util_dir.time_systems import  time_utc_to_gps,\
-                                                    ymdhms_to_mjds
+
+        #### Process the raw satellite ephemeris 
+        if not exists(raw_satinput['ephem_path']) or bool_overwrite==True:
+            print(f"{self.tabtab} - Initialize Raw Satellite Ephemerides as UTC, Cartesian-ECI-J2000")
+            
+            print('satellite', self.prms['satellite'])
+            ### Satellite specific function
+            self.sat_process_raw_ephemeris(verbose=verbose)
+
+        else:
+            if verbose: print(f"{self.tabtab} - raw data already processed, loading...")
+
 
         ###  Load inital conditions file
-        
-        #inputs----------------------------------
-        # datetype = 'datetime_string'
-        # epoch_startDT = self.prms_arc['epoch_startDT']
-        #inputs----------------------------------
-        
-        # date_in_file_flag= False
-        # import linecache
-        #
-        ### Only need to use accuracy to within 1 second (ignore the microseconds)
-        # if datetype == 'datetime_string':
-        #     date_str = str(self.prms_arc['epoch_startDT'])
-        # elif datetype == 'YYMMDDHHMMSS':
-        #     date_str = datetime.strftime(self.prms_arc['epoch_startDT'],\
-        #                                                     '%y%m%d%H%M%S')
-        #
-        # with open(self.file_statevector_ICs, 'r') as f:
-        #     for line_no, line_text in enumerate(f):
-        #         if date_str in line_text:
-        #             date_in_file_flag= True
-        #             print('    ','xyzline',line_no,line_text)
-        #             break
-        # if date_in_file_flag == False:
-        #     ### Find the dates that have the same hour    
-        #     if datetype == 'datetime_string':
-        #         date_roundhour_str=str(self.prms_arc['epoch_startDT'])[:10]
-        #     elif datetype == 'YYMMDDHHMMSS':
-        #         date_roundhour_str=datetime.strftime(\
-        #                                 self.prms_arc['epoch_startDT'],\
-        #                                         '%y%m%d%H%M%S')
-        #     ### Scan through IC file and append a list of dates within the same hour
-        #     line_no_list = []
-        #     line_list = []
-        #     with open(self.file_statevector_ICs, 'r') as f:
-        #         for line_no, line_text in enumerate(f):
-        #             if date_roundhour_str in line_text:
-        #                 line_no_list.append(line_no)
-        #     for i in np.arange(line_no_list[0]-10, line_no_list[-1]+10):
-        #         line = linecache.getline(self.file_statevector_ICs,i)
-        #         line_list.append(line)
-        #     dates = []
-        #     for i ,val in enumerate(line_list):
-        #         if datetype == 'datetime_string':
-        #             dates.append(pd.to_datetime(line_list[i][:19],format='%Y-%m-%d %H:%M:%S'))
-        #         elif datetype == 'YYMMDDHHMMSS':
-        #             dates.append(pd.to_datetime(line_list[i][:19],format='%y%m%d%H%M%S.%f'))
-        #
-        xyzline = pd.read_csv(self.file_statevector_ICs, 
+        xyzline = pd.read_csv(raw_satinput['ephem_path'], 
                     skiprows =23, 
                     # nrows=line_no_list[-1]- line_no_list[0],           
                     sep = '\s+',
@@ -314,13 +348,22 @@ class PrepareInputs():
         ###  the fortran routine, pce_converter.f
         pce_in = {}
 
+        if verbose: print(f"{self.tabtab} - Convert UTC to GPS and convert to MJDS")
+
+    
+        ### NOTE TO ZACH, check the whole GEODYN REF TIME thing in MJDSEC stuff
+                # DFnew['Date_pd'].dt.year.values[0]
+        dAT = get_leapseconds(xyzline['Date'].dt.year.values[0],
+                              xyzline['Date'].dt.month.values[0],
+                              xyzline['Date'].dt.day.values[0])
+
         ### Convert UTC to GPS time and convert to MJDsec in one step
-        mjdsec_gps = [ymdhms_to_mjds(time_utc_to_gps(date, 37).year,
-                                     time_utc_to_gps(date, 37).month,
-                                     time_utc_to_gps(date, 37).day,
-                                     time_utc_to_gps(date, 37).hour,
-                                     time_utc_to_gps(date, 37).minute,
-                                     time_utc_to_gps(date, 37).second)
+        mjdsec_gps = [ymdhms_to_mjds(time_utc_to_gps(date, dAT).year,
+                                     time_utc_to_gps(date, dAT).month,
+                                     time_utc_to_gps(date, dAT).day,
+                                     time_utc_to_gps(date, dAT).hour,
+                                     time_utc_to_gps(date, dAT).minute,
+                                     time_utc_to_gps(date, dAT).second)
                                             for date in xyzline['Date'].values]
 
         pce_in['mjdsec_gps'],\
@@ -328,7 +371,10 @@ class PrepareInputs():
                                     zip(*[[int(math_modf(date)[1]),\
                                         math_modf(date)[0]]\
                                         for date in mjdsec_gps ]))
-        pce_in['gps_offset'] = -18.0  # GPS is 18 seconds ahead of UTC
+
+        #               tim_utc - tim_gps =  - (dAT - pd.to_timedelta(19,'s'))
+        # GPS is 18 seconds ahead of UTC
+        pce_in['gps_offset'] = -1.*(dAT -19.)  
         pce_in['X_j2000_m']          = xyzline['X'].values.astype(float)
         pce_in['Y_j2000_m']          = xyzline['Y'].values.astype(float)
         pce_in['Z_j2000_m']          = xyzline['Z'].values.astype(float)
@@ -361,47 +407,51 @@ class PrepareInputs():
         del pce_in_df['frac_sec']
         del pce_in_df['gps_offset']
 
-
-        
+        if verbose: print(f"{self.tabtab} - Save prepped PCE as TRAJ.txt")
         ##### Save as an unadorned txt file
         pce_in_df.to_csv(self.dir_makeg2b+'/TRAJ.txt',      \
-                            sep=' ',      \
-                            index = False,\
+                            sep=' ',                        \
+                            index = False,                  \
                             header=False)
 
 
-
         ### change dir to where the fortran code is hosted
+        cwd = os.getcwd()
         os.chdir(self.path_utilpce)
-
 
         ### Write the inputs to the fortran code as environment variables
         os.environ["PATH_UTIL_PCE"]    = str(self.path_utilpce)
         os.environ["PATH_pcemake_in"]  = self.dir_makeg2b + '/TRAJ.txt'
         os.environ["PATH_pcemake_out"] = self.file_G2B
-        os.environ["in_SATID"] = self.prms['sat_ID'] 
+        os.environ["in_SATID"]         = self.prms['sat_ID'] 
 
 
 
         #### Compile the pce code
         command_1 = './compile_pce_f.sh'
         subprocess_run(command_1, shell = True)
-        print('pce_fortran.f compiled')
+        if verbose: print(f"{self.tabtab} - pce_fortran.f compiled")
 
         ### delete any already constructed PCE data in the folder...
         subprocess_run("rm "+ self.file_G2B, shell = True)
 
+
+        if verbose: print(f"{self.tabtab} - Run fortran PCE converter")
+
         #### Execute the pce code
         command_2 = './ExecutePCE.exe > out_pce 2> err_execute'
         subprocess_run(command_2, shell = True)
-        print('pce_fortran.f executed')
-        print('')
+        if verbose: print(f"{self.tabtab} - pce_fortran.f executed")
+        # print('')
 
 
         del os.environ['PATH_UTIL_PCE']
         del os.environ['PATH_pcemake_in']
         del os.environ['PATH_pcemake_out']
         del os.environ['in_SATID']
+
+        ### Change back to current working directory
+        os.chdir(cwd)
 
 # os.system('gzip -vr '+ path_to_data+'/'+out_filename)
 
@@ -487,7 +537,130 @@ class PrepareInputs():
         '''
 
 
-    def prep_iisset_write(self):
+
+    # def init_updatedICs(self):
+    #     start_0ut = []
+    #     end___0ut = []
+    #     arcs      = []
+    #     start_update = []
+    #     #
+    #     dt_1days = pd.Series(pd.to_timedelta(24,'h'))
+    #     #        
+    #     startdate = pd.to_datetime(self.prms['epoch_start'][0])
+    #     enddate   = pd.to_datetime(self.prms['epoch_start'][-1])
+    #     startdate_dt = pd.to_datetime(startdate, format='%Y-%m-%d')
+    #     enddate_dt   = pd.to_datetime(enddate,   format='%Y-%m-%d')
+    #     starts_linspace_dt = pd.date_range(start=startdate_dt,
+    #                                          end=enddate_dt,
+    #                                         freq=str(1)+"D")
+    #     #
+    #     for iday,dayval in enumerate(starts_linspace_dt):
+            
+    #         epoch_start = f"{dayval.strftime('%Y-%m-%d')} 00:00:00"
+    #         epoch_startDT = pd.to_datetime(epoch_start, format='%Y-%m-%d %H:%M:%S')
+            
+    #         start_0ut.append(f"{dayval.strftime('%Y-%m-%d')} 00:00:00")
+    #         end___0ut.append(pd.to_datetime(epoch_startDT+dt_1days).dt.strftime('%Y-%m-%d %H:%M:%S').values[0])
+            
+    #         file_statevector_ICs = self.file_statevector_ICs
+    #                                #"/data/SatDragModelValidation/data/inputs/"\
+    #                                # +"sat_spire83/setups/Spire83_initialconditions_Nov2018_v1.txt"
+
+    #         datetype = 'datetime_string'
+    #         date_in_file_flag= False
+    #         import linecache
+
+    #         ### Only need to use accuracy to within 1 second (ignore the microseconds in the file)
+
+    #         if datetype == 'datetime_string':
+    #             date_str = str(epoch_startDT)
+    #         elif datetype == 'YYMMDDHHMMSS':
+    #             date_str = datetime.strftime(epoch_startDT, '%y%m%d%H%M%S')
+
+
+    #         with open(file_statevector_ICs, 'r') as f:
+    #             for line_no, line_text in enumerate(f):
+    #                 if date_str in line_text:
+    #                     date_in_file_flag= True
+    #     #                 print('    ','xyzline',line_no,line_text)
+    #                     break
+    #         if date_in_file_flag == False:
+    #     #         print(date_str,'not found in file.')
+
+    #             ### Find the dates that have the same hour    
+    #             if datetype == 'datetime_string':
+    #                 date_roundhour_str = str(epoch_startDT)[:10]
+    #             elif datetype == 'YYMMDDHHMMSS':
+    #                 date_roundhour_str = datetime.strftime(epoch_startDT, '%y%m%d%H')
+
+    #     #         print(date_roundhour_str)
+    #             ### Scan through IC file and append a list of dates within the same hour
+    #             line_no_list = []
+    #             line_list = []
+    #             with open(file_statevector_ICs, 'r') as f:
+    #                 for line_no, line_text in enumerate(f):
+    #                     if date_roundhour_str in line_text:
+    #                         line_no_list.append(line_no)
+
+
+    #             # print(line_no_list)
+    #             for i in np.arange(line_no_list[1], line_no_list[-1]):
+    #                 line = linecache.getline(file_statevector_ICs,i)
+    #                 line_list.append(line)
+    #             dates = []
+    #             for i ,val in enumerate(line_list):
+    #                 if datetype == 'datetime_string':
+    #                     dates.append(pd.to_datetime(line_list[i][:19],format='%Y-%m-%d %H:%M:%S'))
+    #                 elif datetype == 'YYMMDDHHMMSS':
+    #                     dates.append(pd.to_datetime(line_list[i][:19],format='%y%m%d%H%M%S.%f'))
+                
+    #             start_update.append(dates[1])
+                
+    #         else:
+    #     #         print('Found date in IC file:', str(epoch_startDT))
+    #             xyzline = pd.read_csv(file_statevector_ICs, 
+    #                         skiprows = line_no, 
+    #                         nrows=1,           
+    #                         sep = '\s+',
+    #                         dtype=str,
+    #                         names = [
+    #                             'DateYMD',
+    #                             'DateHMS',
+    #                             'X',
+    #                             'Y',
+    #                             'Z',
+    #                             'X_dot',
+    #                             'Y_dot',
+    #                             'Z_dot',
+    #                                 ],)
+    #             start_update.append(pd.to_datetime(xyzline['DateYMD']+xyzline['DateHMS'], format='%Y-%m-%d%H:%M:%S')[0])
+
+    #         print(epoch_start[:10], "earliest time is:", start_update[iday])
+
+    #     #         X     =  float(xyzline['X'].values[0].ljust(20))     #'  -745933.8926940708'
+    #     #         Y     =  float(xyzline['Y'].values[0].ljust(20))     #'  -4864983.834066438'
+    #     #         Z     =  float(xyzline['Z'].values[0].ljust(20))     #'    4769954.60524261'
+    #     #         X_dot =  float(xyzline['X_dot'].values[0].ljust(20)) #'  457.44564954037634'
+    #     #         Y_dot =  float(xyzline['Y_dot'].values[0].ljust(20)) #'   5302.381564886811'
+    #     #         Z_dot =  float(xyzline['Z_dot'].values[0].ljust(20)) #'    5463.55571622269'
+    #     #     print(f"   [X,Y,Z]:          [{X    :15.5f}, {Y    :15.5f}, {Z    :15.5f}]")
+    #     #     print(f"   [Xdot,Ydot,Zdot]: [{X_dot:15.5f}, {Y_dot:15.5f}, {Z_dot:15.5f}]")        
+    #     #     print()        
+
+    #     del date_roundhour_str
+    #     del line_no_list
+    #     del line_list
+    #     del dates
+    #     del xyzline
+
+    #     start_update = [datetime.strftime(idate, '%Y-%m-%d %H:%M:%S') for idate in start_update]
+
+
+## =============================================================================
+
+
+
+    def prep_iisset_write(self, verbose=False):
         """
         Calls the assorted functions that write the setup file. 
         """
@@ -496,7 +669,7 @@ class PrepareInputs():
         self.file_iisset = self.dir_input+'/'+self.setup_file_arc
         #
         ## Call the functions that populate the setup file options
-        self.get_arc_values_and_dates()
+        self.get_arc_values_and_dates(skip_ic=False, verbose = self.verbose)
         lines_global      = self.set_iisset_GlobalOptions()
         arc_options_cards = self.set_iisset_ArcOptions()
 
@@ -540,17 +713,17 @@ class PrepareInputs():
         global_atgrav = 'ATGRAV9090              '\
                             +epoch_start_minus2day+''+epoch_end_plus1day[:-1]   
 
+        # global_obsvu =  'OBSVU 2'
+        global_obsvu =  'OBSVU 5'
         for iline, line in enumerate(lines_global):
             if 'ATMDEN' in line:
                lines_global[iline] = global_atmden+'\n'
             if 'ATGRAV' in line:
                lines_global[iline] = global_atgrav+'\n'
+            if 'OBSVU' in line:
+               lines_global[iline] = global_obsvu+'\n'
         return lines_global
         
-
-
-
-
 
     def set_iisset_ArcOptions(self):
         """ Arc Set contains information defining the arc. (Can have multiple
@@ -584,7 +757,10 @@ class PrepareInputs():
         SC_param_A_m       = 0      # Use S/C area and mass from this card
         SC_param_DragSRP   = 0      # No S/C param file used
         TwelveParam        = 0      # not used
-        AttitudeControl    = 0      # cannonball
+        if self.prms['satellite'] == 'icesat2':
+            AttitudeControl    = 13      # ICESAT attitude
+        else:
+            AttitudeControl    = 0      # cannonball
         LocalGravitySwitch = 0      # Gravity is considered significant
         Ext_ThermalAccel   = 0      # No external thermal acceleration
         MaxDeg_GravCoeffs  = 0      # default-- Max. of Model
@@ -775,106 +951,69 @@ class PrepareInputs():
                                     +f"{self.prms['sat_ID']}".rjust(7,' ')\
                                     +'  1.  '\
                                     +'\n' 
-        CD_VALUE = str(self.prms['cd_value'])
-        arc_options_cards['drag'] ='DRAG             '\
-                                    +f"{self.prms['sat_ID']}".rjust(7,' ')\
-                                    +''+CD_VALUE+'0000000E+00'\
-                                    +'\n' 
-                
-
-
-
-
-
-        ##### DRAG CARDS:
-        # card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '                   \
-        #                                         + str(epoch_start[:-5])+str(epoch_end[:-5])  \
-        #                                         + '         0.50000  28800.'
-        #                                      #     '         0.50000  28800.'
-        # card_drag_strings[i_cd] =  'DRAG             '+ SAT_ID+' '            \
-        #                                                       + CD_VALUE+'0000000D+00'\
-        #                                                       + '     '+drag_dates[i_cd][:10] \
-        #                                                       + ' 0.00    0.100D+02'
-        #####  IF we are using CD adjustement drag options, then set the drag cards according to the run settings
-        #####  If we are NOT using CD adjustment, remove DRAG times from the file
-        ####   INPUT THE DRAG OPTIONS  for time dependent drag
-#         card_drag_strings={}
-#         card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '                   \
-#                                                 + str(epoch_start[:-5])+str(epoch_end[:-5])  \
-#                                                 + '         0.50000  28800.'
-#                                              #     '         0.50000  28800.'
-
         
-#         CD_VALUE = str(self.prms['cd_value'])
-#         print('   Using a CD value of ', CD_VALUE)
+        ### DRAG OPTIONS --------------------------------------------------
 
-#         if self.prms['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
-           
-#             hours_between_cd_adj = self.prms['hours_between_cd_adj']
-#             if self.prms['arc_length_h']==hours_between_cd_adj:   # The 24 hour case
-#                 num_of_cd_adj = (self.prms['arc_length_h']/self.prms['hours_between_cd_adj'])
-#             else:    
-#                 num_of_cd_adj = (self.prms['arc_length_h']/self.prms['hours_between_cd_adj']) #- 1
-#             add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
-            
-#             drag_dates = []
-#             for i_cd in np.arange(0, num_of_cd_adj):
-#                 factor = i_cd+1
-#                 drag_dates.append( (epoch_start_dt+add_hours_dt*factor).dt.strftime('%y%m%d%H%M%S').values[0])
+        CD_VALUE = str(self.prms['cd_value'])
+        if self.prms['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
+            arc_options_cards['condrg'] = \
+                        f"CONDRG  1        {self.prms['sat_ID']}"\
+                            + f"{start_ymdhms}.00".rjust(20,' ')\
+                            + f"{stop_ymdhms}.00".rjust(15,' ') \
+                            + f"{0.5}".rjust(13,' ')\
+                            + f"{86400.}".rjust(8,' ')\
+                            +'\n' 
+
+# '''
+#CONDRG  1        1807001     181109000000.00181110000000.00         0.50000  288 102903
+#DRAG             1807001 2.50000000E+00                                          102904
+#DRAG             1807001 2.50000000D+00     1811100000 0.00    0.100D+02         102905
+            arc_options_cards['drag'] ='DRAG             '\
+                                    +f"{self.prms['sat_ID']}".rjust(7,' ')\
+                                    +f"{CD_VALUE}".rjust(20,' ')          \
+                                    +'\n' 
+
+
+            hours_between_cd_adj = self.prms['hours_between_cd_adj']
+            if self.prms_arc['arc_length_h']==hours_between_cd_adj:   # The 24 hour case
+                num_of_cd_adj = (self.prms_arc['arc_length_h']/self.prms['hours_between_cd_adj'])
+            else:    
+                print('*** ERROR in setupfile write for time dependent drag.')
+                print('     fix the case for adjusting drag with Arclength!=24 hours')
+                import sys
+                sys.exit(0)
+
+            add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
+            drag_dates = []
+            for i_cd in np.arange(0, num_of_cd_adj):
+                factor = i_cd+1
+                drag_dates.append( ( self.prms_arc['epoch_startDT'] \
+                                    +add_hours_dt*factor            \
+                                    ).dt.strftime('%y%m%d%H%M%S').values[0])
                 
-#             for i_cd in np.arange(0, num_of_cd_adj):
-#                 i_cd = int(i_cd)
-#                 print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
+            for i_cd in np.arange(0, num_of_cd_adj):
+                i_cd = int(i_cd)
+                print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
 
-#                 card_drag_strings[i_cd] =  'DRAG             '+ SAT_ID+' '            \
-#                                                               + CD_VALUE+'0000000D+00'\
-#                                                               + '     '+drag_dates[i_cd][:10] \
-#                                                               + ' 0.00    0.100D+02'
-# #                 card_drag_strings[i_cd] =  'DRAG             '+SAT_ID+' 2.2000000000000D+00'+drag_dates[i_cd][:10]+' 0.00    0.100D+02'
+                arc_options_cards[f'drag_t{i_cd}'] ='DRAG             '   \
+                                    +f"{self.prms['sat_ID']}".rjust(7,' ')\
+                                    +f"{CD_VALUE}".rjust(20,' ')          \
+                                    +f"{drag_dates[i_cd]}.00".rjust(15) \
+                                    +f"10.0".rjust(13) \
+                                    +'\n' 
 
-#         else:
-#             cards_to_remove.append('CONDRG')
-
-            
-#             #### --------------------------------------------------------------------
-#         ####   INPUT THE DRAG OPTIONS  for time dependent drag
-# #         card_drag_strings={}
-# #         card_drag_strings['CONDRG']  =  'CONDRG  1        '+SAT_ID+'     '+str(epoch_start[:-5])+str(epoch_end[:-5])+'         0.50000  28800.'
-
-#         #### for adding time dependent drag estimations.  We need to do a few things:
-#         ###       Find the drag card that is already in the file:
-#         ###       Add CONDRAG before all drag cards
-#         ###       Add DRAG cards with TIME periods after the first drag card
-#         if self.prms['cd_adjustment_boolean'] == True:
-#             with open(iisset_file, "r") as f:
-#                 lines_all = f.readlines()                
-#             with open(iisset_file, "w") as f:
-#                 for line in lines_all:
-#                     if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
-#                         f.write(card_drag_strings['CONDRG'] + ' \n')
-#                         f.write('DRAG             '+SAT_ID+' '+CD_VALUE+'0000000E+00'+ ' \n')
-#                         for i_cd in np.arange(0, num_of_cd_adj):
-#                             i_cd = int(i_cd)
-#                             f.write(card_drag_strings[i_cd] + ' \n')                 
-#                     else:
-#                         f.write(line)
-                        
-#         elif self.prms['cd_adjustment_boolean'] == False: ### DONT allow CD to ADJUST, i.e. only 1 DRAG card, no time dep.
-#             print('   Running without DRAG time dependence')
-#             with open(iisset_file, "r") as f:
-#                 lines_all = f.readlines()                
-#             with open(iisset_file, "w") as f:
-#                 for line in lines_all:
-#                     if 'DRAG   0 0       '+SAT_ID+' 2.3000000000000E+00' in line:  #this finds the DRAG line.  
-#                         f.write('DRAG             '+SAT_ID+' '+CD_VALUE+'0000000E+00'+ ' \n')
-#                     else:
-#                         f.write(line)
-
-
-
-
-
-
+        if self.prms['cd_adjustment_boolean'] == False:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
+            # arc_options_cards['drag'] ='DRAG             '\
+            #                         +f"{self.prms['sat_ID']}".rjust(7,' ')\
+            #                         +' '+CD_VALUE+'0000000E+00'\
+            #                         +'\n' 
+            arc_options_cards[f'drag'] ='DRAG             '   \
+                                +f"{self.prms['sat_ID']}".rjust(7,' ')\
+                                +f"{CD_VALUE}".rjust(20,' ')          \
+                                +'\n'
+                                # +f"{drag_dates[i_cd][:10].rjust(15)}" \
+                                # +f"0.100D+01".rjust(13) \
+                                # +'\n' 
 
 
         

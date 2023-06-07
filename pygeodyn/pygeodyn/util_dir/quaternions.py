@@ -179,7 +179,7 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
 
     Args:
         SpireDF (pandas dataframe): The Spire attitude quaternions and times.
-            Times are GPS time 'tim (gps)', and quaternions are SBF 'q (sbf)'.
+            Times are TDT time 'tim (tdt)', and quaternions are SBF 'q (sbf)'.
         startEpoch (str): Epoch start time (must be <10 seconds before 
             intended arc epoch start); "2018-11-08 23:00:00"  
         stopEpoch (str): Epoch stop time (must be <10 seconds after 
@@ -188,13 +188,12 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
         
     Returns:
         extatt_quats(dict): Return a dictionary containing the linearly spaced
-            GPS times from start_date to stop_date given user input interval, 
+            TDT times from start_date to stop_date given user input interval, 
             Slerp'd quaternions at the above times for SBF-->J2000.
     """
     
     from scipy.spatial.transform import Rotation as R
     from scipy.spatial.transform import Slerp
-    import pandas as pd
     
     
     ### Make linearly spaced time series from the Epoch Start to Epoch End 
@@ -211,7 +210,7 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
     
     
     ### Simplify variable name
-    Spire_dates = SpireDF['tim (tdt)'].values
+    Spire_dates = SpireDF['date_tdt'].values
     
     ###### Must convert times to their unix times. 
     ###    Spire data times 
@@ -223,7 +222,7 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
     tim_unix_interp =  [ ts.value/10**9  for ts in unixtimes ]
     
     #### Load the Spire Quaternions as Scipy." ".Rotation    
-    key_rots = R.from_quat(SpireDF['q (SBFtoECI)'] .values.tolist() )
+    key_rots = R.from_quat(SpireDF['q_SBF_to_J2000'] .values.tolist() )
     
     #### Construct a Slerp interpolation object    
     slerp_obj = Slerp(np.sort(tim_unix_spire),key_rots)
@@ -233,13 +232,13 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
 
     extatt_quats = {}
     ### Recover the dates from unix time
-    extatt_quats['tim (tdt)'] =  [pd.to_datetime(
+    extatt_quats['date_tdt'] =  [pd.to_datetime(
                 datetime.strftime(datetime.fromtimestamp(ts), '%y%m%d%H%M%S.%f'),
                     format ='%y%m%d%H%M%S.%f' )
                                  for ts in tim_unix_interp ]
 
     ### Recover the interpolated quaternions
-    extatt_quats['q (SBFtoECI)'] = interp_rots.as_quat()
+    extatt_quats['q_SBF_to_J2000'] = interp_rots.as_quat()
 
     return(extatt_quats)
 

@@ -34,7 +34,7 @@
 !!!!! Once we have our saved values we interpolate the values of the cube 
 !!!!!      to a single point (the one requested) by GLAT, GLON, ALTKM
     delta_deg = 2
-    delta_m   = 1
+    delta_m   = 2
     x  = GLON
     x0 = x - delta_deg
     x1 = x + delta_deg

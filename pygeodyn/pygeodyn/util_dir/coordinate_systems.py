@@ -372,7 +372,7 @@ def iau76_get_eop_vals(year,mon,day,
 
 
     if 'eop_dict' not in globals():   #read_once_flag==False:    
-        print('---Reading EOP data and saving as dict global vars.')
+        # print('---Reading EOP data and saving as dict global vars.')
 
         global eop_dict
 
@@ -394,7 +394,8 @@ def iau76_get_eop_vals(year,mon,day,
         eop = readline_finals_iau76_data(line)
 
     else:
-        print('Val not in dict, reading EOP the long way...')
+        print('teme-2-eci transformation')
+        print('   - Val not in dict, reading EOP the long way...')
         #### Scan the EOP file to find the correct day/line
         with open(file_iers_iau76eop, 'r') as f:
             # f.seek(line_no)
@@ -1581,7 +1582,7 @@ def iau06_precess_nutate_xys(ttt, ddx, ddy):
     ttt5 = ttt3 * ttt2
 
     if 'axs0' not in globals():   #read_once_flag==False:    
-        print('---Reading nutation data and saving as global vars.')
+        # print('---Reading nutation data and saving as global vars.')
 
         global axs0
         global a0xi
@@ -1630,6 +1631,55 @@ def iau06_precess_nutate_xys(ttt, ddx, ddy):
 #     print(f'   lonurn   {lonurn/deg2rad:11.7f}   ')
 #     print(f'   lonnep   {lonnep/deg2rad:11.7f}   ')
 #     print(f'   precrate {precrate/deg2rad:11.7f} ')
+
+
+# def add_slow(a0xi,
+#         l,l1,f,d,omega,lonmer,lonven,lonear,lonmar,lonjup,lonsat,lonurn,lonnep,precrate):
+#     xsum0 = 0.0
+#     for i in np.arange(1306-1,-1,-1):  # range to the zeroth index, backwards
+#         tempval =  a0xi[i, 1-1]*l      \
+#                  + a0xi[i, 2-1]*l1     \
+#                  + a0xi[i, 3-1]*f      \
+#                  + a0xi[i, 4-1]*d      \
+#                  + a0xi[i, 5-1]*omega  \
+#                  + a0xi[i, 6-1]*lonmer + a0xi[i, 7-1]*lonven  \
+#                  + a0xi[i, 8-1]*lonear + a0xi[i, 9-1]*lonmar  \
+#                  + a0xi[i,10-1]*lonjup + a0xi[i,11-1]*lonsat  \
+#                  + a0xi[i,12-1]*lonurn + a0xi[i,13-1]*lonnep  \
+#                  + a0xi[i,14-1]*precrate
+#         #
+#         xsum0 = xsum0 + axs0[i,1-1]*np.sin(tempval)+axs0[i,2-1]*np.cos(tempval)
+#     return(xsum0)
+# import timeit
+
+# def add_fast(a0xi,
+#         l,l1,f,d,omega,lonmer,lonven,lonear,lonmar,lonjup,lonsat,lonurn,lonnep,precrate):
+#     xsum0 = [axs0[i,1-1]*np.sin(a0xi[i, 1-1]*l      \
+#                                      + a0xi[i, 2-1]*l1     \
+#                                      + a0xi[i, 3-1]*f      \
+#                                      + a0xi[i, 4-1]*d      \
+#                                      + a0xi[i, 5-1]*omega  \
+#                                      + a0xi[i, 6-1]*lonmer + a0xi[i, 7-1]*lonven  \
+#                                      + a0xi[i, 8-1]*lonear + a0xi[i, 9-1]*lonmar  \
+#                                      + a0xi[i,10-1]*lonjup + a0xi[i,11-1]*lonsat  \
+#                                      + a0xi[i,12-1]*lonurn + a0xi[i,13-1]*lonnep  \
+#                                      + a0xi[i,14-1]*precrate )\
+#         +axs0[i,2-1]*np.cos(a0xi[i, 1-1]*l      \
+#                           + a0xi[i, 2-1]*l1     \
+#                           + a0xi[i, 3-1]*f      \
+#                           + a0xi[i, 4-1]*d      \
+#                           + a0xi[i, 5-1]*omega  \
+#                           + a0xi[i, 6-1]*lonmer + a0xi[i, 7-1]*lonven  \
+#                           + a0xi[i, 8-1]*lonear + a0xi[i, 9-1]*lonmar  \
+#                           + a0xi[i,10-1]*lonjup + a0xi[i,11-1]*lonsat  \
+#                           + a0xi[i,12-1]*lonurn + a0xi[i,13-1]*lonnep  \
+#                           + a0xi[i,14-1]*precrate  )    for i in np.arange(1306-1,-1,-1)]
+#     return(sum(xsum0))
+
+# print(timeit.timeit('add_fast', 'from __main__ import add_fast', number=10**8))
+# print(timeit.timeit('add_slow', 'from __main__ import add_slow', number=10**8))
+
+
 
     ### ---------------- first find x
     ### the iers code puts the constants in here, however
@@ -2258,7 +2308,7 @@ def iau06_get_eop_vals(year,mon,day,
     #     return dicts
 
     if 'eop_dict' not in globals():   #read_once_flag==False:    
-        print('---Reading EOP data and saving as dict global vars.')
+        # print('---Reading EOP data and saving as dict global vars.')
 
         global eop_dict
 

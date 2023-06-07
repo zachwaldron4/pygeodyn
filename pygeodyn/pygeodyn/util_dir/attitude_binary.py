@@ -1,4 +1,5 @@
-def write_EXAT_binary(filename, params, quat_xyzw, quat_dates, writetxt=False):
+def write_EXAT_binary(filename, params, quat_xyzw, quat_dates, writetxt=False,
+                                        verbose=False):
     """Write the GEODYN external attitude file from satellite quaternions.
 
         filename
@@ -145,14 +146,14 @@ def write_EXAT_binary(filename, params, quat_xyzw, quat_dates, writetxt=False):
                         ]
         f.write_record(np.array(record4_Data, dtype=float))
 
-    print('Reached end of attitude data.  Closing the File')
+    if verbose: print(f"        - Reached end of attitude data.  Closing the File")
     f.close()
 
     if writetxt:
         #'/data/SatDragModelValidation/notebooks/O2R_spire/exat.txt'
         filetxt = filename+'_check.txt'
-        print("Saving external attitude as a text file")
-        print("    filetxt" ,filetxt )
+        if verbose: print(f"        - Saving external attitude as a text file")
+        if verbose: print(f"        - filetxt" ,filetxt )
 
         f = open(filetxt, "w")
         f.write("\n")

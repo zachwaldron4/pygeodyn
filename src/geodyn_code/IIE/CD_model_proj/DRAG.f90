@@ -253,7 +253,7 @@
 !     
 !
       integer, dimension(5) :: optionsin
-      CHARACTER(len=200) :: model_path
+      CHARACTER(len=255) :: model_path
       CHARACTER(len=200) :: orbitcloud_file
 !
       integer :: choose_model
@@ -285,20 +285,13 @@
       integer :: intFACE
       CHARACTER(len=255) :: PATH_IO_GEODYN
       CHARACTER(len=255) :: PATH_IIELOCAL
-      
-      
-      
-!
 !
 !**********************************************************************
-!* START OF EXECUTABLE CODE *******************************************
+!           START OF EXECUTABLE CODE              *********************
 !**********************************************************************
 !
 !
-!      
-
-
-
+! 
       KENTRY = KENTRY + 1
         IF(LSTINR) THEN !-----------------------------------
          !IF(IPDDRG.EQ.1) THEN
@@ -368,7 +361,8 @@
           
           WRITE(6,*) "======================= DRAG.F90 ======================="
           WRITE(6,*) '     * model_path                     ', trim(model_path)
-          WRITE(6,*) '     * orbitcloud_file                ', trim(orbitcloud_file)
+          WRITE(6,*) '     * orbitcloud_file                '
+          WRITE(6,*) '         ', trim(orbitcloud_file)
           WRITE(6,*) '     * Drag Coefficient Model (CD)    ', optionsin(4)
 
            if(optionsin(4).eq.1)then
@@ -782,10 +776,32 @@
             CALL JB2008_call(MJDSEC, FSEC,                 &
               &    ALTI, PHI,XLAMB,RHO,DRHODZ,             &
               &    COSPSI, n_dens_temp)
+            
+            ! RHO = 0.77924821 * RHO
             C(1)=DRHODZ
             
+
+
+         !  --------------------------------------------------------------------
+         !  CASE FOR MANUAL DENSITY READING FROM TEXT FILE
+         case(2) 
+            if(kentry.eq.1) then
+                  WRITE(6,*) '     * model                    MANUAL from txt '
+            endif
+           
+            !! Get the correct year and DOY 
+            IJDSEC=MJDSEC+FSEC
+            CALL MJDYMD(IJDSEC,IYMD,IHMS,4)
+            IYR=(IYMD/10000.D0)+0.5D0
             
-         end select !------------------------------------------------------------------ End jaachia cases
+            CALL ManualDensityInput(MJDSEC,FSEC,                   &
+                   &                RHO,DRHODZ,DAY,IYR,            &
+                   &                model_path                     )
+            C(1) = 0.D0
+
+         end select !----------------------------------------- End jaachia cases
+
+
       ENDIF  ! end jaachia71 [>> IF(IATDN.EQ.2) THEN <<]
       
       
@@ -816,7 +832,8 @@
         WRITE(6,*) '           RHO    = ', RHO
         WRITE(6,*) '           DRHODZ = ', DRHODZ
         WRITE(6,*) '           KENTRY = ', KENTRY
-        WRITE(6,*) '================================='          
+        WRITE(6,*) '================================='   
+        STOP 16      
       endif
       if (RHO.LT.1.0D-30) then
         WRITE(6,*) '-----   ERROR in DRAG.f90   -----'
@@ -825,7 +842,8 @@
         WRITE(6,*) '           RHO    = ', RHO
         WRITE(6,*) '           DRHODZ = ', DRHODZ
         WRITE(6,*) '           KENTRY = ', KENTRY
-        WRITE(6,*) '================================='          
+        WRITE(6,*) '================================='  
+        STOP 16        
       endif
       if (RHO.GT.1.D0) then
         WRITE(6,*) '-----   ERROR in DRAG.f90   -----'
@@ -835,6 +853,7 @@
         WRITE(6,*) '           DRHODZ = ', DRHODZ
         WRITE(6,*) '           KENTRY = ', KENTRY
         WRITE(6,*) '================================='          
+        STOP 16
       endif
 
 
@@ -1078,7 +1097,6 @@
             ELSE
                FLXS2 = FLUXS( NDAY2 )
             ENDIF
-!
 !C          NDAY1 = TD - DELTD
 !C          NDAY2 = TD - DELTD + D27
 !

@@ -17,6 +17,7 @@ import time
 from  datetime import datetime,timedelta
 import logging
 import gc
+from gc import collect as gc_collect
 
 
 class RunController():
@@ -58,6 +59,7 @@ class RunController():
         self.dir_output_raw = self.path_data_outputs_raw + '/'   \
                                     + self.prms['satellite']+ '/'\
                                     + self.prms['den_model'] +'/'+self.series
+        self.make_directory_check_exist(self.path_data_outputs_raw)       
         # make output directory if it does not exist
         # self.make_directory_check_exist(self.params['path_output_dir'])
         # self.make_directory_check_exist(self.params['path_output_dir'] 
@@ -73,7 +75,7 @@ class RunController():
         
         if skip_files==False:
             #### Add temporary fix for spire
-            if self.prms['satellite']  == 'spire83':
+            if 'spire'in self.prms['satellite']:
                 dir_gravfield = self.path_data_inputs +'/common_2018'+''
                 dir_atmograv  = self.path_data_inputs +'/common_2018'+''
                 dir_ephem     = self.path_data_inputs +'/common_2018'+''
@@ -89,7 +91,7 @@ class RunController():
             #--Gravity Field
             self.file_grav_field = dir_gravfield +'/'+ self.filename_gravfield
             #--GDYN specific binary tracking data 
-            self.file_G2B        = dir_g2b        +'/'+ self.filename_g2b        
+            self.file_G2B        = dir_g2b        +'/'+ str(self.filename_g2b)
             #--GDN-table - Solar flux,Ap,Kp,PolarMotion,A1-UTC,A1-UT1
             self.filename_gdntable = 'gdntable.data'
             self.file_gdntable = self.path_data_inputs+'/common_2018/'\
@@ -126,9 +128,9 @@ class RunController():
 
         ####  Make Directories if they do not exists
         #-------------------------------------------------------------
-        self.make_directory_check_exist(self.path_data_outputs_raw)
-        self.make_directory_check_exist(self.path_data_outputs_raw \
-                                        +'/'+self.prms['den_model'])
+        # self.make_directory_check_exist(self.path_data_outputs_raw)
+        # self.make_directory_check_exist(self.path_data_outputs_raw \
+        #                                 +'/'+self.prms['den_model'])
         
         #### Setup the Temporary directory
         dir_tmp = self.path_tmp+'/'+self.series 
@@ -856,12 +858,27 @@ class RunController():
         #### Go up 3 levels and delete the temporary directories:
         os.chdir('../../')
         
-#         print(self.tabtab,'Deleting tmp/: ',self.series)
-#         os.system('rm -rf'+' ' +self.series)
+        # print(self.tabtab,'Deleting tmp/: ',self.series)
+        # os.system('rm -rf'+' ' +self.series)
+        print(self.tabtab,'Deleting tmp/: ',self.dir_tmp_arc)
+        os.system('rm -rf'+' ' +self.dir_tmp_arc)
      
+        ## perhaps needs to be changed to this
+        ##
     
 
-    ##########################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+    ###########################################################################
     ##### MAKE THE CSV
     def make_orbit_cloud_csv(self, kamodo_flag=True, HASDM_format_flag=False):
         """
@@ -918,6 +935,8 @@ class RunController():
         # logger = logging.getLogger(self.execlog_filename)
         # logging.info(f'in make_orbit_cloud_csv()   \n       Path to DEN_CSV file:  {self.msis2_file_path}')
           
+        print('make_orbit_cloud_csv():  msis2_file_path', self.msis2_file_path)
+
         DEN_csv = pd.read_csv(self.msis2_file_path, 
                             dtype=object,
                             names = ['YYMMDD',
@@ -1006,8 +1025,7 @@ class RunController():
                
         if kamodo_flag:
             import sys
-#             sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo/flythrough/')
-            sys.path.insert(0,'/data/geodyn_proj/interface_kamodo_geodyn/Kamodo/kamodo_ccmc/flythrough/')
+            sys.path.insert(0,self.path_kamodo_src+'/Kamodo/kamodo_ccmc/flythrough/')
             from SatelliteFlythrough import ModelFlythrough
 
         #### Initialize empty lists for storing the values 
@@ -1020,7 +1038,8 @@ class RunController():
                
         #### Set the perturbation amounts for the coordinates for making the size of the cube
         delta_deg = 2    # degrees
-        delta_m = 1000.*1e-3 # meters to kilometers
+        delta_m = 2000.*1e-3 # meters to kilometers
+
         # logging.info(f'LON and LAT cube size of orbit_cloud_file: {delta_deg} degrees')
         # logging.info(f'Altitude size of orbit_cloud_file:  {delta_m} kilometers')
 
@@ -1028,14 +1047,17 @@ class RunController():
         #### We will loop thru the DEN CSV and if the file already contains the the date, don't overwrite.
         
         ### The below removes any repeated dates in the file.
-        vals  = np.arange(DEN_csv.index[0],DEN_csv.index[-1]+1)
-        df = DEN_csv.set_index('Date',drop=False ) 
-        df['i_vals'] = vals
-        index_date = df.loc[df.index.max()]['i_vals'].min()
+        # vals  = np.arange(DEN_csv.index[0],DEN_csv.index[-1]+1)
+        # df = DEN_csv.set_index('Date',drop=False ) 
+        # df['i_vals'] = vals
+        # index_date = df.loc[df.index.max()]['i_vals'].min()
+        
+        DEN_csv = DEN_csv.drop_duplicates(subset=["Date"], keep='first'\
+                                ).sort_values(by='Date'\
+                                             ).reset_index(drop=True)
         
         
-        
-        for it,val in enumerate(DEN_csv['Date'][:index_date]):
+        for it,val in enumerate(DEN_csv['Date']):
             date_index = DEN_csv['YYMMDD'][it] + DEN_csv['HHMMSS'][it]
             unix_time  = DEN_csv['sattime_utctimestamp'][it]
 
@@ -1129,24 +1151,35 @@ class RunController():
             ##
             #### Kamodo static inputs:
             if self.prms['den_model'] == 'tiegcm_oc':
-#                 model          = 'TIEGCM'
-#                 file_dir       = self.model_data_path+'/'
-#                 logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
-#                 variable_list  = ['rho','psi_O2', 'psi_O', 'psi_He','psi_N2', 'T_n']
-#                 coord_type     = 'SPH'
-#                 coord_grid     = 'sph'
-#                 high_res       = 1.
-#                 verbose        = False  
-#                 csv_output     = '' 
-#                 plot_output    = ''    
+                model          = 'TIEGCM'
+                file_dir       = self.prms['model_data_path']+'/data/'
+                # logger.debug(f"Added a forward slash to path of {self.model_data_path} to input into Kamodo")
+                # variable_list  = ['rho','psi_O2', 'psi_O', 'psi_He','psi_N2', 'T_n']
+                variable_list  = ['rho','mmr_O2', 'mmr_O', 'mmr_He','mmr_N2', 'T_n']
+
+                # coord_type     = 'SPH'
+                # coord_grid     = 'sph'
+                # high_res       = 1.
+                coord_type     = 'GDZ'
+                coord_grid     = 'sph'
+                high_res       = 1.
+                verbose        = False  
                 temp_var = 'T_n'
                 den_var = 'rho'
+                output_type='csv' 
+                output_name='' 
+                plot_output='' 
+                plot_coord='' 
+                _print_units=False
+                # plot_output    = '' 
+                # plot_coord     = '' 
+                # _print_units   = True
 
 
             elif self.prms['den_model'] == 'ctipe_oc':
                 #### Kamodo static inputs:
                 model          = 'CTIPe'
-                file_dir       = self.model_data_path+'/'
+                file_dir       = self.prms['model_data_path']+'/data/'
                 variable_list  = ['rho','N_O', 'N_O2', 'N_N2', 'T']
                 coord_type     = 'GDZ'#'SPH'
                 coord_grid     = 'sph'
@@ -1163,7 +1196,19 @@ class RunController():
             elif self.prms['den_model'] == 'gitm':
                 #### Kamodo static inputs:
                 model          = 'GITM'
-                file_dir       = self.model_data_path+'/'
+                
+                list1 =  [ '2018.313', '2018.314', '2018.315', '2018.316',
+                           '2018.317', '2018.318', '2018.319']
+                list2 =  [ '2018.320', '2018.321', '2018.322','2018.323', 
+                           '2018.324', '2018.325', '2018.326', '2018.327' ]  
+                if   self.arc_name_id in list1:
+                    file_dir       = self.prms['model_data_path']+'/data/'
+                elif self.arc_name_id in list2:
+                    file_dir       = self.prms['model_data_path']+'/data2/'
+                else:
+                    print("arcdate not found")
+                    raise ValueError(f"ERROR, '{self.arc_name_id}' arcdate not found")
+
                 variable_list  = ['rho_n','T_n']
                 coord_type     = 'GDZ'
                 coord_grid     = 'sph'
@@ -1177,15 +1222,20 @@ class RunController():
                 temp_var = 'T_n'
                 den_var = 'rho_n'
 
-                
+            gc_collect()
+    
             print(f'|     Running data cube thru Kamodo... please hold.')
 #             results = ModelFlythrough(model, file_dir, variable_list, unixtimes_list, lons_list, lats_list, alts_list,
 #                                       coord_type, coord_grid, high_res=20., verbose=False,csv_output='', plot_output='')
+
             results  =  ModelFlythrough(model, file_dir, variable_list, 
-                                        unixtimes_list, lons_list, lats_list, alts_list, 
-                                        coord_type, coord_grid, high_res, 
-                                        verbose, output_type, output_name, plot_output, 
-                                        plot_coord, _print_units)
+                                    unixtimes_list, lons_list, lats_list, alts_list, 
+                                    coord_type, coord_grid, high_res, 
+                                    verbose, output_type, output_name, plot_output, 
+                                    plot_coord, _print_units)
+
+
+
 
             #### Zach modified ModelFlythrough() to include a top boundary extrapolation as well as retun N2 
             print(results.keys())
@@ -1204,10 +1254,10 @@ class RunController():
                     
                     #### For tiegcm, we convert mmrs to number densities and put into cgs units
                     if self.prms['den_model'] == 'tiegcm_oc':
-                        nden_O =  (results['psi_O'][ii]  * results['rho'][ii])/(mp_cgs*16)
-                        nden_O2 = (results['psi_O2'][ii] * results['rho'][ii])/(mp_cgs*32)
-                        nden_He = (results['psi_He'][ii] * results['rho'][ii])/(mp_cgs*4)
-                        nden_N2 = (results['psi_N2'][ii] * results['rho'][ii])/(mp_cgs*28)
+                        nden_O =  (results['mmr_O'][ii]  * results['rho'][ii])/(mp_cgs*16)
+                        nden_O2 = (results['mmr_O2'][ii] * results['rho'][ii])/(mp_cgs*32)
+                        nden_He = (results['mmr_He'][ii] * results['rho'][ii])/(mp_cgs*4)
+                        nden_N2 = (results['mmr_N2'][ii] * results['rho'][ii])/(mp_cgs*28)
                     
                     #### For ctipe, we convert from SI to CGS 
                     ##              ctipe only has O1, O2, and N2
@@ -1223,7 +1273,7 @@ class RunController():
                     ##              gitm output can be upgraded to have more than 
                     ##                                        rho and temp
                     elif self.prms['den_model'] == 'gitm':
-                        nden_O  = 0.
+                        nden_O   = 0.
                         nden_O2  = 0.
                         nden_N2  = 0.
                             # fill the Helium values with zeros so as to not cause fortran formatting problems in the file read...
@@ -1231,7 +1281,10 @@ class RunController():
                         valrho = valrho / 1000.
                                    
                         
-                    file.write(f"{datetime.strftime(datetime.fromtimestamp(results['utc_time'][ii]), '%y%m%d%H%M%S')}  {results['c1'][ii]:9.4f}  {results['c2'][ii]:9.4f}  {results['c3'][ii]:9.4f}  {valrho:15.6e}  {nden_O:12.5e}  {nden_O2:12.5e}  {nden_He:12.5e}  {nden_N2:12.5e}   {results[temp_var][ii]:8.4e}\n")
+                    file.write(f"{datetime.strftime(datetime.fromtimestamp(results['utc_time'][ii]), '%y%m%d%H%M%S')}  "\
+                              +f"{results['c1'][ii]:9.4f}  {results['c2'][ii]:9.4f}  {results['c3'][ii]:9.4f}  "\
+                              +f"{valrho:15.6e}  {nden_O:12.5e}  {nden_O2:12.5e}  {nden_He:12.5e}  "\
+                              +f"{nden_N2:12.5e}   {results[temp_var][ii]:8.4e}\n")
                         ###!!!!!   NOTE THERE IS AN EXTRA SPACE B4 TEMPERATURE BECAUSE FORTRAN SUCKS
     
             results = 0
@@ -1413,7 +1466,7 @@ class RunController():
         
     def RUN_GEODYN(self):
         '''
-        This is the main run function that calls the above functions in the
+        This is the OLD main run function that calls the above functions in the
         Pygeodyn Controller class.
                 
         '''
@@ -1445,7 +1498,8 @@ class RunController():
             print(f'|     Running GEODYN with Orbit Cloud Method     ',)
             print(f'|                                                ',)
             # logger = logging.getLogger(self.execlog_filename)
-            # logging.info('Running PYGEODYN with the Orbit Cloud Method \n         Check to see if the CSV files have been created using msis2. ')
+            # logging.info('Running PYGEODYN with the Orbit Cloud Method \n         
+            # Check to see if the CSV files have been created using msis2. ')
 
             #### RUN FIRST WITH MSIS2 IF THE FILE DOES NOT EXIST
             self.set_density_model_setup_params( 'msis2' )
@@ -1456,7 +1510,7 @@ class RunController():
                 #### identify supposed location of msis2 run
                 series = self.prms['den_model'] + '_' + self.cd_model + self.directory_name_specifier
                 OUTPUTDIR   = self.prms['path_output_dir'] + '/'+self.prms['den_model']+'/'+self.series
-                self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
+                self.orbitcloud_csv_file =(self.prms['model_data_path']+'/OrbitCloud_Step'+
                                        str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
                 self.msis2_file_path = OUTPUTDIR+'/DENSITY/'+self.ARC+'_msisin'
 
@@ -1513,7 +1567,7 @@ class RunController():
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            
                 series = self.prms['den_model'] + '_' + self.cd_model + self.directory_name_specifier
                 OUTPUTDIR   = self.prms['path_output_dir'] + '/'+self.prms['den_model']+'/'+self.series
-                self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
+                self.orbitcloud_csv_file =(self.prms['model_data_path']+'/OrbitCloud_Step'+
                                        str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
 
                 #### ONLY RERUN ORBITCLOUD if PATH NOT EXIST or if file is super small (i.e. empty)
@@ -1561,14 +1615,14 @@ class RunController():
                 
                     print(f'|     Running GEODYN with orbit cloud')
                     self.set_file_paths_for_multiple_arcs( arc , iarc)            
-                    self.orbitcloud_csv_file =(self.model_data_path+'/OrbitCloud_Step'+
+                    self.orbitcloud_csv_file =(self.prms['model_data_path']+'/OrbitCloud_Step'+
                                    str(int(self.prms['step']))+'_'+self.arcdate_for_files+'.csv')
-                    self.model_data_path = self.prms['model_data_path']
+                    # self.model_data_path = self.prms['model_data_path']
                     # logging.info(f'writing model path to file:  {self.model_data_path } \n {self.orbitcloud_csv_file}')
                     
                        #### Write the model path and orbitcloud filename to a file for GEODYN
                     filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
-                    filemodels.write(self.model_data_path+'\n')
+                    filemodels.write(self.prms['model_data_path']+'\n')
                     filemodels.write(self.orbitcloud_csv_file+  '\n')
                     filemodels.close()
                 else:
@@ -1595,12 +1649,12 @@ class RunController():
                 if self.prms['satellite'] == 'icesat2':
 
                     self.set_file_paths_for_multiple_arcs( arc , iarc)  
-                    self.model_data_path = self.prms['model_data_path']
+                    # self.model_data_path = self.prms['model_data_path']
 
-                    print('self.model_data_path:  ', self.model_data_path)
+                    print('self.model_data_path:  ', self.prms['model_data_path'])
     
     
-                    self.orbitcloud_csv_file = ( self.model_data_path    +
+                    self.orbitcloud_csv_file = ( self.prms['model_data_path']    +
                                                  '/HASDM_OrbitCloud_'    +
                                                  self.arcdate_for_files  +
                                                  '.csv' )
@@ -1610,7 +1664,7 @@ class RunController():
                     
                 #### Write the model path and orbitcloud filename to a file for GEODYN
                     filemodels = open("/data/geodyn_proj/pygeodyn/temp_runfiles/geodyn_modelpaths.txt","w+")
-                    filemodels.write(self.model_data_path+'\n')
+                    filemodels.write(self.prms['model_data_path']+'\n')
                     filemodels.write(self.orbitcloud_csv_file+  '\n')
                     filemodels.close()
                 else:

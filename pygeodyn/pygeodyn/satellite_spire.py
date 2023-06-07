@@ -1,6 +1,6 @@
-"""SHORT EXPLAIN THIS MODULE
+"""Module for Runnning the Spire Cubesats Lemur2v3.3.45 in GEODYN
 
-    _extended_summary_
+
 """
 
 import pandas as pd
@@ -14,6 +14,7 @@ from datetime import datetime
 #### Import the Pygeodyn Modules
 from pygeodyn.control import RunController
 from pygeodyn.read    import ReadRawOutput
+# from pygeodyn.prep_inputs    import PrepareInputs
 
 
 class InheritControlStages(RunController):
@@ -25,47 +26,187 @@ class InheritReadRaw(ReadRawOutput):
     def __init__(self):
         ReadRawOutput.__init__(self)
 
+list_run_types = ["DataReduction_PCE" , "OrbitPropagation"] 
 
 
-class Spire(RunController, ReadRawOutput):
+
+
+class Spire_Lemur2_v33(RunController, ReadRawOutput):
     """Class with config for running Pygeodyn with Spire cubesats.
     
     In the Pygeodyn Infrastructure it inherits the RunController and
-    ReadRawOutput.  Class with satellite specific confiuguration for running 
+    ReadRawOutput.  Class with satellite specific configuration for running 
     Pygeodyn with Spire.
-  
+       
+        # file_sat_details = self.path_data_inputs_raw+'/' \
+        #                   + f"attitude/{taskorder}/"     \
+        #                   + f"Spire_Satellite_List_for_NASA_BPA.csv"
+        # sat_details = pd.read_csv(file_sat_details, sep = ',',dtype=str)
+
+        import string
+        alph2num=dict(zip(string.ascii_uppercase, range(1,27)))
+        cospar_ID[2:4]+cospar_ID[5:8]+f"{alph2num[cospar_ID[-1]]:02d}"
+
     """
+ 
 
 
-    def __init__(self):
-        # Initialize the class to contain all methods
+    def __init__(self):       
+        ### Initialize the class to contain all methods
         InheritControlStages.__init__(self)
         InheritReadRaw.__init__(self)
-
-        # print('Running Pygeodyn with SPIRE')
-
-
-        # Call the control path pointer to establish attributed paths
+        ### Call the control path pointer to establish attributed paths
         self.ctrlStage1_setup_path_pointers(skip_files = True)
 
-        #------------------------------
-        # Universal ICESat2 Properties
-        #------------------------------
-        self.prms['sat_ID']                  = '1804607'  # 83 # cospar-id #
-        self.prms['sat_area_cross_sec']      = 999        # estimate (m^2)
-        self.prms['sat_mass']                = 4.933      # estimate (kg)
+
+        ### Time period selector (based on task order)
+        taskorder = "20180923_20181209_TaskOrder3Data"
+        
+        raw_attitudepath = self.path_data_inputs_raw+'/data_Spire/'  \
+                            + f"attitude/{taskorder}/"     \
+
+
+        self.raw_satinput = {}
+        print(self.prms['satellite'])
+
+        ### Determine which Spire satellite is being called:
+        if self.prms['satellite']  == 'spire083':
+            satnum                 = 83
+            self.prms['sat_ID']    = '1804607'   # cospar-id #
+            self.raw_satinput['att_path'] = raw_attitudepath \
+                    + f"leoAtt_2018-09-23T00-12-00Z.9999999.{satnum:03d}.log"
+
+        elif self.prms['satellite']  == 'spire084':
+            satnum                 = 84
+            self.prms['sat_ID']    = '1804606'   # cospar-id #
+            self.raw_satinput['att_path'] =  raw_attitudepath \
+                    +  f"leoAtt_2018-09-23T00-06-13Z.9999999.{satnum:03d}.log"
+
+        elif self.prms['satellite']  == 'spire085':
+            satnum                 = 85
+            self.prms['sat_ID']    = '1804605'   # cospar-id #
+            self.raw_satinput['att_path'] =  raw_attitudepath \
+                    +  f"leoAtt_2018-09-23T00-16-01Z.9999999.{satnum:03d}.log"
+        else:
+            print('Check satellite name in Spire_lemur2_3.3 class')
+
+        self.prms['satnum'] = satnum
+
+        ###----------------------------------------
+        ### Universal Properties for Spire cubesats Lemur-2v3.3.45
+        ###----------------------------------------
+        self.prms['sat_area_cross_sec']      = 4.5          # estimate (m^2), intentionally too large
+        self.prms['sat_mass']                = 4.933        # estimate (kg)
         self.prms['sat_geometry_panel_num']  = 8 
         #
-        self.prms['coord_ref_system']     = 'j2000'      # j2000 is default
+        self.prms['coord_ref_system']     = 'j2000'      # j2000 is default for pygeodyn
         self.prms['orbit_elements_form']  = 'cartesian'  # (meters), XYZ
-        self.prms['bool_exatfiles']       =  True         # use EXTATT file
-        self.prms['number_of_satellites'] = 1
+        self.prms['bool_exatfiles']       =  True        # use EXTAT file
+        self.prms['number_of_satellites'] =  1
+        
+        
+        # if self.prms['initialize']:
+        dt_2days = pd.Series(pd.to_timedelta(48,'h'))
+        # datestr1 = (pd.to_datetime(self.prms['epoch_start'][0])-dt_2days).dt.strftime('%Y%m%d')[0]    
+        # datestr2 = (pd.to_datetime(self.prms['epoch_start'][-1])+dt_2days).dt.strftime('%Y%m%d')[0] 
+        datestr1 = pd.to_datetime(self.prms['epoch_start'][0]).strftime('%Y%m%d')    
+        datestr2 = pd.to_datetime(self.prms['epoch_start'][-1]).strftime('%Y%m%d') 
+        self.raw_satinput['daterange'] = f"{datestr1}_{datestr2}"
+        
+        ### Include paths to the raw_satinput datafiles/directories and assorted
+        ### data format/settings.
+                                        ## must be converted to UTC and J2000
+        if self.prms['initialize']:
+            self.raw_satinput['ephem_path'] = self.path_data_inputs +'/'\
+                        +f'sat_spire{satnum:03d}/g2b/'  \
+                        +f'Spire{satnum:03d}_RawEphem_{datestr1}_{datestr2}.txt'
+        else:
+            self.raw_satinput['ephem_path'] = self.path_data_inputs +'/'\
+                        +f"sat_spire{satnum:03d}/g2b/"\
+                        +f"Spire{satnum:03d}_RawEphem__20181101_20181130.txt"
+                        # +f"Spire{satnum:03d}_RawEphem__20181101_20181130.txt"
+        
+        # self.raw_satinput['ephem_days'] =  [pd.to_datetime(i).day \
+        #                         for i in self.prms['epoch_start']]        
+        ephem_days =  [pd.to_datetime(i).day \
+                            for i in self.prms['epoch_start']]        
+        self.raw_satinput['ephem_days'] = \
+                        np.arange(ephem_days[0]-2, ephem_days[-1]+3 )
 
-        #------------------------------------------------------------------
-        # Use the Global Files for ICESat-2 Precise Science Orbit from 2018
-        #------------------------------
+
+        #                  Parameter              Raw Data       GEODYN Req
+        #                  -------------------   ------------    -------------
+        self.raw_satinput['att_quat___refsys'] = 'SBF_to_RSW'    # SBF_to_J2000
+        self.raw_satinput['att_posvel_refsys'] = 'eci_teme'      # j2000
+        self.raw_satinput['att_date']          = 'date_gps'      # date_tdt
+        self.raw_satinput['att_interval']      = 10 #seconds     
+        ### Ephemeris (OD or POD)
+
+        #                  Parameter              Raw Data       GEODYN Req
+        #                  -------------------   ------------    -------------
+        self.raw_satinput['ephem_posvel_refsys'] = 'ecef_igs08'   # j2000
+        self.raw_satinput['ephem_date']          = 'date_gps'     # date_utc
+        #
+        # Directory that holds the raw data:
+        self.raw_satinput['ephem_path_dir']  =  self.path_data_inputs_raw \
+                                             +'/data_Spire/arcs'
+
+
+        ### maybe some sort of list written to a file that saves the correct version of
+         ### the various inputs files would be the right idea.....
+
+
+        ### ------------------
+        ###  Run-type Options
+        ### ------------------
+        #
+        ###  Fill in the appropriate settings based on the run_type.
+        #----------------------------------------------------------------------
+        if self.prms['run_type'] == "DataReduction_PCE":
+            self.tracking_data_type   = 'PCE'
+            #### G2B file name
+            if self.prms['initialize']:
+                self.filename_g2b         = f"pce_spire{satnum:03d}_leoOrb_{self.raw_satinput['daterange']}" 
+            else:
+                self.filename_g2b = f"pce_spire{satnum:03d}_leoOrb_20181101_20181130" 
+                # self.filename_g2b = f"pce_icesat2_pso_20181108_20181124" 
+            # self.filename_g2b         = f"pce_spire{satnum:03d}_leoOrb_20181101_20181130"
+            # self.filename_g2b         = f"pce_spire{satnum:03d}_leoOrb_20181107_20181111"
+            #### PCE Ascii textfile name
+            if self.prms['which_ICfile'] is not None:
+                self.file_statevector_ICs = self.prms['which_ICfile']
+            else:
+                self.file_statevector_ICs = self.dir_input+'/'\
+                        +f"Spire{satnum:03d}_initialconditions_"\
+                        +f"{self.raw_satinput['daterange']}_v1.txt"
+
+            ### Identify all the header names in the file
+            self.file_statevector_headers   = ['Date',
+                                                'X',
+                                                'Y',
+                                                'Z',
+                                                'X_dot',
+                                                'Y_dot',
+                                                'Z_dot']
+        #----------------------------------------------------------------------
+        elif self.prms['run_type']  == "OrbitPropagation":
+                self.filename_g2b = 'None'
+                self.file_statevector_ICs   = self.dir_input\
+                            +f'/Spire{satnum:03d}_initialconditions_Nov2018_v2.txt'
+                # print("self.file_statevector_ICs",self.file_statevector_ICs)
+                #'/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
+#                        + '/statevector_ICs.txt'
+        #----------------------------------------------------------------------
+        else:
+            print("Run Settings Error: User input bad option as run_type.")
+            print("    bad input:           ",self.run_type)
+            print("    available run types: ",list_run_types)
+            sys.exit(0)
+
+        ###-------------------------------------------------
+        ### Use the Global Files from ICESat-2 PSO from 2018
+        ###------------------------------------------------
         if self.prms['global_options']=='pso_2018':
-
             #### Atmospheric Gravity file name
             self.filename_atmograv  = 'ATGRAV.glo-3HR_20160101-PRESENT'\
                                                 +'_9999_AOD1B_0006.0090'
@@ -76,54 +217,19 @@ class Spire(RunController, ReadRawOutput):
             ### Global Option Cards for PSO            
             self.file_globalcards = self.path_data_inputs +'/common_2018'\
                                         +'/icesat2_pso_global_cards.txt'
-
         else:
+            ### ToDo: - Make these global options the Basic/barebones options for 
+            ###         the setup file 
             print("Run Settings Error: User input bad option as global_options.")
             print("    bad input:           ",self.prms['global_options'])
             print("    available run types: ", '***ADD***')
-            sys.exit(0)
-
-        #---------------------------------------------------------------------
-        ### Run-type Options
-        list_run_types = ["DataReduction_PCE" , "OrbitPropagation"] 
-        # Fill in the appropriate settings based on the run_type.
-        if self.prms['run_type'] == "DataReduction_PCE":
-            self.tracking_data_type   = 'PCE'
-            #### G2B file name
-            self.filename_g2b         = 'g2b_pce_leoOrb_nov2018' 
-            #### PCE Ascii textfile name
-            self.file_statevector_ICs = self.dir_input+'/'\
-                                    +'Spire83_initialconditions_Nov2018_v1.txt'
-                                    # +'Spire83_initialconditions_Nov2018_v2.txt'
-            ### Identify all the header names in the file
-            self.file_statevector_headers   = ['Date',
-                                                'X',
-                                                'Y',
-                                                'Z',
-                                                'X_dot',
-                                                'Y_dot',
-                                                'Z_dot']
-        #
-        elif self.prms['run_type']  == "OrbitPropagation":
-                self.filename_g2b = 'None'
-                self.file_statevector_ICs   = self.dir_input+'/Spire83_initialconditions_Nov2018_v2.txt'
-                print("self.file_statevector_ICs",self.file_statevector_ICs)
-                #'/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
-#                        + '/statevector_ICs.txt'
-        else:
-            print("Run Settings Error: User input bad option as run_type.")
-            print("    bad input:           ",self.run_type)
-            print("    available run types: ",list_run_types)
-            sys.exit(0)
-
-
-    #===========================================================================       
-
-    
-    
+            sys.exit(0)    
 
         
 
+    #===========================================================================       
+
+        
 
 
     def sat_geometry_panel_model(self):
@@ -245,6 +351,222 @@ class Spire(RunController, ReadRawOutput):
 
 
 
+    def sat_process_raw_ephemeris(self, verbose=False):
+
+        from astropy import coordinates as coord
+        from astropy import units as u
+        from astropy.time import Time
+
+        from datetime import datetime,timedelta
+        from pygeodyn.satellite_spire import read_SpireLeoOrbPOD_sp3c
+        import time
+        ## Load coordinate transformation functions
+        # from pygeodyn.util_dir.coordinate_systems import iau06_Call_ecef2eci
+        from pygeodyn.util_dir.time_systems import time_gps_to_utc,\
+                                                get_leapseconds, jday           
+
+        spire_sat_num = int(self.prms['satnum'])
+        # days = self.raw_satinput['ephem_days']
+
+        raw_ephem = self.raw_satinput['ephem_path']
+        ephem_path_dir = self.raw_satinput['ephem_path_dir']
+
+        dt_2days = pd.Series(pd.to_timedelta(48,'h'))
+
+        startdate = pd.to_datetime(self.prms['epoch_start'][0])
+        enddate   = pd.to_datetime(self.prms['epoch_start'][-1])
+        startdate_dt = pd.to_datetime(startdate, format='%Y-%m-%d')
+        enddate_dt   = pd.to_datetime(enddate,   format='%Y-%m-%d')
+        starts_linspace_dt = pd.date_range(start=startdate_dt ,
+                                             end=enddate_dt   ,
+                                            freq=str(1)+"D")
+        # starts_linspace_dt
+        if verbose: print(f"{self.tabtab} -SPIRE")
+
+        if verbose: print(f"{self.tabtab} - processing raw satellite ephemerides from files.")
+        #### Find files throught dir tree containing Satellite's LeoOrb POD
+        files_with_sat = []
+
+        if verbose: print(f"{self.tabtab} - for dates: {starts_linspace_dt}")
+
+        ## Loop through the daily directories
+        for iday,day in enumerate(starts_linspace_dt):
+            dir_set   = ephem_path_dir + f"/{day.strftime('%Y-%m-%d')}/"
+
+            ## Loop through the arc directories for that day,
+            ## Identify the leoOrb..._{sat#}.sp3 (Spire "POD") files
+            for root, dirs, files in os.walk(dir_set, topdown=False):
+                for name in files:
+                    if 'leoOrb'in name and f'{spire_sat_num:03d}.sp3' in name:
+                        files_with_sat.append(os.path.join(root, name))
+
+        if len(files_with_sat) == 0:
+            print('**Error in sat_process_raw_ephemeris()')
+            print('        did not find files')
+            print('        dir_set : ', dir_set)
+            print('        root    : ', root)
+            print('        dirs    : ', dirs)
+            print('        files   : ', files)
+            
+            sys.exit(0)
+
+
+        del root, dirs, files, name
+        del dt_2days,startdate,enddate,startdate_dt,enddate_dt
+        del starts_linspace_dt, iday, day
+        
+
+
+        #### Load raw data from all found files
+        leoOrb_ecef = read_SpireLeoOrbPOD_sp3c(files_with_sat)
+        del files_with_sat
+        gc.collect()
+
+
+
+        ### Get the leapseconds for time period of interest
+        dAT = get_leapseconds(leoOrb_ecef['date_gps'][0].year,
+                              leoOrb_ecef['date_gps'][0].month,
+                              leoOrb_ecef['date_gps'][0].day)
+        
+        ## Convert to UTC
+        leoOrb_ecef['date_utc'] = [time_gps_to_utc(time, dAT) \
+                                    for time in leoOrb_ecef['date_gps']]
+        del leoOrb_ecef['date_gps']
+        del leoOrb_ecef['clock_microsec']
+        gc.collect()
+
+
+        ### Convert all ephemerides from ECEF-igs08 to ECI-j2000
+        start = time.time()
+        conv_dms2kms = 1/10000.
+        #
+        len_ecef = np.shape(leoOrb_ecef['date_utc'])[0]    
+        
+        if verbose: print(f"{self.tabtab} - Converting from ECEF to J2000 using IAU2010 conventions, and ")
+        if verbose: print(f"{self.tabtab}   saving satellite ephemeris to single file.")
+
+        f = open(raw_ephem, "w")
+        f.write("\n")
+        f.close()
+        
+
+        leoOrb_eci={}
+
+        ecef = coord.ITRS(x  =leoOrb_ecef['x_km']*1000*u.m,
+                        y  =leoOrb_ecef['y_km']*1000*u.m,
+                        z  =leoOrb_ecef['z_km']*1000*u.m,
+                        v_x=leoOrb_ecef['xdot_dms']*conv_dms2kms*1000*u.m/u.s,
+                        v_y=leoOrb_ecef['ydot_dms']*conv_dms2kms*1000*u.m/u.s,
+                        v_z=leoOrb_ecef['zdot_dms']*conv_dms2kms*1000*u.m/u.s, 
+                        representation_type='cartesian', 
+                        differential_type='cartesian', 
+                        obstime=Time(leoOrb_ecef['date_utc']))
+        j2000 = ecef.transform_to(coord.GCRS(obstime=Time(leoOrb_ecef['date_utc'])))
+        leoOrb_eci['X_m_eci']    = j2000.cartesian.x.value
+        leoOrb_eci['Y_m_eci']    = j2000.cartesian.y.value
+        leoOrb_eci['Z_m_eci']    = j2000.cartesian.z.value
+        leoOrb_eci['Xdot_m_eci'] = j2000.cartesian.differentials['s'].d_x.value*1000
+        leoOrb_eci['Ydot_m_eci'] = j2000.cartesian.differentials['s'].d_y.value*1000
+        leoOrb_eci['Zdot_m_eci'] = j2000.cartesian.differentials['s'].d_z.value*1000
+
+
+
+        ### Write to file
+        with open(raw_ephem, 'r+') as file:
+
+            #### Manually write the header units
+            header_units =\
+                    f"{'UTC'.rjust(len(str(leoOrb_ecef['date_utc'][1]))-1,' ') }"\
+                    +f"  {'(m)'.rjust(15,' ')}"\
+                    +f"  {'(m)'.rjust(15,' ')}"\
+                    +f"  {'(m)'.rjust(15,' ')}"\
+                    +f"  {'(m/s)'.rjust(15,' ')}"\
+                    +f"  {'(m/s)'.rjust(15,' ')}"\
+                    +f"  {'(m/s)'.rjust(15,' ')}"\
+
+            #### Manually write the header field names
+            header_names =\
+                    f"{'Date'.rjust(len(str(leoOrb_ecef['date_utc'][1]))-1,' ') }"\
+                    +f"  {'X'.rjust(15,' ')}"\
+                    +f"  {'Y'.rjust(15,' ')}"\
+                    +f"  {'Z'.rjust(15,' ')}"\
+                    +f"  {'X_dot'.rjust(15,' ')}"\
+                    +f"  {'Y_dot'.rjust(15,' ')}"\
+                    +f"  {'Z_dot'.rjust(15,' ')}"\
+
+            #### Manually write the detailed header description
+            header_meta = \
+            f'''### "Raw" Satellite Ephemeris
+### -----------------------
+###     Satellite: Spire_{self.prms['satnum']:03d} ({self.prms['sat_ID']})
+###     Epoch: +start____ {leoOrb_ecef['date_utc'][0]} 
+###            +stop_____ {leoOrb_ecef['date_utc'][-1]}
+###     Last modified: {datetime.now()-timedelta(hours=7)}
+###
+### Source
+### -------
+###     {self.raw_satinput['ephem_path_dir']}
+###     (leoOrb... .sp3 files for indiv. arcs)
+###
+### Contents
+### --------
+###     Date:  (YYYY-MM-DD hh:mm:ss) (UTC, converted from gps time)
+###     Ephem:  Position and velocity (X, Y, Z, X_dot, Y_dot, Z_dot)
+###             coordinate: ECI-J2000
+###              (converted from ECEF-IGS08 using IAU-2010 p+n conventions)
+###              unit: m
+###
+#{header_units}
+#{header_names}
+### %eoh
+'''
+            print(np.shape(leoOrb_eci['X_m_eci']))
+        # leoOrb_eci['X_m_eci']    = j2000.cartesian.x.value
+        # leoOrb_eci['Y_m_eci']    = j2000.cartesian.y.value
+        # leoOrb_eci['Z_m_eci']    = j2000.cartesian.z.value
+        # leoOrb_eci['Xdot_m_eci'] = j2000.cartesian.differentials['s'].d_x.value
+        # leoOrb_eci['Ydot_m_eci'] = j2000.cartesian.differentials['s'].d_y.value
+        # leoOrb_eci['Zdot_m_eci'] = j2000.cartesian.differentials['s'].d_z.value
+
+            file.write(header_meta)  
+            for indx,valdate in enumerate(leoOrb_ecef['date_utc']):
+                ## position vector earth fixed  ( km )
+                # recef = [leoOrb_ecef['x_km'][indx],  
+                #         leoOrb_ecef['y_km'][indx], 
+                #         leoOrb_ecef['z_km'][indx]]
+                # ## velocity vector earth fixed  (km/s)
+                # vecef = [leoOrb_ecef['xdot_dms'][indx]*conv_dms2kms, 
+                #         leoOrb_ecef['ydot_dms'][indx]*conv_dms2kms,
+                #         leoOrb_ecef['zdot_dms'][indx]*conv_dms2kms]
+                # ### convert the data to correct coordinate ref frame
+                # (reci, veci, _)= iau06_Call_ecef2eci(\
+                #                             recef, vecef, None,
+                #                             leoOrb_ecef['date_utc'][indx].year  , 
+                #                             leoOrb_ecef['date_utc'][indx].month , 
+                #                             leoOrb_ecef['date_utc'][indx].day   , 
+                #                             leoOrb_ecef['date_utc'][indx].hour  , 
+                #                             leoOrb_ecef['date_utc'][indx].minute, 
+                #                             leoOrb_ecef['date_utc'][indx].second, 
+                #                             calc_accel = False)
+            #### Manually write each row of the data.
+                row =   f"{leoOrb_ecef['date_utc'][indx]}"\
+                    +f"  {leoOrb_eci['X_m_eci'][indx]:15.5f}"\
+                    +f"  {leoOrb_eci['Y_m_eci'][indx]:15.5f}"\
+                    +f"  {leoOrb_eci['Z_m_eci'][indx]:15.5f}"\
+                    +f"  {leoOrb_eci['Xdot_m_eci'][indx]:15.5f}"\
+                    +f"  {leoOrb_eci['Ydot_m_eci'][indx]:15.5f}"\
+                    +f"  {leoOrb_eci['Zdot_m_eci'][indx]:15.5f}"\
+                    +f"\n"
+                file.write(row)
+        #
+        end = time.time()
+        elapsed = end - start
+        #
+        print()
+        # print(f'       indxes: 0 -',indx,'') 
+        print(f'       Processed file in : ',np.round(elapsed,5),'secs', f"({np.round(elapsed,5)/60} minutes)") 
+
 
 
 
@@ -309,8 +631,8 @@ def load_attitude_spire(filename, start_date, stop_date):
 
 
     dict_data = {}
-    dict_data['tim (gps)'] = []
-    dict_data['q (sbf)'] = []
+    dict_data["date_gps"] = []
+    dict_data['q_SBF_to_RSW'] = []
     dict_data['pos (eci)'] = []
     dict_data['vel (eci)'] = []
 
@@ -333,20 +655,20 @@ def load_attitude_spire(filename, start_date, stop_date):
                 sec   = int(line[21:23] )
                 msec  = int(line[24:30] )
                 date = datetime(yr,mon, day, hr,minute,sec, msec )
-                if  pd.to_datetime(date) in dict_data['tim (gps)']:
+                if  pd.to_datetime(date) in dict_data['date_gps']:
                     #print('Found a copy, SKIP', date)
                     noSkip_flag=False
                     continue # to next line of for loop
                 else:
                     noSkip_flag = True
-                    dict_data['tim (gps)'].append( pd.to_datetime(date))
+                    dict_data['date_gps'].append( pd.to_datetime(date))
 
             elif line[0:4]=="sca " and noSkip_flag:
                 qx = float(line[4:17] )
                 qy = float(line[18:31])
                 qz = float(line[32:45])
                 qw = float(line[46:59])
-                dict_data['q (sbf)'].append(np.array([qx, qy, qz, qw]))
+                dict_data['q_SBF_to_RSW'].append(np.array([qx, qy, qz, qw]))
 
             elif line[0:4]=="pvi "and noSkip_flag:
                 x    = float(line[4:17] )
@@ -361,15 +683,29 @@ def load_attitude_spire(filename, start_date, stop_date):
     #### Make a Dataframe for easier utility                   
     SpireDF = pd.DataFrame.from_dict(dict_data)
 
+    del dict_data
+
+    # print(SpireDF.head())
+
+
     #### Mask the data according to the time period of interest
     startDT = pd.to_datetime(start_date, format='%Y-%m-%d %H:%M:%S')
-    stopDT  = pd.to_datetime(stop_date,  format='%Y-%m-%d %H:%M:%S')
-    mask_month = SpireDF['tim (gps)'].dt.month==  startDT.month
-    mask_days = np.logical_and(SpireDF['tim (gps)'].dt.day  >=  startDT.day,
-                                SpireDF['tim (gps)'].dt.day  <=  stopDT.day)
-    mask       = mask_month & mask_days
-    SpireDF =  SpireDF[:][mask].reset_index(drop=True)
+    stopDT  = pd.to_datetime(stop_date,  format='%Y-%m-%d %H:%M:%S') \
+                                                        + pd.to_timedelta(1,'d')
+
+    # mask_month = SpireDF['date_gps'].dt.month==  startDT.month
+    # mask_days = np.logical_and(SpireDF['date_gps'].dt.day  >=  startDT.day,
+    #                            SpireDF['date_gps'].dt.day  <=  stopDT.day)
+    # mask       = mask_month & mask_days
+    # SpireDF =  SpireDF[:][mask].reset_index(drop=True)
     
+    query = SpireDF.query(f"{startDT.year}{startDT.month:02d}{startDT.day:02d}"\
+                         +f" < date_gps < "\
+                         +f"{stopDT.year}{stopDT.month:02d}{stopDT.day:02d}")
+
+    SpireDF =  query.reset_index(drop=True)
+
+
     gc.collect()
     return(SpireDF)
 
@@ -381,197 +717,197 @@ def load_attitude_spire(filename, start_date, stop_date):
 
 
 
-def aux__make_file_statevector_ICs():
+# def aux__make_file_statevector_ICs():
 
-    # import pandas as pd
+#     # import pandas as pd
 
-    # file_statevector_ICs = '/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
-    #                     + '/statevector_ICs.txt'
+#     # file_statevector_ICs = '/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
+#     #                     + '/statevector_ICs.txt'
 
-    # prms_arc = {}
-    # prms_arc['epoch_start'] = "2018-11-09 00:00:00"
-    # prms_arc['epoch_stop']  = "2018-11-10 00:00:00"
-    # prms_arc['epoch_startDT'] = pd.to_datetime(prms_arc['epoch_start'],\
-    #                                             format='%Y-%m-%d %H:%M:%S')
-    # prms_arc['epoch_stopDT']  = pd.to_datetime(prms_arc['epoch_stop'],\
-    #                                             format='%Y-%m-%d %H:%M:%S')
+#     # prms_arc = {}
+#     # prms_arc['epoch_start'] = "2018-11-09 00:00:00"
+#     # prms_arc['epoch_stop']  = "2018-11-10 00:00:00"
+#     # prms_arc['epoch_startDT'] = pd.to_datetime(prms_arc['epoch_start'],\
+#     #                                             format='%Y-%m-%d %H:%M:%S')
+#     # prms_arc['epoch_stopDT']  = pd.to_datetime(prms_arc['epoch_stop'],\
+#     #                                             format='%Y-%m-%d %H:%M:%S')
 
-    import pandas as pd
-    import numpy as np
-    from datetime import datetime
-    from pygeodyn.util_dir.time_systems import time_gps_to_utc
+#     import pandas as pd
+#     import numpy as np
+#     from datetime import datetime
+#     from pygeodyn.util_dir.time_systems import time_gps_to_utc
 
-    def load_attitude_spire(filename):
-        Spire_dict = {}
-        Spire_dict['info']  = """fill info here"""
-
-
-        dict_data = {}
-        dict_data['tim (gps)'] = []
-        dict_data['q (sbf)'] = []
-    #     dict_data['pos (eci)'] = []
-    #     dict_data['vel (eci)'] = []
-        dict_data['X'] = []
-        dict_data['Y'] = []
-        dict_data['Z'] = []
-        dict_data['X_dot'] = []
-        dict_data['Y_dot'] = []
-        dict_data['Z_dot'] = []
-
-        ### Loop through the file
-        with open(filename, 'r') as f:
-            for l_no, line in enumerate(f): 
-                if line[0:4]=="tim ":
-                    yr    = int(line[4:8]   )
-                    mon   = int(line[9:11]  )
-                    day   = int(line[12:14] )
-                    hr    = int(line[15:17] )
-                    minute= int(line[18:20] )
-                    sec   = int(line[21:23] )
-                    msec  = int(line[24:30] )
-                    date = datetime(yr,mon, day, hr,minute,sec, msec )
-                    if  pd.to_datetime(date) in dict_data['tim (gps)']:
-                        #print('Found a copy, SKIP', date)
-                        noSkip_flag=False
-                        continue # to next line of for loop
-                    else:
-                        noSkip_flag = True
-                        dict_data['tim (gps)'].append( pd.to_datetime(date))
-
-                elif line[0:4]=="sca " and noSkip_flag:
-                    qx = float(line[4:17] )
-                    qy = float(line[18:31])
-                    qz = float(line[32:45])
-                    qw = float(line[46:59])
-                    dict_data['q (sbf)'].append(np.array([qx, qy, qz, qw]))
-
-                elif line[0:4]=="pvi "and noSkip_flag:
-                    x    = float(line[4:17] )
-                    y    = float(line[18:31])
-                    z    = float(line[32:45])
-                    xdot = float(line[46:59])
-                    ydot = float(line[60:73])
-                    zdot = float(line[74:87])
-    #                 dict_data['pos (eci)'].append(np.array([x, y, z]))
-    #                 dict_data['vel (eci)'].append(np.array([xdot,ydot,zdot]))
-                    dict_data['X'].append(x)
-                    dict_data['Y'].append(y)
-                    dict_data['Z'].append(z)
-                    dict_data['X_dot'].append(xdot)
-                    dict_data['Y_dot'].append(ydot)
-                    dict_data['Z_dot'].append(zdot)
-
-        Spire_dict['units'] = {'tim (gps)': "pd.datetime" ,
-                            'q (sbf)':  "" ,
-                            'X':  "m" ,
-                            'Y':  "m" ,
-                            'Z':  "m" ,
-                            'X_dot':  "m/s" ,
-                            'Y_dot':  "m/s" ,
-                            'Z_dot':  "m/s" ,
-                            }
-        Spire_dict['data'] = dict_data
+#     def load_attitude_spire(filename):
+#         Spire_dict = {}
+#         Spire_dict['info']  = """fill info here"""
 
 
-        #### Make a Dataframe for easier utility                   
-    #     SpireDF = pd.DataFrame.from_dict(dict_data)
+#         dict_data = {}
+#         dict_data['date_gps'] = []
+#         dict_data['q_SBF_to_RSW'] = []
+#     #     dict_data['pos (eci)'] = []
+#     #     dict_data['vel (eci)'] = []
+#         dict_data['X'] = []
+#         dict_data['Y'] = []
+#         dict_data['Z'] = []
+#         dict_data['X_dot'] = []
+#         dict_data['Y_dot'] = []
+#         dict_data['Z_dot'] = []
 
-        return(Spire_dict)
+#         ### Loop through the file
+#         with open(filename, 'r') as f:
+#             for l_no, line in enumerate(f): 
+#                 if line[0:4]=="tim ":
+#                     yr    = int(line[4:8]   )
+#                     mon   = int(line[9:11]  )
+#                     day   = int(line[12:14] )
+#                     hr    = int(line[15:17] )
+#                     minute= int(line[18:20] )
+#                     sec   = int(line[21:23] )
+#                     msec  = int(line[24:30] )
+#                     date = datetime(yr,mon, day, hr,minute,sec, msec )
+#                     if  pd.to_datetime(date) in dict_data['date_gps']:
+#                         #print('Found a copy, SKIP', date)
+#                         noSkip_flag=False
+#                         continue # to next line of for loop
+#                     else:
+#                         noSkip_flag = True
+#                         dict_data['date_gps'].append( pd.to_datetime(date))
 
-    dir_spire='/data/SatDragModelValidation/data/inputs/sat_spire83/data_Spire/'
-    file_spire = dir_spire+'attitude/20180923_20181209_TaskOrder3Data/'\
-                        +'leoAtt_2018-09-23T00-12-00Z.9999999.083.log'
-    statevector_ICs = load_attitude_spire(file_spire)
-    del statevector_ICs['data']['q (sbf)']
-    del statevector_ICs['units']['q (sbf)']
+#                 elif line[0:4]=="sca " and noSkip_flag:
+#                     qx = float(line[4:17] )
+#                     qy = float(line[18:31])
+#                     qz = float(line[32:45])
+#                     qw = float(line[46:59])
+#                     dict_data['q_SBF_to_RSW'].append(np.array([qx, qy, qz, qw]))
+
+#                 elif line[0:4]=="pvi "and noSkip_flag:
+#                     x    = float(line[4:17] )
+#                     y    = float(line[18:31])
+#                     z    = float(line[32:45])
+#                     xdot = float(line[46:59])
+#                     ydot = float(line[60:73])
+#                     zdot = float(line[74:87])
+#     #                 dict_data['pos (eci)'].append(np.array([x, y, z]))
+#     #                 dict_data['vel (eci)'].append(np.array([xdot,ydot,zdot]))
+#                     dict_data['X'].append(x)
+#                     dict_data['Y'].append(y)
+#                     dict_data['Z'].append(z)
+#                     dict_data['X_dot'].append(xdot)
+#                     dict_data['Y_dot'].append(ydot)
+#                     dict_data['Z_dot'].append(zdot)
+
+#         Spire_dict['units'] = {'date_gps': "pd.datetime" ,
+#                             'q_SBF_to_RSW':  "" ,
+#                             'X':  "m" ,
+#                             'Y':  "m" ,
+#                             'Z':  "m" ,
+#                             'X_dot':  "m/s" ,
+#                             'Y_dot':  "m/s" ,
+#                             'Z_dot':  "m/s" ,
+#                             }
+#         Spire_dict['data'] = dict_data
 
 
-    ### Convert from GPS time to UTC time
-    tim_utc = [datetime.strftime(time_gps_to_utc(tim, leap_sec=37), '%y%m%d%H%M%S.%f' )
-                                    for tim in statevector_ICs['data']['tim (gps)'] ]
+#         #### Make a Dataframe for easier utility                   
+#     #     SpireDF = pd.DataFrame.from_dict(dict_data)
+
+#         return(Spire_dict)
+
+#     dir_spire='/data/SatDragModelValidation/data/inputs/sat_spire83/data_Spire/'
+#     file_spire = dir_spire+'attitude/20180923_20181209_TaskOrder3Data/'\
+#                         +'leoAtt_2018-09-23T00-12-00Z.9999999.083.log'
+#     statevector_ICs = load_attitude_spire(file_spire)
+#     del statevector_ICs['data']['q_SBF_to_RSW']
+#     del statevector_ICs['units']['q_SBF_to_RSW']
 
 
-    statevector_ICs['data']['Date'] =   tim_utc 
-
-    ### Update the units to reflect the above changes:
-    del statevector_ICs['data']['tim (gps)']
-    del statevector_ICs['units']['tim (gps)']
-    statevector_ICs['units']['Date'] = 'UTC'
-
-    ### Update the metadata.  This will become the file header.
-    statevector_ICs['info']= 'fill info here'
+#     ### Convert from GPS time to UTC time
+#     tim_utc = [datetime.strftime(time_gps_to_utc(tim, leap_sec=37), '%y%m%d%H%M%S.%f' )
+#                                     for tim in statevector_ICs['data']['date_gps'] ]
 
 
+#     statevector_ICs['data']['Date'] =   tim_utc 
 
-    from  datetime import datetime, timedelta
+#     ### Update the units to reflect the above changes:
+#     del statevector_ICs['data']['date_gps']
+#     del statevector_ICs['units']['date_gps']
+#     statevector_ICs['units']['Date'] = 'UTC'
 
-    ### Write to an ascii text file. 
-    file_save = '/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
-                    + '/statevector_ICs.txt'
-    # 
-    with open(file_save, 'r+') as file:
-        #### Manually write the header units
-        header_units =\
-                    f"{'UTC'.rjust(len(str(statevector_ICs['data']['Date'][1]))-1,' ') }"\
-                +f"  {'(m)'.rjust(15,' ')}"\
-                +f"  {'(m)'.rjust(15,' ')}"\
-                +f"  {'(m)'.rjust(15,' ')}"\
-                +f"  {'(m/s)'.rjust(15,' ')}"\
-                +f"  {'(m/s)'.rjust(15,' ')}"\
-                +f"  {'(m/s)'.rjust(15,' ')}"\
-
-        #### Manually write the header field names
-        header_names =\
-                    f"{'Date'.rjust(len(str(statevector_ICs['data']['Date'][1]))-1,' ') }"\
-                +f"  {'X'.rjust(15,' ')}"\
-                +f"  {'Y'.rjust(15,' ')}"\
-                +f"  {'Z'.rjust(15,' ')}"\
-                +f"  {'X_dot'.rjust(15,' ')}"\
-                +f"  {'Y_dot'.rjust(15,' ')}"\
-                +f"  {'Z_dot'.rjust(15,' ')}"\
+#     ### Update the metadata.  This will become the file header.
+#     statevector_ICs['info']= 'fill info here'
 
 
 
-        #### Manually write the detailed header description
-        header_meta = \
-    f'''### Initial conditions file
-    ### -----------------------
-    ###     Satellite: Spire_083 (1804607)
-    ###     Epoch: +start____ 2018  9 23  0 12  0.0300000 
-    ###            +stop_____ 2018 12  9 23 43 35.9080000 
-    ###     Last modified: {datetime.now()-timedelta(hours=7)}
-    ###
-    ### Source
-    ### -------
-    ###     leoAtt_2018-09-23T00-12-00Z.9999999.083.log
-    ###     (long quaternion file)
-    ###     %spire version 1.3  revision   1 2019 07 05 00:00 Spire     Spire Processing Center
-    ###
-    ### Contents
-    ### --------
-    ###     Date: (YYYY-MM-DD hh:mm:ss.ssssss) (UTC, converted from gps time)
-    ###     pvi: Position and velocity (X, Y, Z, X_dot, Y_dot, Z_dot)
-    ###          coordinate: ECI
-    ###          unit: m
-    ###
-    #{header_units}
-    #{header_names}
-    ### %eoh
-    '''
-        file.write(header_meta)
+#     from  datetime import datetime, timedelta
 
-        #### Manually write each row of the data.
-        for ii, val in enumerate(statevector_ICs['data']['Date']):
-            row =   f"{statevector_ICs['data']['Date'][ii]}"\
-                +f"  {statevector_ICs['data']['X'][ii]*1000:15.5f}"\
-                +f"  {statevector_ICs['data']['Y'][ii]*1000:15.5f}"\
-                +f"  {statevector_ICs['data']['Z'][ii]*1000:15.5f}"\
-                +f"  {statevector_ICs['data']['X_dot'][ii]*1000:15.5f}"\
-                +f"  {statevector_ICs['data']['Y_dot'][ii]*1000:15.5f}"\
-                +f"  {statevector_ICs['data']['Z_dot'][ii]*1000:15.5f}"\
-                + f"\n"
-            file.write(row)
-    return
+#     ### Write to an ascii text file. 
+#     file_save = '/data/SatDragModelValidation/data/inputs/sat_spire83/setups'\
+#                     + '/statevector_ICs.txt'
+#     # 
+#     with open(file_save, 'r+') as file:
+#         #### Manually write the header units
+#         header_units =\
+#                     f"{'UTC'.rjust(len(str(statevector_ICs['data']['Date'][1]))-1,' ') }"\
+#                 +f"  {'(m)'.rjust(15,' ')}"\
+#                 +f"  {'(m)'.rjust(15,' ')}"\
+#                 +f"  {'(m)'.rjust(15,' ')}"\
+#                 +f"  {'(m/s)'.rjust(15,' ')}"\
+#                 +f"  {'(m/s)'.rjust(15,' ')}"\
+#                 +f"  {'(m/s)'.rjust(15,' ')}"\
+
+#         #### Manually write the header field names
+#         header_names =\
+#                     f"{'Date'.rjust(len(str(statevector_ICs['data']['Date'][1]))-1,' ') }"\
+#                 +f"  {'X'.rjust(15,' ')}"\
+#                 +f"  {'Y'.rjust(15,' ')}"\
+#                 +f"  {'Z'.rjust(15,' ')}"\
+#                 +f"  {'X_dot'.rjust(15,' ')}"\
+#                 +f"  {'Y_dot'.rjust(15,' ')}"\
+#                 +f"  {'Z_dot'.rjust(15,' ')}"\
+
+
+
+#         #### Manually write the detailed header description
+#         header_meta = \
+#     f'''### Initial conditions file
+#     ### -----------------------
+#     ###     Satellite: Spire_083 (1804607)
+#     ###     Epoch: +start____ 2018  9 23  0 12  0.0300000 
+#     ###            +stop_____ 2018 12  9 23 43 35.9080000 
+#     ###     Last modified: {datetime.now()-timedelta(hours=7)}
+#     ###
+#     ### Source
+#     ### -------
+#     ###     leoAtt_2018-09-23T00-12-00Z.9999999.083.log
+#     ###     (long quaternion file)
+#     ###     %spire version 1.3  revision   1 2019 07 05 00:00 Spire     Spire Processing Center
+#     ###
+#     ### Contents
+#     ### --------
+#     ###     Date: (YYYY-MM-DD hh:mm:ss.ssssss) (UTC, converted from gps time)
+#     ###     pvi: Position and velocity (X, Y, Z, X_dot, Y_dot, Z_dot)
+#     ###          coordinate: ECI
+#     ###          unit: m
+#     ###
+#     #{header_units}
+#     #{header_names}
+#     ### %eoh
+#     '''
+#         file.write(header_meta)
+
+#         #### Manually write each row of the data.
+#         for ii, val in enumerate(statevector_ICs['data']['Date']):
+#             row =   f"{statevector_ICs['data']['Date'][ii]}"\
+#                 +f"  {statevector_ICs['data']['X'][ii]*1000:15.5f}"\
+#                 +f"  {statevector_ICs['data']['Y'][ii]*1000:15.5f}"\
+#                 +f"  {statevector_ICs['data']['Z'][ii]*1000:15.5f}"\
+#                 +f"  {statevector_ICs['data']['X_dot'][ii]*1000:15.5f}"\
+#                 +f"  {statevector_ICs['data']['Y_dot'][ii]*1000:15.5f}"\
+#                 +f"  {statevector_ICs['data']['Z_dot'][ii]*1000:15.5f}"\
+#                 + f"\n"
+#             file.write(row)
+#     return
 
 
 
@@ -584,7 +920,7 @@ def read_SpireLeoOrbPOD_sp3c(filelist_sat):
     -------
         This file contains the estimated position, velocity 
         and receiver clock error of a given Spire satellite 
-        after processing of the POD observation file by Spire’s
+        after processing of the POD observation file by Spires
         precise orbit determination software. 
         Estimates are typically given in the ECEF (IGS08) frame.
 
@@ -625,7 +961,7 @@ def read_SpireLeoOrbPOD_sp3c(filelist_sat):
 
 
 
-    print("read_SpireLeoOrbPOD_sp3c(): Reading ephemeris data from  ", len(filelist_sat), "files.")
+    print("        - read_SpireLeoOrbPOD_sp3c(): Reading ephemeris data from  ", len(filelist_sat), "files.")
     ### initialize large empty arrays (save through loops)
     ### initialize empty arrays (in loops)
     ### initialize the data storage    
@@ -837,7 +1173,7 @@ def read_SpireLeoOrbPOD_sp3c(filelist_sat):
                 format ='%y%m%d%H%M%S.%f' )
                                  for ts in leoOrb_dict['date_gps'] ]
     
-    print("read_SpireLeoOrbPOD_sp3c(): Done combining data.")
+    print("        - read_SpireLeoOrbPOD_sp3c(): Done combining data.")
 
 
     

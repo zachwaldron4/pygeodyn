@@ -1,8 +1,8 @@
  i_SATID =                  1804607
  SATID_char = 1804607
  SATID =         1804607.0000000000     
- input_file = /data/SatDragModelValidation/data/inputs/sat_spire83/g2b/TRAJ.txt
- output file = /data/SatDragModelValidation/data/inputs/sat_spire83/g2b/g2b_pce_leoOrb_nov2018
+ input_file = /data/SatDragModelValidation/data/inputs/sat_spire083/g2b/TRAJ.txt
+ output file = /data/SatDragModelValidation/data/inputs/sat_spire083/g2b/pce_spire083_leoOrb_20181101_20181130
  BLOCK #      1 WRITTEN
  BLOCK #      2 WRITTEN
  BLOCK #      3 WRITTEN
