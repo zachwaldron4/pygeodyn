@@ -1,7 +1,7 @@
 !$JB2008_call
       SUBROUTINE JB2008_call(MJDSEC,FSEC,    &
         &      ALTM,PHI,XLAMB, RHO, DRHODZ,  &
-        &      COSPSI, n_dens_temp )
+        &      COSPSI,SINPSI,LSTINR, n_dens_temp )
       
       
 !********1*********2*********3*********4*********5*********6*********7**
@@ -9,7 +9,6 @@
 !
 ! FUNCTION:
 !    THIS ROUTINE SERVES AS A SHELL FOR CALLING THE JB2008 DENSITY MODEL
-!
 !
 ! I/O PARAMETERS:
 !
@@ -23,12 +22,44 @@
 !   RHO         I/0   S           DENSITY OF ATMOSPHERE AS GIVEN BY MSIS MODEL
 !   DRHODZ      I/0   S           PARTIAL DERIVATIVE OF RHO WITH HEIGHT.
 !   COSPSI       I    S           Cosine of GEOCENTRIC LATITUDE
+!   SINPSI       I    S           Sine of GEOCENTRIC LATITUDE
+!   LSTINR       I    L           Last inner iteration of OD 
 !   n_dens_temp  I    A(alloc.)   Array containing the various outputs from JB2008
 !                                    nden(N2,O2,O,Ar,He,H), RHO, TEMP(x2)
 !   -------------------------------------------------------------------
 
 ! COMMENTS:
 !
+! C     Inputs to JB2008.for
+! C
+! C           AMJD   : Date and Time, in modified Julian Days
+! C                    and Fraction (MJD = JD-2400000.5)
+! C           SUN(1) : Right Ascension of Sun (radians)
+! C           SUN(2) : Declination of Sun (radians)
+! C           SAT(1) : Right Ascension of Position (radians)
+! C           SAT(2) : Geocentric Latitude of Position (radians)
+! C           SAT(3) : Height of Position (km)
+! C           F10    : 10.7-cm Solar Flux (1.0E-22*Watt/(M**2*Hertz))
+! C                    (Tabular time 1.0 day earlier)
+! C           F10B   : 10.7-cm Solar Flux, ave.
+! C                    81-day centered on the input time
+! C                    (Tabular time 1.0 day earlier)
+! C           S10    : EUV index (26-34 nm) scaled to F10
+! C                    (Tabular time 1.0 day earlier)
+! C           S10B   : EUV 81-day ave. centered index
+! C                    (Tabular time 1.0 day earlier)
+! C           XM10   : MG2 index scaled to F10
+! C                    (Tabular time 2.0 days earlier)
+! C           XM10B  : MG2 81-day ave. centered index
+! C                    (Tabular time 2.0 days earlier)
+! C           Y10    : Solar X-Ray & Lya index scaled to F10
+! C                    (Tabular time 5.0 days earlier)
+! C           Y10B   : Solar X-Ray & Lya 81-day ave. centered index
+! C                    (Tabular time 5.0 days earlier)
+! C           DSTDTC : Temperature change computed from Dst index
+! 
+! 
+! 
 ! REFERENCES:
 !
 !
@@ -38,7 +69,7 @@
 
       COMMON/DTMGDN/TGTYMD,TMGDN1,TMGDN2
       
-      !!!*CEARTH* GEOMETRICAL EARTH CONSTANTS USED FOR MEAS. PROCESSI CONSTANTS  ADOPTED IN GRS80
+      !!!*CEARTH* GEOMETRICAL EARTH CONSTANTS USED FOR MEAS. PROCESSI CONSTANTS ADOPTED IN GRS80
 !            AEG    -  SEMI MAJOR AXIS OF TRACKING BODY (EARTH)
 !            AEGSQ  -  AEG * AEG
 !            FG     -  FLATTENING OF EARTH ELLIPSOID
@@ -90,16 +121,28 @@
 !**********************************************************************
 !
       kin = kin+1
+      
 
 
-      IJDSEC=float(MJDSEC)+FSEC     
-      AMJD=(IJDSEC/86400.0D0)+(TMGDN2+ 0.10D0)
+      if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) '*******************************************************'
+      if(kin.eq.1) WRITE(6,*) '****************** [JB2008_call.f90] ******************'
+      if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) 'Inputs to Call JB2008()     '
+      if(kin.eq.1) WRITE(6,*) '-----------------------     '
 
+            
 
+!     AMJD   : Date and Time, in modified Julian Days
+!              and Fraction (MJD = JD-2400000.5)
+!     ------------------------------------------------
+                        ! IJDSEC=float(MJDSEC)+FSEC     
+                        ! AMJD=(IJDSEC/86400.0D0)+(TMGDN2+ 0.10D0)
+                        ! if(kin.eq.1) WRITE(6,*) '   AMJD      ', AMJD
 
-      !!!!   USE THE CALCULATIONS IN MJDYMD.f90 to calcualte the integer
-      !!!!   VALUES FOR YEAR, MONTH, DAY, HOUR, MIN, SEC
-      !!!!    ---- but  we have to actually use DOY(day of year) instead of Month&Day
+      !!   USE THE CALCULATIONS IN MJDYMD.f90 to calcualte the integer
+      !!   VALUES FOR YEAR, MONTH, DAY, HOUR, MIN, SEC
+      !!    ---- but we have to actually use DOY(day of year) instead of Month&Day
       iDOY=DOY(MJDSEC,FSEC)   !-ONE    ----- zach removed subtract one...
       MODJD=MJDSEC+FSEC
       IDY=(MODJD/86400)+INT(TMGDN2+0.1)  ! CONVERT FROM MJDS TO MJD
@@ -116,14 +159,23 @@
       imin   = (isecs-ihour*3600)/60
       isec   = isecs-ihour*3600-imin*60
 
+      if(kin.eq.1) WRITE(6,*) '        iyear        ', iyear
+      if(kin.eq.1) WRITE(6,*) '        imonth       ', imonth
+      if(kin.eq.1) WRITE(6,*) '        iday         ', iday
+      if(kin.eq.1) WRITE(6,*) '        ihour        ', ihour
+      if(kin.eq.1) WRITE(6,*) '        imin         ', imin
+      if(kin.eq.1) WRITE(6,*) '        isecs        ', isecs
+      if(kin.eq.1) WRITE(6,*) '        isec         ', isec
 
       !C     CONVERT TIME TO DAYS SINCE 1950 JAN 0 (Jan 31,1949 0 UT) AND MJD
       IF (iyear.GT.1900) iyear = (iyear-2000) + 100
-      IF (iyear.LT.50) iyear = iyear + 100
+      IF (iyear.LT.50)   iyear = iyear + 100
       IYY = ((iyear-1)/4-12)
       IYY = (iyear-50)*365 + IYY
-      D1950 = IYY*1.D0 + iDOY*1.D0+ihour/24.D0+imin/1440.D0+isec/86400.D0
-      !AMJD2 = D1950 + 33281.0D0
+      D1950 = IYY*1.D0 + iDOY*1.D0 + ihour/24.D0 + imin/1440.D0 + isec/86400.D0
+      AMJD = D1950 + 33281.0D0
+      if(kin.eq.1) WRITE(6,*) '   Date and Time, in modified Julian Days'
+      if(kin.eq.1) WRITE(6,*) '        AMJD        ', AMJD
 
 
 
@@ -131,40 +183,69 @@
       !     USE 1 DAY LAG FOR F10 AND S10 FOR JB2008
       DLAG = 1.
       T1950 = D1950 - DLAG
-      CALL SOLFSMY (T1950,F10,F10B,S10,S10B,XMXX,XMXXB,XYXX,XYXXB)
-      
-
+      CALL SOLFSMY(T1950,F10,F10B,S10,S10B,XMXX,XMXXB,XYXX,XYXXB)
 
       !C     USE 2 DAY LAG FOR M10 FOR JB2008
       DLAG = 2.
       T1950 = D1950 - DLAG
-      CALL SOLFSMY (T1950,XFXX,XFXXB,XSXX,XSXXB,XM10,XM10B,XYXX,XYXXB)
+      CALL SOLFSMY(T1950,XFXX,XFXXB,XSXX,XSXXB,XM10,XM10B,XYXX,XYXXB)
       
       !C     USE 5 DAY LAG FOR Y10 FOR JB2008
       DLAG = 5.
       T1950 = D1950 - DLAG
-      CALL SOLFSMY (T1950,XFXX,XFXXB,XSXX,XSXXB,XMXX,XMXXB,Y10,Y10B)
+      CALL SOLFSMY(T1950,XFXX,XFXXB,XSXX,XSXXB,XMXX,XMXXB,Y10,Y10B)
 
       !C     READ GEOMAGNETIC STORM DTC VALUE
-      CALL DTCVAL (D1950,IDTCVAL)
+      CALL DTCVAL(D1950,IDTCVAL)
       DSTDTC = IDTCVAL
+      if(kin.eq.1) WRITE(6,*) '   F10       ', F10
+      if(kin.eq.1) WRITE(6,*) '   F10B      ', F10B
+      if(kin.eq.1) WRITE(6,*) '   S10       ', S10
+      if(kin.eq.1) WRITE(6,*) '   S10B      ', S10B
+      if(kin.eq.1) WRITE(6,*) '   XM10      ', XM10
+      if(kin.eq.1) WRITE(6,*) '   XM10B     ', XM10B
+      if(kin.eq.1) WRITE(6,*) '   Y10       ', Y10
+      if(kin.eq.1) WRITE(6,*) '   Y10B      ', Y10B
+      if(kin.eq.1) WRITE(6,*) '   DSTDTC    ', DSTDTC
+
       
-      
-      !!!! if COSPSI is greater than one by any amount (like even in the 12th decimal point)
-      !!! it will return a nan and result in cascading errors
-      if (COSPSI.GE.1) then
-          WRITE(6,*) 'COSPSI too large: ', COSPSI
-          WRITE(6,*) '    setting equal to 1.D0 '
-          COSPSI=1.D0
-      endif 
-       
+
+!     SAT(1) : Right Ascension of Position (radians)
+!     SAT(2) : Geocentric Latitude of Position (radians)
+!     SAT(3) : Height of Position (km)
+!     ---------------------------------------------------
+
+      !   if COSPSI is > 1 by any amount (even to 12th decimal point)
+      !   will return a nan and result in cascading errors
+      ! if (COSPSI.GE.1) then
+      !     WRITE(6,*) 'COSPSI too large: ', COSPSI
+      !     WRITE(6,*) '    setting equal to 1.D0 '
+      !     COSPSI=1.D0
+      ! endif 
+
       ! Convert GEODETIC Lat to GEOCENTRIC
-      XLAT_geodetic = PHI     !  GEODETIC in rads
-      XLON_geodetic = XLAMB   !  GEODETIC in rads
-      XLAT_geocentric = ACOS(COSPSI)
-      XLON_geocentric = XLON_geodetic
-      
- 
+      ! XLAT_geodetic = PHI     !  GEODETIC in rads
+      ! XLON_geodetic = XLAMB   !  GEODETIC in rads
+      ! XLAT_geocentric = ACOS(COSPSI)    !
+      ! XLAT_geocentric = ATAN(SINPSI,COSPSI)
+      XLAT_geocentric = ATAN2(SINPSI,COSPSI)
+      ! XLAT_geocentric = PHI
+      ! XLAT_geocentric = ASIN(SINPSI)
+      ! if (XLAT_geocentric.LT.0) then
+      !       XLAT_geocentric = XLAT_geocentric + 2.D0*PI
+      ! endif
+
+      if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) '------------------------'
+      if(kin.eq.1) WRITE(6,*) '  SINPSI           ', SINPSI
+      if(kin.eq.1) WRITE(6,*) '  COSPSI           ', COSPSI
+      if(kin.eq.1) WRITE(6,*) '  ASIN(SINPSI)       ',  ASIN(SINPSI)
+      if(kin.eq.1) WRITE(6,*) '  ACOS(COSPSI)       ',  ACOS(COSPSI)
+      if(kin.eq.1) WRITE(6,*) '  ATAN(SINPSI,COSPSI) ', ATAN2(SINPSI,COSPSI)
+      if(kin.eq.1) WRITE(6,*) '  XLAT_geocentric  ', XLAT_geocentric
+      if(kin.eq.1) WRITE(6,*) '------------------------'
+      if(kin.eq.1) WRITE(6,*) ' '
+      XLON_geocentric = XLAMB
       XLAT = XLAT_geocentric
       XLON = XLON_geocentric
 
@@ -174,32 +255,105 @@
       SAT(1) = DMOD(GWRAS + XLON + 2.D0*PI, 2.D0*PI)
       SAT(2) = XLAT 
       SAT(3) = ALTM/1000.D0                                   ! Satellite altitude in KM
-      
+      if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) '   Right Ascension of Position (radians)' 
+      if(kin.eq.1) WRITE(6,*) '        SAT(1)        ', SAT(1)
+      if(kin.eq.1) WRITE(6,*) '   Geocentric Latitude of Position (radians)'  
+      if(kin.eq.1) WRITE(6,*) '        SAT(2)        ', SAT(2) 
+      if(kin.eq.1) WRITE(6,*) '   Height of Position (km)'  
+      if(kin.eq.1) WRITE(6,*) '        SAT(3)        ', SAT(3)
+
+
+      IF(LSTINR) THEN
+            WRITE(500,7500)   iday,      &  
+                           &  imonth,      &  
+                           &  iyear,      &  
+                        !    &  isecs,      &  
+                           &  ihour,      &  
+                           &  imin,      &  
+                           &  isec,      &  
+                           &   AMJD,    &  
+                           &   D1950,      &  
+                           &   SINPSI,     &  
+                           &   COSPSI,     &  
+                           &   ASIN(SINPSI) ,      &  
+                           &   ACOS(COSPSI) ,       &  
+                           &   ATAN2(SINPSI,COSPSI), &
+                           &    DSTDTC
+                        !    &    ,    &  
+                        !    &    ,    &  
+                        !    &           
+!
+            7500   FORMAT(   I3,     1X,    &   !iday
+                       &     I2,     1X,    &   !imonth
+                       &     I4,     1X,    &   !iyear
+                  !      &     I06,    1X,    &   !isecs
+                       &     I2,     1X,    &   !ihour
+                       &     I2,     1X,    &   !imin
+                       &     I2,     1X,    &   !isec
+                       &    2(F12.4, 1X),   &    
+                            6(F12.4, 1X))    
+                  !      &       ,   1X,   &
+                  !      &       ,   1X,   &
+                  !      &       ,   1X,   &  
+                  !      &       ,   1X,   &
+                  !      &       ,   1X,   &
+                  !      &       ,   1X,   &     
+                  !      &       ,   1X,   &     
+                  !      &       ,   1X     ) 
+      ENDIF                                                           
+!***************************************************************************
+
+
        
-      !     GET SUN LOCATION (RAD)
+!     GET SUN LOCATION (RAD)
+!     SUN(1) : Right Ascension of Sun (radians)
+!     SUN(2) : Declination of Sun (radians)
+!     ----------------------------------------------
+         !SOLRAS and SOLDEC are outputs from SUNPOS
       CALL SUNPOS(AMJD,SOLRAS,SOLDEC)
       SUN(1) = SOLRAS
       SUN(2) = SOLDEC
+      if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) '   Right Ascension of Sun (radians)'
+      if(kin.eq.1) WRITE(6,*) '        SUN(1)        ', SUN(1)
+      if(kin.eq.1) WRITE(6,*) '   Declination of Sun (radians)'
+      if(kin.eq.1) WRITE(6,*) '        SUN(2)        ', SUN(2)
+      
 
-            
-      ! if(kin.eq.1) WRITE(6,*) '*******************************************************'
-      ! if(kin.eq.1) WRITE(6,*) '****************** [JB2008_call.f90] ******************'
-      ! if(kin.eq.1) WRITE(6,*) ' '
-      ! if(kin.eq.1) WRITE(6,*) 'INPUTS to CALL JB2008()     '
-      ! if(kin.eq.1) WRITE(6,*) '   AMJD      ', AMJD
-      ! if(kin.eq.1) WRITE(6,*) '   SUN       ', SUN
-      ! if(kin.eq.1) WRITE(6,*) '   SAT       ', SAT
-      ! if(kin.eq.1) WRITE(6,*) '   F10       ', F10
-      ! if(kin.eq.1) WRITE(6,*) '   F10B      ', F10B
-      ! if(kin.eq.1) WRITE(6,*) '   S10       ', S10
-      ! if(kin.eq.1) WRITE(6,*) '   S10B      ', S10B
-      ! if(kin.eq.1) WRITE(6,*) '   XM10      ', XM10
-      ! if(kin.eq.1) WRITE(6,*) '   XM10B     ', XM10B
-      ! if(kin.eq.1) WRITE(6,*) '   Y10       ', Y10
-      ! if(kin.eq.1) WRITE(6,*) '   Y10B      ', Y10B
-      ! if(kin.eq.1) WRITE(6,*) '   DSTDTC    ', DSTDTC
-      ! if(kin.eq.1) WRITE(6,*) '   TEMP_jb2008      ', TEMP_jb2008
-      ! if(kin.eq.1) WRITE(6,*) '   RHO_jb2008       ', RHO_jb2008
+
+      if(kin.eq.1) WRITE(6,*) ' '
+      if(kin.eq.1) WRITE(6,*) '   TEMP_jb2008      ', TEMP_jb2008
+      if(kin.eq.1) WRITE(6,*) '   RHO_jb2008       ', RHO_jb2008
+      if(kin.eq.1) WRITE(6,*) '------------------------------------------------'
+
+
+
+! *****  PRINT THE INPUTS to FILE ***********************************
+!       IF(LSTINR) THEN
+!             WRITE(500,7500)   AMJD,      &  
+!                            &  SUN,      &  
+!                            &  SAT,      &  
+!                            &  F10,      &  
+!                            &  F10B,      &  
+!                            &  S10,      &  
+!                            &   S10B,    &  
+!                            &   XM10,      &  
+!                            &   XM10B,     &  
+!                            &   Y10,     &  
+!                            &   Y10B,      &  
+!                            &   DSTDTC
+! !
+!             7500   FORMAT(   F12.4,     1X,    &   !iday
+!                        &     I2,     1X,    &   !imonth
+!                        &     I4,     1X,    &   !iyear
+!                        &     I2,     1X,    &   !ihour
+!                        &     I2,     1X,    &   !imin
+!                        &     I2,     1X,    &   !isec
+!                        &    2(F12.4, 1X),   &    
+!                             6(F12.4, 1X))    
+!       ENDIF                                                           
+
 
             ! Computes density in units of kg/m^3 -- Returns density through RHO
             !           AMJD   : Date and Time, in modified Julian Days
@@ -253,7 +407,9 @@
       n_dens_temp(8) = TEMP_jb2008(1) !   TEMP(1): Exospheric Temperature above Input Position (deg K)
       n_dens_temp(9) = TEMP_jb2008(2) !   TEMP(2): Temperature at Input Position (deg K)
       
-      if(kin.eq.1) WRITE(6,*) '     * JB2008 Outputs '
+      if(kin.eq.1) WRITE(6,*) '  '
+      if(kin.eq.1) WRITE(6,*) 'JB2008 Outputs '
+      if(kin.eq.1) WRITE(6,*) '--------------- '
       if(kin.eq.1) WRITE(6,*) '          - N2            ', n_dens_temp(1)
       if(kin.eq.1) WRITE(6,*) '          - O2            ', n_dens_temp(2)
       if(kin.eq.1) WRITE(6,*) '          - O             ', n_dens_temp(3)

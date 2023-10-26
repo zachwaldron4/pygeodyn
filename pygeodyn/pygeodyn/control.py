@@ -768,9 +768,8 @@ class RunController():
             os.system('mv fort.105 accel_file')     
 
         
-        
-        
-        os.system('rm -f slvtmp* ftn* fort.*')
+
+        # os.system('rm -f slvtmp* ftn* fort.*')
 
 
 
@@ -856,22 +855,15 @@ class RunController():
         print(self.run_ID,"               Finished copying files to outputdir")
 
         #### Go up 3 levels and delete the temporary directories:
-        os.chdir('../../')
-        
-        # print(self.tabtab,'Deleting tmp/: ',self.series)
-        # os.system('rm -rf'+' ' +self.series)
-        print(self.tabtab,'Deleting tmp/: ',self.dir_tmp_arc)
-        os.system('rm -rf'+' ' +self.dir_tmp_arc)
+        os.chdir('../../')        
+        # print('current dir: ', os.getcwd())
+
+        del_tmp = '/'.join(self.dir_tmp_arc.split('/')[:-1])
+
+
+        # print(self.tabtab,'Deleting tmp/: ',del_tmp)
+        # os.system('rm -rf'+' ' +del_tmp)
      
-        ## perhaps needs to be changed to this
-        ##
-    
-
-
-
-
-
-
 
 
 
@@ -928,7 +920,8 @@ class RunController():
         #### Timer to measure how long this function takes
         import time
         start = time.time()
-        
+        from  datetime import datetime,timedelta
+
         ##### --------------------------------------------------------------------------------------------
         #### Import the INIT_ORBIT that was constructed from the initializing run of MSIS2 through GEODYN
         import sys
@@ -1021,11 +1014,11 @@ class RunController():
         del DEN_csv['secs']
         ##### --------------------------------------------------------------------------------------------
         #### End code block that deals with the INIT_ORBIT and fixing the date formats
-        
+         
                
         if kamodo_flag:
             import sys
-            sys.path.insert(0,self.path_kamodo_src+'/Kamodo/kamodo_ccmc/flythrough/')
+            sys.path.insert(0,self.path_kamodo_src+'/Kamodo_vJan2023/kamodo_ccmc/flythrough/')
             from SatelliteFlythrough import ModelFlythrough
 
         #### Initialize empty lists for storing the values 
@@ -1192,6 +1185,10 @@ class RunController():
                 _print_units=False
                 temp_var = 'T'
                 den_var = 'rho'
+
+                ### IF USING CTIPE, in the old version of KAMODO, SHIFT THE LON
+                lons_list  = [x+360 if x<0 else x for x in lons_list]  
+                print("***** shifting the longitude range from -180,180 to 0,360 for CTIPe *****")
             
             elif self.prms['den_model'] == 'gitm':
                 #### Kamodo static inputs:
@@ -1221,12 +1218,17 @@ class RunController():
                 _print_units=False
                 temp_var = 'T_n'
                 den_var = 'rho_n'
-
+            
+            from gc import collect as gc_collect
             gc_collect()
     
             print(f'|     Running data cube thru Kamodo... please hold.')
 #             results = ModelFlythrough(model, file_dir, variable_list, unixtimes_list, lons_list, lats_list, alts_list,
 #                                       coord_type, coord_grid, high_res=20., verbose=False,csv_output='', plot_output='')
+
+
+
+
 
             results  =  ModelFlythrough(model, file_dir, variable_list, 
                                     unixtimes_list, lons_list, lats_list, alts_list, 
@@ -1299,16 +1301,205 @@ class RunController():
         else: #if kamodo_flag=False #### OPTION TO NOT RUN THRU KAMODO,  JUST MAKE THE FILE WITH COORDINATES
             
             if HASDM_format_flag:
-                print('***** Constructing the File with requested format to be made input for HASDM ***** ')
+                print("    Fill orbit_cloud with values from SET-HASDM ")
                 
+                ### SET-HASDM interpolator!
+
+                ##### Open the right files:
+                path_sethasdm_database = \
+                    "/data/SatDragModelValidation/data/inputs/atmos_models/hasdm/SET_hasdm_density_database/"
+
+                # print(date_list[0])
+                # print(date_list)
+                max_doy   = pd.to_datetime(date_list, format='%y%m%d%H%M%S').max().day_of_year
+                min_doy   = pd.to_datetime(date_list, format='%y%m%d%H%M%S').min().day_of_year 
+                max_year  = pd.to_datetime(date_list, format='%y%m%d%H%M%S').max().year
+                min_year  = pd.to_datetime(date_list, format='%y%m%d%H%M%S').min().year
+                max_alt   = np.max(alts_list)
+                min_alt   = np.min(alts_list)
+                years  =  np.unique([min_year , max_year])  
+                alts   =  np.unique([min_alt  , max_alt])/1000  
+                DOYs   =  np.unique([min_doy  , max_doy])  
+
+                print(f"--------------------------------------")
+                # print(f"orbit params: {files_to_load}")
+                print(f"   years: {years}")
+                print(f"   alts:  {alts}")
+                print(f"   DOYs:  {DOYs}")
+
+
+                ## for sake of simplicity just load all relevant files in that altitude range
+                files_to_load = []
+                for iyear, valyear in enumerate(years):
+                    files_to_load.append( str(valyear)+"_HASDM_400-475KM.den")
+                    files_to_load.append( str(valyear)+"_HASDM_500-575KM.den")
+
+
+                files_to_load = list(np.unique(files_to_load))
+                print(f"****Loading SET-HASDM files: {files_to_load}****")
+                                
+                #### Find the indices for the desired Day of Year (DOY)
+                doy1 = np.sort(DOYs)[0]-1
+                # doy1 = np.sort(DOYs)[0]
+                doy2 = np.sort(DOYs)[-1]+1
+                flag1=True
+
+
+                with open(path_sethasdm_database+files_to_load[0], 'r') as f:
+                    for line_no, line_text in enumerate(f):
+                        ### First instance of DOY
+                        if str(doy1) in line_text[5:10] and flag1:
+                            index1 = line_no
+                            flag1=False
+                        ### Final instance of DOY
+                        if str(doy2) in line_text[5:10]:
+                            index2 = line_no
+                            break
+                print('Will load data from index', index1,'to', index2 ,'for days', doy1,'-',doy2)
+
+
+                ### Prepare to load HASDM dataset with correct dateformat and columns
+                from datetime import datetime
+                custom_date_parser= lambda v,w,x,y,z: datetime.strptime(f"{v}-{w} {x}:{y}:{z}", "%Y-%j %H:%M:%S.000")
+                col_names =   [ "IYR"   ,   #  = year
+                                "IYDAY" ,   #  = day of year (1 through 366)
+                                "IHR"   ,   #  = hour of day
+                                "IMIN"  ,   #  = minutes of hour
+                                "SEC"   ,   #  = seconds of minute
+                                "D1950" ,   #  = days since 0 Jan 1950
+                                "HTM"   ,   #  = altitude above EGM-96(km)
+                                "XLT"   ,   #  = local solar time (hour)
+                                "XLAT"  ,   #  = geocentric latitude  (deg)
+                                "XLON"  ,   #  = geographical longitude (deg)
+                                "RHO"   ,   #  = HASDM density (kg/m3)
+                                ]
+
+                df_bighasdm = {}
+                for ifile, file in enumerate(files_to_load):
+
+                    ### Load HASDM data
+                    df_bighasdm[file]  =  pd.read_csv(path_sethasdm_database+file,
+                                                skiprows = index1, 
+                                                nrows=(index2-index1),           
+                                                sep = '\s+',
+                                                parse_dates={'Date':["IYR" ,"IYDAY" ,"IHR","IMIN","SEC"]},
+                                                date_parser=custom_date_parser,
+                                                names= col_names)
+                ### Concatinate it all into one dataframe
+                DF = pd.concat([ df_bighasdm[file] for file in files_to_load]  )
+                DF.reset_index(drop=True)
+
+                from gc import collect as gc_collect
+                ### Save memory:
+                del df_bighasdm
+                del DF['Date']
+                hasdm_matrix = DF.to_numpy()
+                del DF
+                gc_collect()
+
+
+
+                def Call_HASDM_interpolation(hasdm_mat):
+                    ''' This inputs the HASDM grid for a given timeperiod and altitude range as 
+                    a numpy matrix as input and returns an interpolation function to the
+                    densities within that matrix'''
+                    import numpy as np
+                    from scipy.interpolate import RegularGridInterpolator, interp1d
+
+                    ### Get unique values for the coordinates
+                    vec_alt = np.unique(hasdm_mat[:,1])
+                    vec_tim = np.unique(hasdm_mat[:,0])
+                    vec_lon = np.unique(hasdm_mat[:,4])
+                    vec_lat = np.unique(hasdm_mat[:,3])
+
+                    ### Project the densities into log space
+                    hasdm_mat[:,5] = np.log(hasdm_mat[:,5])
+                    ### Construct an array of longitude indices
+                    ind_lon = np.arange(0,np.size(vec_lon))
+                    ### Make an empty data matrix to store the densities
+                    den_grid = np.zeros((np.size(vec_alt),
+                                        np.size(vec_tim),
+                                        np.size(vec_lon),
+                                        np.size(vec_lat),
+                                        ))
+
+                    ### Loop through the coordinates to construct an 
+                    ###    even smaller grid through which to interpolate.
+                    N_alt = np.size(vec_alt)
+                    N_tim = np.size(vec_tim)
+                    N_lat = np.size(vec_lat)
+                    N_lon = np.size(vec_lon)
+
+                    for ii_alt in range(N_alt):
+                        ind_alt = np.where(hasdm_mat[:,1] == vec_alt[ii_alt])[0]
+
+                        for ii_tim in range(N_tim):
+                            ind_tim = np.where(hasdm_mat[:,0] == vec_tim[ii_tim])[0]
+
+                            for ii_lat in range(N_lat):
+                                ind_alt_tim = np.intersect1d(ind_alt, ind_tim)
+                                hasdm_small = hasdm_mat[ind_alt_tim,:]
+
+                                ind_lat = np.where(hasdm_small[:,3] == vec_lat[ii_lat])[0]
+                                hasdm_small = hasdm_small[ind_lat,:]
+
+                                den_ind = interp1d(hasdm_small[:,4], hasdm_small[:,5], 
+                                                    kind='linear', fill_value='extrapolate')(vec_lon)
+                                den_grid[ii_alt, ii_tim, ind_lon, ii_lat] = den_ind
+
+                    # Create a gridded interpolant
+                    gridVecs = [vec_alt, vec_tim, vec_lon, vec_lat]
+                    interp_func = RegularGridInterpolator(gridVecs, den_grid, 
+                                                        bounds_error=False,fill_value=None)
+                    return(interp_func)
+
+
+                interpolate_hasdm =  Call_HASDM_interpolation(hasdm_matrix)
+
+
+                ### IF USING HASDM, SHIFT THE LONGITUDE TO CORRECTION RANGE
+                lons_list  = [x+360 if x<0 else x for x in lons_list]  
+                print("***** shifting the longitude range from -180,180 to 0,360 for HASDM *****")
+
+
+
+                RHO_hasdm = []
+                for index, datetimeval in enumerate(pd.to_datetime(date_list, format='%y%m%d%H%M%S')):
+
+                        #### Convert to 1950 Julian Day from 
+                        #### Julian date:    12:00 January 1, 4713 BC    (proleptic Julian calendar -->  JD)
+                        #### CNES JD:         0:00 January 1, 1950       (JD − 2433282.5) 
+
+                        
+                        ### Lon is 0-360, geographical
+                        ### Lat is -90 to 90
+                        ### Alt above EGM-96(km)
+                        
+                    JD = pd.Timestamp(datetimeval).to_julian_date()
+                    # JD = np.trunc(DF['D1950'].mean())
+                    tim_sat = (JD - 2433282.5)+1 #JD+(datetimeval.hour/24)     # 25150.3
+                    lat_sat = float(lats_list[index])    
+                    lon_sat = float(lons_list[index])    
+                    alt_sat = float(alts_list[index] )   
+                    sat_coords = np.array([alt_sat,tim_sat, lon_sat, lat_sat])
+                    
+                    # Convert from kg/m3 to g/cm^3
+                    RHO_hasdm.append( np.exp(interpolate_hasdm(sat_coords))[0]/1000)
+
+
+
                 with open(self.orbitcloud_csv_file, 'r+') as file:
                     
                     for ii, valval in enumerate(unixtimes_list):
 #                         print('whoops gotta fix this lol')
                         
-                        file.write(f"{datetime.strftime(datetime.fromtimestamp(valval), '%y%m%d%H%M%S')}  {lons_list[ii]:9.4f}  {lats_list[ii]:9.4f}  {alts_list[ii]:9.4f}  \n")                        
+                        file.write(f"{datetime.strftime(datetime.fromtimestamp(valval), '%y%m%d%H%M%S')}  "\
+                                  +f"{lons_list[ii]:9.4f}  {lats_list[ii]:9.4f}  {alts_list[ii]:9.4f}  "\
+                                  +f"{RHO_hasdm[ii]:15.6e}  {0.:12.5e}  {0.:12.5e}  {0.:12.5e}  "\
+                                  +f"{0.:12.5e}   {0.:8.4e}\n")                        
 
-            
+
+
             else:#### REGULAR GEODYN requestied format without the density from Kamodo 
                 with open(self.orbitcloud_csv_file, 'r+') as file:
                     for ii, valval in enumerate(date_list):

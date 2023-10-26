@@ -1,2 +1,2 @@
-/data/SatDragModelValidation/data/inputs/atmos_models/hasdm/vishal_icesat2_oct2018_jan2019
-/data/SatDragModelValidation/data/inputs/atmos_models/hasdm/vishal_icesat2_oct2018_jan2019/HASDM_OrbitCloud_2018314.01.csv
+ 
+none

@@ -580,7 +580,7 @@ class Util_Tools:
                 
                 if 'CONVERGENCE WITHIN  2.0 PERCENT' in line:
                     self.convergence_flag = True
-                    print(self.tab,'- convergence achieved', sep='')
+                    # print(self.tab,'- convergence achieved', sep='')
                     break
                 
                 elif 'HYPERBOLIC TRAJECTORY' in line:
@@ -868,8 +868,8 @@ class Util_Tools:
         Handles the Arc naming conventions
         Construct a way to read in the satellite specific filenames.
         
-        :param: arc_val aslkjdkldsj definintinonasldkfjsaldkj
-        :output: slkdfjlksdjf
+        :param: arc_val definition 
+        :output:  
         
         '''
         
@@ -886,13 +886,37 @@ class Util_Tools:
             else:
 #                 print('There are multiples of this arc, this is #',iarc+1)
                 pass
+
+        ### get fractional hours for this epoch
+        epochstart = self.prms['epoch_start'][iarc]
+        hours = pd.to_datetime(epochstart, format='%Y-%m-%d %H:%M:%S').hour
+        frachours =(hours/24)
+
         self.arc_name_id = arc_val
         self.YR  = self.arc_name_id[0:4]
-        doy = self.arc_name_id[5:]
+        doy = self.arc_name_id[5:8]
+
+        if len(self.arc_name_id) == 9:
+            maneuv_indicator = self.arc_name_id[8]
+        else:
+            maneuv_indicator = ''
+
+        if self.prms['arc_type'] == "Nominal30hr_and_AB":
+            ### Arc names do not have a fraction attached
+            self.arcdate_for_files = '%d%03d'  % ( int(self.YR), int(doy)) + maneuv_indicator
+            self.arcdate_v2        = '%d.%03d' % ( int(self.YR), int(doy)) + maneuv_indicator
+        else:  
+            ### Arc names have a fraction attached indicating the start fractional hour
+            self.arcdate_for_files = '%d%03d'  % ( int(self.YR), int(doy))+('%.3f'%frachours).lstrip('0') + maneuv_indicator
+            self.arcdate_v2        = '%d.%03d' % ( int(self.YR), int(doy))+('%.3f'%frachours).lstrip('0') + maneuv_indicator
 #         self.arcdate_for_files = '%02d.%d%d'   % ( str(iarc+1), self.YR, doy)
 #         self.arcdate_v2        = '%02d.%d.%d'   % ( str(iarc+1), self.YR, doy) #str(iarc+1)+'.'+ self.YR + '.' + doy 
-        self.arcdate_for_files = '%d%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1))
-        self.arcdate_v2        = '%d.%03d.%02d'   % ( int(self.YR), int(doy), (iarc+1)) #str(iarc+1)+'.'+ self.YR + '.' + doy 
+
+
+        # arcdate_v3        = '%d.%03d' % ( int(YR), int(doy))+('%.3f'%frachours).lstrip('0') #str(iarc+1)+'.'+ self.YR + '.' + doy 
+
+        ### Include the below to reduce arclength to three hours and have better 
+        ###  understandability 
 
 
         ####
@@ -943,9 +967,7 @@ class Util_Tools:
         '''
         
         arc_file_list = []
-        
-#         print('make_list_of_arcfilenames-- self.arc_input: ',self.arc_input)
-            
+                    
         for i, val in enumerate(self.arc_input):
 
             #### Count how many arcs of this name there are
@@ -960,10 +982,30 @@ class Util_Tools:
 #                 print('filename list #',i+1)
                 pass
 
+            
+            epochstart = self.prms['epoch_start'][i]
+            hours = pd.to_datetime(epochstart, format='%Y-%m-%d %H:%M:%S').hour
+            frachours =(hours/24)
+
             arc_name_id = val
             YR  = arc_name_id[0:4]
-            doy = arc_name_id[5:]
-            arcdate_for_files =  '%d%03d.%02d' % ( int(YR), int(doy), (i+1)) # str(i+1)+'.' +YR + doy 
+            doy = arc_name_id[5:8]
+
+            if len(arc_name_id) == 9:
+                maneuv_indicator = arc_name_id[8]
+            else:
+                maneuv_indicator = ''
+
+
+            if self.prms['arc_type'] == "Nominal30hr_and_AB":
+                ### Arc names do not have a fraction attached
+                arcdate_for_files = '%d%03d'  % ( int(YR), int(doy))+ maneuv_indicator
+            else:  
+                ### Arc names have a fraction attached indicating the start fractional hour
+                arcdate_for_files = '%d%03d'  % ( int(YR), int(doy))+('%.3f'%frachours).lstrip('0') + maneuv_indicator
+
+            # arcdate_for_files = '%d%03d'  % ( int(self.YR), int(doy))+('%.3f'%frachours).lstrip('0') 
+
             ####
             ####
             ### Now specify what we what the output arcs to be named.

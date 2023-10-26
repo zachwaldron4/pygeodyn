@@ -162,9 +162,9 @@
    20       SUM = SUM + XKP(INDEX-I)
           pass_24meanKp = SUM/8.0D0
 
-    WRITE(6,*) 'ops:  dtm2020_kptran, XKP(INDEX) ', XKP(INDEX)         
-    WRITE(6,*) 'ops:  dtm2020_kptran, XKP(INDEX-1) ', XKP(INDEX-1)         
-    WRITE(6,*) 'ops:  dtm2020_kptran, pass_24meanKp ', pass_24meanKp         
+!     WRITE(6,*) 'ops:  dtm2020_kptran, XKP(INDEX) ', XKP(INDEX)         
+!     WRITE(6,*) 'ops:  dtm2020_kptran, XKP(INDEX-1) ', XKP(INDEX-1)         
+!     WRITE(6,*) 'ops:  dtm2020_kptran, pass_24meanKp ', pass_24meanKp         
 
      
     !pass_array_kpap(1) = SNGL(XKP(INDEX-1))       ! akp(1) = kp delayed by 3 hours,

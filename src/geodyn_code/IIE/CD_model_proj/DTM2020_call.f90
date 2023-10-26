@@ -40,6 +40,10 @@
 !   MJDSEC   I    S                TIME IN INTEGRAL SECONDS FROM GEODYN REF. TIME
 !
 
+!   PHI     I/O   S    GEODETIC LATITUDE (RADIANS)
+!   XLAMB   I/O   S    LONGITUDE (RADIANS)
+!   alti    I/O   S    HEIGHT ABOVE ELLIPSOID (M)
+
 
 !   XKP(*)   I    A    AN ARRAY CONTAIN 3-HOURLY KP VALUES.  MUST
 !                      GO BACK AT LEAST 2.5 DAYS FROM PRESENT TIME. MAY
@@ -183,7 +187,7 @@
       DATA H_amu/1.0079D0/
       DATA N_amu/14.0067D0/
       
-      
+      COMMON/CONSTR/PI,TWOPI,DEGRAD,SECRAD,SECDAY
       COMMON/PARMB/GSURF,RE
       DATA RGAS/831.4D0/,ZL/120.D0/
 
@@ -226,9 +230,20 @@
 
 ! LOCALTIME      
 !     hl    =   local time (in radian: 0-24hr = 0-2pi)
-      STLOC = SNGL(ATAN2(SINHL,COSHL))
-      
+!       COSHL                          THE COSINE OF HL(LOCAL HOUR)
+!       SINHL                          THE SINE OF HL(LOCAL HOUR)
+
+      STLOC = SNGL(ATAN2(SINHL,COSHL)) 
+
+      if (STLOC.LT.0) then
+            STLOC = STLOC + TWOPI
+      endif
+
+      WRITE(6,*) 'STLOC, SINHL, COSHL ', STLOC, SINHL, COSHL          
+
+
 ! LONGITUDE AND LATITUDE   (in radian)
+      !these are GEODETIC
       GLAT = SNGL(PHI)
       GLON = SNGL(XLAMB)
       
@@ -251,6 +266,7 @@
       kp_array(2) = SNGL(0.0D0)         ! akp(2) = 0. 
       kp_array(3) = SNGL(pass_24meanKp) ! akp(3) = mean of last 24 hours,
       kp_array(4) = SNGL(0.0D0)         ! akp(4) = 0.     
+
 
          if(kin.eq.1) WRITE(6,*) '**********************************************'
          if(kin.eq.1) WRITE(6,*) '************* [DTM2020_call.f90] *************'

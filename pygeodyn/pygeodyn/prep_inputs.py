@@ -8,6 +8,7 @@ import os
 from  datetime   import datetime,timedelta
 from  math       import modf as math_modf
 from  subprocess import run  as subprocess_run
+from gc import collect as gc_collect
 
 
 #
@@ -343,7 +344,8 @@ class PrepareInputs():
                                 + xyzline['DateHMS'], \
                                     format='%Y-%m-%d%H:%M:%S')
         del xyzline['DateYMD'], xyzline['DateHMS']
-    
+        gc.collect()
+
         ### Prepare the data to be in the correct input format for 
         ###  the fortran routine, pce_converter.f
         pce_in = {}
@@ -365,6 +367,9 @@ class PrepareInputs():
                                      time_utc_to_gps(date, dAT).minute,
                                      time_utc_to_gps(date, dAT).second)
                                             for date in xyzline['Date'].values]
+        del xyzline['Date']
+        gc.collect()
+        if verbose: print(f"{self.tabtab}{self.tabtab}  - done with conversion")
 
         pce_in['mjdsec_gps'],\
         pce_in['frac_sec']    = map(list,  \
@@ -374,11 +379,17 @@ class PrepareInputs():
 
         #               tim_utc - tim_gps =  - (dAT - pd.to_timedelta(19,'s'))
         # GPS is 18 seconds ahead of UTC
-        pce_in['gps_offset'] = -1.*(dAT -19.)  
+        pce_in['gps_offset'] = -1.*(dAT -  19.)  
         pce_in['X_j2000_m']          = xyzline['X'].values.astype(float)
         pce_in['Y_j2000_m']          = xyzline['Y'].values.astype(float)
         pce_in['Z_j2000_m']          = xyzline['Z'].values.astype(float)
+        
+        if verbose: print(f"{self.tabtab}{self.tabtab}  - done with the above")
 
+        del xyzline
+        del dAT
+        del mjdsec_gps
+        gc.collect()
 
         ### Write the prepared inputs to a txt file to be read by fortran code
         ##     TRAJ.txt for input to PCE_converter.f
@@ -401,19 +412,28 @@ class PrepareInputs():
         ##  The last three words are the X, Y and Z coordinates of the satellite
         ##       in the J2000 coordinate system.
 
+
+        if verbose: print(f"{self.tabtab} - Put data in a DataFrame")
+
         pce_in_df = pd.DataFrame(pce_in)
         pce_in_df.insert(1, 'utc_offset' ,\
                          pce_in_df['frac_sec'] + pce_in_df['gps_offset'])
         del pce_in_df['frac_sec']
         del pce_in_df['gps_offset']
+        del pce_in
+        gc.collect()
 
         if verbose: print(f"{self.tabtab} - Save prepped PCE as TRAJ.txt")
         ##### Save as an unadorned txt file
         pce_in_df.to_csv(self.dir_makeg2b+'/TRAJ.txt',      \
                             sep=' ',                        \
-                            index = False,                  \
-                            header=False)
+                            index  = False,                 \
+                            header = False)
 
+        ### Free up some memory
+        if verbose: print(f"{self.tabtab} - Free up some memory")
+        del pce_in_df 
+        gc.collect()
 
         ### change dir to where the fortran code is hosted
         cwd = os.getcwd()
@@ -976,19 +996,21 @@ class PrepareInputs():
 
             hours_between_cd_adj = self.prms['hours_between_cd_adj']
             if self.prms_arc['arc_length_h']==hours_between_cd_adj:   # The 24 hour case
-                num_of_cd_adj = (self.prms_arc['arc_length_h']/self.prms['hours_between_cd_adj'])
+                num_of_cd_adj = (self.prms_arc['arc_length_h']/hours_between_cd_adj)
             else:    
-                print('*** ERROR in setupfile write for time dependent drag.')
-                print('     fix the case for adjusting drag with Arclength!=24 hours')
-                import sys
-                sys.exit(0)
+                num_of_cd_adj = (self.prms_arc['arc_length_h']/hours_between_cd_adj)
+
+                # print('*** ERROR in setupfile write for time dependent drag.')
+                # print('     fix the case for adjusting drag with Arclength!=24 hours')
+                # import sys
+                # sys.exit(0)
 
             add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
             drag_dates = []
             for i_cd in np.arange(0, num_of_cd_adj):
                 factor = i_cd+1
-                drag_dates.append( ( self.prms_arc['epoch_startDT'] \
-                                    +add_hours_dt*factor            \
+                drag_dates.append( ( self.prms_arc['epoch_startDT']  \
+                                    +add_hours_dt*factor             \
                                     ).dt.strftime('%y%m%d%H%M%S').values[0])
                 
             for i_cd in np.arange(0, num_of_cd_adj):

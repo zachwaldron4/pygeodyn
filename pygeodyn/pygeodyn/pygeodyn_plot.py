@@ -159,7 +159,7 @@ def orb_avg(den_df, arc):
             roll_avg_count =0
             
         roll_avg_count+=1 
-    d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
+    # d_avg_rolling.append(np.mean([ d_avg[j],  d_avg[j-1]]))
         
     return(time_avg, d_avg, d_avg_rolling )
     

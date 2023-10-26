@@ -86,17 +86,11 @@ class SatelliteHandler(ICESat2):
 
 
 
-
-
-
-
-
 # class SatelliteHandler(ICESat2, Spire_Lemur2_v33):
 #     def __init__(self, whichSatellite):
 #         if whichSatellite is ICESat2 :
 #             ICESat2.__init__(self)
 #             print("check sat ICESat2")
-
 #         elif    whichSatellite is Spire_Lemur2_v33 :#
 #             #  or whichSatellite is 'spire084' \
 #             #  or whichSatellite is 'spire085':
@@ -118,7 +112,6 @@ class SatelliteHandler(ICESat2):
 #         else:
 #             raise ValueError("Error when inheriting the satellite. "\
 #                              +"Check Satellite name.")
-
 
 
 
@@ -166,9 +159,11 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         
         if 'which_ICfile' not in self.prms.keys():
             self.prms['which_ICfile'] = None
-        
-        
     
+        if 'arc_type' not in self.prms.keys():
+            self.prms['arc_type'] = None
+        
+
 
 
         self.prms['initialize'] = False
@@ -214,7 +209,7 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
 
 
     def initialize_timeperiod_stage1(self, startdate, enddate, 
-                                           overwrite_exat, overwrite_g2b):
+                                           overwrite_exat, overwrite_ICtext):
         """
         initialize_timeperiod _summary_
 
@@ -258,13 +253,41 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         print("     overwriting the epoch start and stop to match")
         print(f"----------------------------------------------------------------------------")
         print()
-        
+
         ### Update the input date options 
         ###  (overwriting other date inputs that may otherwise be set)
         self.prms['arc'] = [datetime.strftime(idate, '%Y.%j') for idate in starts_linspace_dt]
+        # self.arc_input = self.prms['arc'] 
+
+        #### Sept 2023. Add the maneuver days back in for ICESat-2
+        ##   Add a check to see if the arcs have maneuver indicators (A or B)
+        arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times.txt'
+        ### Find the right range of dates in this file.
+        arcs = pd.read_csv(arc_timesfile, 
+                    sep = ',',
+        #             dtype=object,
+                    names = ['arc'  ,'epoch_start' ,'epoch_stop'  ,'orbit_start' ,'orbit_stop'],
+                    )
+        ### Convert to list and remove whitespaces in each string
+        arcs_withmaneuvs = []
+        for iarc in self.prms['arc']:
+            index = arcs['arc'].str.contains(iarc)
+            arcs_withmaneuvs.extend(arcs['arc'][index].values.tolist())
+
+        arcs_withmaneuvs = [x.strip() for x in arcs_withmaneuvs]
+        # Update the arcs to reflect maneuvers
+        self.prms['arc'] = arcs_withmaneuvs
         self.arc_input = self.prms['arc'] 
-        self.prms['epoch_start'] = startdate_list_str
-        self.prms['epoch_stop']  = enddate_list_str
+
+        print("self.prms['arc']", self.prms['arc'])
+
+       
+        
+        self.prms['epoch_start'] = [pd.to_datetime(idate[:8], format= '%Y.%j') for idate in arcs_withmaneuvs]
+        self.prms['epoch_stop']  = [pd.to_datetime(idate[:8], format= '%Y.%j')+dt_1day[0] for idate in arcs_withmaneuvs]
+
+        # self.prms['epoch_start'] = startdate_list_str
+        # self.prms['epoch_stop']  = enddate_list_str
         self.verbose=True
 
         ### Re-initialize the satellite.....
@@ -272,13 +295,6 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
 
         #-------------------------------------------------------------------
         print("Step 0: Make directory structure for satellite input data")
-        # for iarc, arc in enumerate(self.arc_input):  # must be a list
-        #     self.arcnumber = iarc
-        #     ###
-        #     self.verbose=True
-        #     self.set_file_paths_for_multiple_arcs( arc , iarc)
-        #     self.get_arc_values_and_dates(skip_ic=True, verbose = self.verbose)
-
 
         path_inputs = self.path_data_inputs+'/sat_'+self.prms['satellite']        
         self.make_directory_check_exist(path_inputs            ,verbose=True)
@@ -351,7 +367,7 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         # self.raw_satinput['ephem_days'] =  [pd.to_datetime(i).day \
         #                                 for i in self.prms['epoch_start']]
         self.prep_g2b_check(self.raw_satinput,\
-                            bool_overwrite=overwrite_g2b,\
+                            bool_overwrite=overwrite_ICtext,\
                             verbose = True)
 
 
@@ -444,17 +460,19 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
             self.ctrlStage1_setup_path_pointers(skip_files = True)
             self.set_file_paths_for_multiple_arcs( arc , iarc) 
 
-            if hasdm_bool:
-                # HASDM_OrbitCloud_2018292.01.csv
-                self.orbitcloud_csv_file = (self.prms['model_data_path']   \
-                                                + '/HASDM_OrbitCloud_'     \
-                                                +  self.arcdate_for_files  \
-                                                + '.csv' )
-            else:
-                self.orbitcloud_csv_file =(self.prms['model_data_path'] \
-                                       +f"/OrbitCloud_{self.prms['satellite']}_Step"\
-                                       + str(int(self.prms['step']))          \
-                                       +'_'+self.arcdate_for_files+'.csv')
+
+            # ZACHHASDM
+            # if hasdm_bool:
+            #     # HASDM_OrbitCloud_2018292.01.csv
+            #     self.orbitcloud_csv_file = (self.prms['model_data_path']   \
+            #                                     + '/HASDM_OrbitCloud_'     \
+            #                                     +  self.arcdate_for_files  \
+            #                                     + '.csv' )
+            # else:
+            self.orbitcloud_csv_file =(self.prms['model_data_path'] \
+                                    +f"/OrbitCloud_{self.prms['satellite']}_Step"\
+                                    + str(int(self.prms['step']))          \
+                                    +'_'+self.arcdate_for_files+'.csv')
             #### identify location of msis2 run
             self.msis2_file_path = self._density_filename+'_msisin'  
 
@@ -462,6 +480,14 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
             #### Check if the MSIS2 density file exists
             file_exists = exists(self.msis2_file_path)
             # print('msis2_file_path, 1: ', self.msis2_file_path)
+
+            FORCE_RERUN = True
+            # ZACHHASDM
+            # if hasdm_bool:
+            #     FORCE_RERUN = False
+
+
+            # if file_exists==True and FORCE_RERUN == False:
             if file_exists:
                 print(f'|     MSIS2 Density file already exists. ')
                 print(f'|          - {self.ARC}_msisin           ')
@@ -512,9 +538,14 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
             except:
                 orbit_cloud_csv_size = 1   
 
-            if not file_exists or orbit_cloud_csv_size < 1000: # run if file has less than 1 kilobytes  
+
+            if not file_exists or orbit_cloud_csv_size < 1000 or FORCE_RERUN==True: # run if file has less than 1 kilobytes  
                 if orbit_cloud_csv_size < 1000:
                     print(f"|     File is too small or empty: {self.orbitcloud_csv_file.split('/')[-1]}" )
+
+                if FORCE_RERUN==True:
+                    print(f"|     **forcing a re-run**" )
+
 
                 if hasdm_bool==False:
                     #### Construct the file to be appended to here
@@ -531,7 +562,14 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
                 ###########################################################
                 self.set_file_paths_for_multiple_arcs( arc , iarc)          #  ORBIT CLOUD CALL!    
 #                     print(f'|          - {self.ARC} ')
-                self.make_orbit_cloud_csv()                                 # 
+                
+                if self.prms['den_model'] =='hasdm_oc':
+                    self.make_orbit_cloud_csv(kamodo_flag=False, HASDM_format_flag=True)      
+                else:
+                    self.make_orbit_cloud_csv()      
+
+
+                                           # 
 
                 gc.collect()
 
@@ -606,13 +644,14 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         ####    along the satellite using MSISe2
         if  self.prms['den_model'] == 'tiegcm_oc'  or \
             self.prms['den_model'] == 'ctipe_oc'   or \
-            self.prms['den_model'] == 'gitm'       :
+            self.prms['den_model'] == 'gitm'       or \
+            self.prms['den_model'] == 'hasdm_oc':
             
             self.initialize_physics_model_run()
         
-        elif  self.prms['den_model'] == 'hasdm_oc':
-        
-            self.initialize_physics_model_run(hasdm_bool=True )
+        # ZACHHASDM
+        # elif  self.prms['den_model'] == 'hasdm_oc':
+        #     self.initialize_physics_model_run(hasdm_bool=True )
 
         else:
             for iarc, arc in enumerate(self.arc_input):  # must be a list

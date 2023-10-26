@@ -2271,7 +2271,7 @@ class ReadRawOutput:
         ARC_FILES = self.make_list_of_arcfilenames()
         
         for i in ARC_FILES:
-#             print(i)
+            print(i)
             if os.path.exists(self.path_to_model+'/DENSITY/'):
                 os.chdir(self.path_to_model+'/DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
@@ -2842,8 +2842,9 @@ class ReadRawOutput:
         self.set_file_paths_for_multiple_arcs( self.arc_input[0], 1, True )
         ARC_FILES = self.make_list_of_arcfilenames()
         
+        
         for i in ARC_FILES:
-#             print('arcfiles',i )
+            # print('arcfiles',i )
             if os.path.exists(self.path_to_model+'/DENSITY/'):
                 os.chdir(self.path_to_model+'/DENSITY/')
                 os.system('bunzip2 -v '+ i +'.bz2')
@@ -2939,7 +2940,7 @@ class ReadRawOutput:
                 else:
                     arc_length = int(self.__dict__['prms_arc']['arc_length_h'])
 
-                data = { 'ARC'             :  [] ,
+                data = {'ARC'             :  [] ,
                         'ArcLength'       :  [] ,
                         'Total_iters'     :  [] ,
                         'RMS_total_XYZ'   :  [] ,
@@ -2951,23 +2952,24 @@ class ReadRawOutput:
                         'PCEZ_RMS'        :  [] ,
                         'PCEZ_WTD-RMS'    :  [] ,
                         }
-                data['N_RMS']         = []
-                data['T_RMS']         = []
-                data['W_RMS']         = []
-                data['RMS_total_NTW'] = []
+                
+                data['N_RMS']             =    []
+                data['T_RMS']             =    []
+                data['W_RMS']             =    []
+                data['RMS_total_NTW']     =    []
                 
                 if rsw_bool == True:
-                    data['R_RMS']         = []
-                    data['S_RMS']         = []
-                    data['Wrsw_RMS']         = []
-                    data['RMS_total_RSW'] = []
+                    data['R_RMS']         =    []
+                    data['S_RMS']         =    []
+                    data['Wrsw_RMS']      =    []
+                    data['RMS_total_RSW'] =    []
 
                 data['ARC'].append(self.arcdate_v2)
                 data['ArcLength'].append(int(arc_length))
                 data['Total_iters'].append(int(final_iter))
                 data['RMS_total_XYZ'].append(RMS_total)     
                 data['w_RMS_total_XYZ'].append(w_RMS_total)
-                data['PCEX_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'])      )
+                data['PCEX_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'])    )
                 data['PCEX_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS']))
                 data['PCEY_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS']))
                 data['PCEY_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS']))
@@ -3015,8 +3017,8 @@ class ReadRawOutput:
                     print('No matching lastline time: ',arc_last_time_str, last_line )
             # print("first_line", first_line)
             # print("last_line" , last_line)
-            # print("arc_first_time", arc_first_time)
-            # print("arc_last_time", arc_last_time)
+#             print("arc_first_time", arc_first_time)
+#             print("arc_last_time", arc_last_time)
 
             ####    If you get an error here stating that either first_line or last_line is 
             ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
@@ -3044,13 +3046,18 @@ class ReadRawOutput:
                 del PCE_data_raw['DateYMD'], PCE_data_raw['DateHMS']
     
             ## 
+            
+            
             PCE_data = PCE_data_raw.query(f"{arc_first_time.year}"     \
                                      +f"{arc_first_time.month:02d}"\
                                      +f"{arc_first_time.day:02d}"  \
                                 +f" < Date_pd < "\
-                                     +f"{arc_last_time.year}"     \
-                                     +f"{arc_last_time.month:02d}"\
-                                     +f"{arc_last_time.day+1:02d}")
+                                     +f"{(pd.to_datetime(arc_last_time)+pd.to_timedelta(1,'d')).year}"     \
+                                     +f"{(pd.to_datetime(arc_last_time)+pd.to_timedelta(1,'d')).month:02d}"\
+                                     +f"{(pd.to_datetime(arc_last_time)+pd.to_timedelta(1,'d')).day:02d}")
+#                                      +f"{arc_last_time.year}"     \
+#                                      +f"{arc_last_time.month:02d}"\
+#                                      +f"{arc_last_time.day+1:02d}")
 
             # if satellite == "icesat2":
             #     PCE_data = pd.read_csv(StateVector_PCE_datafile, 

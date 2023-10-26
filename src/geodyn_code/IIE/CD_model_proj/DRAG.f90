@@ -519,7 +519,13 @@
 ! GET GEODETIC LATITUDE AND HEIGHT ABOVE THE REFERENCE ELLIPSOID
 ! IN SUBROUTINE PLHOUT
 ! DXMDMP IS THE PARTIALS MATRIX, FOR THIS CALL IT IS A DUMMY MATRIX
-!
+! FUNCTION PLHOUT:  1) TO COMPUTE GEODETIC PHI, LAMBDA, H FROM
+!                      GEOCENTRIC X, Y, Z
+!                   2) TO COMPUTE PARTIAL DERIVATIVES OF GEOCENTRIC
+!                      COORDINATES WITH RESPECT TO GEODETIC
+!                      COORDINATES
+
+
       CALL PLHOUT(SATP,PHI,COSPHI,SINPHI,XLAMB,COSLAM,SINLAM,           &
      &            ALTI,DXMDMP,.TRUE.,.FALSE.)
       XLATD=PHI*180.D0/DACOS(-1.D0)
@@ -581,7 +587,7 @@
             CALL DTM2020_call(MJDSEC,FSEC,                  &
               &               FLUXIN,FLXAVG,FLUXKP,         &
               &               ALTI,PHI,XLAMB,               &
-              &               COSHLN,SINHLN,                &
+              &               COSHL,SINHL,                &
               &               RHO,DRHODZ, dtmversion_model, &
               &               FLUXM(1),IMARK,IKPAP,I324)
             C(1)=DRHODZ
@@ -773,11 +779,18 @@
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(9) )
             
-            CALL JB2008_call(MJDSEC, FSEC,                 &
-              &    ALTI, PHI,XLAMB,RHO,DRHODZ,             &
-              &    COSPSI, n_dens_temp)
+            CALL JB2008_call( MJDSEC,                 &  ! time in integral secs from geodyn ref time
+                        &     FSEC,                   &  ! fractional remaining seconds
+                        &     ALTI,                   &  ! atitude in meters
+                        &     PHI,                    &  ! geodetic latitude in radians (ouptut from PHLOUT.f90)
+                        &     XLAMB,                  &  ! geodetic longitude in radians (ouptut from PHLOUT.f90)
+                        &     RHO,                    &  ! I/O RHO to be overwritten
+                        &     DRHODZ,                 &  ! I/O pertial derivitive to be overwritten
+                        &     COSPSI,                 &  ! cosine of geocentric latitude
+                        &     SINPSI,                 &  ! sine of geocentric latitude
+                        &     LSTINR,                 &  ! denotes OD is on last inner iteration
+                        &     n_dens_temp)               ! I/O array of consitituent densities
             
-            ! RHO = 0.77924821 * RHO
             C(1)=DRHODZ
             
 

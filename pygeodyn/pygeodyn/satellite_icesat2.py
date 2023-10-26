@@ -9,11 +9,16 @@ import os
 import os.path
 import shutil
 import sys
+from gc import collect as gc_collect
+
+
+
 
 #### Import the Pygeodyn Modules
 from pygeodyn.control import RunController
 from pygeodyn.read    import ReadRawOutput
 from pygeodyn.util_dir.time_systems     import mjds_to_ymdhms
+
 
 
 class InheritControlStages(RunController):
@@ -35,7 +40,6 @@ class ICESat2(RunController, ReadRawOutput):
     ReadRawOutput.  Class with satellite specific confiuguration for running Pygeodyn with
     ICESat2. The setup here is originally for PCE trajectory
     analysis.
-  
     """
 
     def __init__(self):
@@ -57,15 +61,15 @@ class ICESat2(RunController, ReadRawOutput):
         #------------------------------
         # Universal ICESat2 Properties
         #------------------------------
-        self.prms['sat_ID']                  = '1807001' # cospar-id number
-        self.prms['sat_area_cross_sec']      = 9.530     # estimate (m^2)
-        self.prms['sat_mass']                = 1514.0    # estimate (kg)
+        self.prms['sat_ID']                  = '1807001'   # cospar-id number
+        self.prms['sat_area_cross_sec']      = 9.530       # estimate (m^2), overwritten by geodyn force model
+        self.prms['sat_mass']                = 1514.0      # estimate (kg)
         self.prms['sat_geometry_panel_num']  = 14 
         #
-        self.prms['coord_ref_system']     = 'j2000'      # j2000 is default
-        self.prms['orbit_elements_form']  = 'cartesian'  # (meters), XYZ
-        self.prms['bool_exatfiles']       = True         # use EXTATT file
-        self.prms['number_of_satellites'] = 1
+        self.prms['coord_ref_system']        = 'j2000'     # j2000 is default
+        self.prms['orbit_elements_form']     = 'cartesian' # (meters), XYZ
+        self.prms['bool_exatfiles']          = True        # use EXTATT file
+        self.prms['number_of_satellites']    = 1
 
 
 
@@ -123,8 +127,8 @@ class ICESat2(RunController, ReadRawOutput):
             if self.prms['initialize']:
                 self.filename_g2b = f"pce_icesat2_pso_{self.raw_satinput['daterange']}" 
             else:
-                # self.filename_g2b = f"pce_icesat2_pso_20181108_20181113" 
-                self.filename_g2b = f"pce_icesat2_pso_20181108_20181124" 
+#                 self.filename_g2b = f"pce_icesat2_pso_20181108_20181124save" 
+                self.filename_g2b = f"pce_icesat2_pso_2018_10" 
 
 
             
@@ -444,7 +448,7 @@ class ICESat2(RunController, ReadRawOutput):
                                             end=enddate_dt   ,
                                             freq=str(1)+"D")
 
-        if verbose: print(f"{self.tabtab} -ICESAT-2")
+        if verbose: print(f"{self.tabtab} - ICESAT-2")
         if verbose: print(f"{self.tabtab} - processing raw satellite ephemerides from files.")
         if verbose: print(f"{self.tabtab} - for dates: {starts_linspace_dt}")
 
@@ -455,6 +459,40 @@ class ICESat2(RunController, ReadRawOutput):
         rvg_params = {}
         rvg_params["record_length"] = 29        # words (2 Bytes per word)
         rvg_params["overlap"]       = 5.40027   # hours
+
+
+
+        # ##### Add a check to see if the arcs have maneuver indicators (A or B)
+        # arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times.txt'
+        
+        # ### Find the right range of dates in this file.
+        # arcs = pd.read_csv(arc_timesfile, 
+        #             sep = ',',
+        # #             dtype=object,
+        #             names = [
+        #                 'arc'         ,
+        #                 'epoch_start' ,
+        #                 'epoch_stop'  ,
+        #                 'orbit_start' ,
+        #                 'orbit_stop'  ,
+        #                     ],)
+
+        # ### Convert to list and remove whitespaces in each string
+        # arcs_withmaneuvs = []
+        # for iarc in self.prms['arc']:
+        #     index = arcs['arc'].str.contains(iarc)
+        #     arcs_withmaneuvs.append(arcs['arc'][index].values[0].strip())
+
+        # # Update the arcs to reflect maneuvers
+        # self.prms['arc'] = arcs_withmaneuvs
+
+
+
+        # print("sat_process_raw_ephemeris")
+        # print('ephem_path_dir' ,ephem_path_dir)
+        # print("self.prms['arc']" ,self.prms['arc'])
+        # print('rvg_params' ,rvg_params)
+
 
         RVG_FINAL = get_timechopped_rvgdata_1(ephem_path_dir, \
                                             self.prms['arc'],\
@@ -623,14 +661,21 @@ def get_timechopped_rvgdata_1(path_binary, arc_files, rvg_params):
         rvg_data = RVG_Files_add_datetime_column_3(rvg_data)
 
         # Chop off the ends of the files to eliminate overlap
-        rvg_data_chopped = RVGfiles_chop_the_ends_4(rvg_params, rvg_data)
+        # rvg_data_chopped = RVGfiles_chop_the_ends_4(rvg_params, rvg_data)
 
         if count == 0:
-            df1 = rvg_data_chopped
+            df1 = rvg_data
             count += 1
         else:
             # to append df2 at the end of df1 dataframe
-            df1 = pd.concat([df1, rvg_data_chopped])
+            df1 = pd.concat([df1, rvg_data])
+
+        df1 = df1.drop_duplicates(subset=["Date_utc"], keep='first'\
+        ).sort_values(by='Date_utc'\
+                        ).reset_index(drop=True)
+
+        del rvg_data
+        gc_collect()
 
 #         print(tabtab,'Zipping file...', file)
 #             os.system('gzip -v '+file)
@@ -904,8 +949,8 @@ def RVGfiles_read_rvg_binary_2(rvg_params, __rvg_filename):
     del rvg_data['data']['Quat_Q4_J2000_to_ITRF_ECF']
     del rvg_data['data']['Greenwich_HR_angle']
 
-#     rvg_data = rvg_data
-    return(rvg_data)
+    gc_collect()
+    return(rvg_data['data'])
 
 
 def RVG_Files_add_datetime_column_3(rvg_data):
@@ -915,64 +960,64 @@ def RVG_Files_add_datetime_column_3(rvg_data):
 
     '''
     #convert the MJDS to a usable string.
-    yymmdd_str = [mjds_to_ymdhms(x) for x in rvg_data['data']['MJDSEC_GPS']]
+    yymmdd_str = [mjds_to_ymdhms(x) for x in rvg_data['MJDSEC_GPS']]
 
     # convert string of dates to datetime for plotting
     dates_without_offset = [pd.to_datetime( x, format='%y%m%d-%H%M%S') for x in yymmdd_str]
 
-    offset = pd.Series(pd.to_timedelta(rvg_data['data']['GPS_offset_secs_utc'],'s'))
+    offset = pd.Series(pd.to_timedelta(rvg_data['GPS_offset_secs_utc'],'s'))
 
     dates = pd.Series(dates_without_offset) + offset
 
 
-    rvg_data['data'].insert(0, 'Date_utc', dates)
+    rvg_data.insert(0, 'Date_utc', dates)
 #     rvg_data['data']['yymmdd_str'] = yymmdd_str
 
     return(rvg_data)
 
 
-def RVGfiles_chop_the_ends_4(rvg_params, rvg_data):
-    '''
-    Chop the ends off the file.
-    '''
-    def RVGfiles_timeoverlap_GetChoppingTime(rvg_params, rvg_data):
-        '''
-        This function retrieves the times in datetime at which the chop will happen
-        '''
-    #         (_, _, tot_overlap) = time_overlap(file1, file2)
-        tot_overlap = rvg_params['overlap']
+# def RVGfiles_chop_the_ends_4(rvg_params, rvg_data):
+#     '''
+#     Chop the ends off the file.
+#     '''
+#     def RVGfiles_timeoverlap_GetChoppingTime(rvg_params, rvg_data):
+#         '''
+#         This function retrieves the times in datetime at which the chop will happen
+#         '''
+#     #         (_, _, tot_overlap) = time_overlap(file1, file2)
+#         tot_overlap = rvg_params['overlap']
 
 
-        file1_start = rvg_data['data']['Date_utc'].iloc[0] 
-        file1_end = rvg_data['data']['Date_utc'].iloc[-1] 
+#         file1_start = rvg_data['data']['Date_utc'].iloc[0] 
+#         file1_end = rvg_data['data']['Date_utc'].iloc[-1] 
 
-        file1_new_start = file1_start + pd.Timedelta(tot_overlap/2, unit='hours')
-        file1_new_end = file1_end - pd.Timedelta(tot_overlap/2, unit='hours')
+#         file1_new_start = file1_start + pd.Timedelta(tot_overlap/2, unit='hours')
+#         file1_new_end = file1_end - pd.Timedelta(tot_overlap/2, unit='hours')
 
-        return(file1_new_start, file1_new_end)
+#         return(file1_new_start, file1_new_end)
 
-#         print(tabtab,'Chopping the overlap times off of the datasets.')
-    (file1_new_start, 
-    file1_new_end) = RVGfiles_timeoverlap_GetChoppingTime(rvg_params, rvg_data )
-
-
-    df1 = rvg_data['data']
-
-    ##### Chop the FRONT off of the FIRST file
-    # select all the values greater than our new start and grab the last one 
-    val1_front = df1.Date_utc[df1.Date_utc < file1_new_start].iloc[-1]
-    indx1_front = df1.Date_utc[df1.Date_utc==val1_front].index.unique()[0]
-
-    ##### Chop the END off of the FIRST file
-    # select all the values less than our new start and grab the first one 
-    val1_end = df1.Date_utc[df1.Date_utc > file1_new_end].iloc[1]
-    indx1_end = df1.Date_utc[df1.Date_utc==val1_end].index.unique()[0]
+# #         print(tabtab,'Chopping the overlap times off of the datasets.')
+#     (file1_new_start, 
+#     file1_new_end) = RVGfiles_timeoverlap_GetChoppingTime(rvg_params, rvg_data )
 
 
-    df1_new = df1[:indx1_end][indx1_front+1:] # add one index so there is no overlap in time
+#     df1 = rvg_data['data']
 
-#         rvg_data_chopped = df1_new
-    return(df1_new)
+#     ##### Chop the FRONT off of the FIRST file
+#     # select all the values greater than our new start and grab the last one 
+#     val1_front = df1.Date_utc[df1.Date_utc < file1_new_start].iloc[-1]
+#     indx1_front = df1.Date_utc[df1.Date_utc==val1_front].index.unique()[0]
+
+#     ##### Chop the END off of the FIRST file
+#     # select all the values less than our new start and grab the first one 
+#     val1_end = df1.Date_utc[df1.Date_utc > file1_new_end].iloc[1]
+#     indx1_end = df1.Date_utc[df1.Date_utc==val1_end].index.unique()[0]
+
+
+#     df1_new = df1[:indx1_end][indx1_front+1:] # add one index so there is no overlap in time
+
+# #         rvg_data_chopped = df1_new
+#     return(df1_new)
 
 
 
