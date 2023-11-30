@@ -159,9 +159,15 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         
         if 'which_ICfile' not in self.prms.keys():
             self.prms['which_ICfile'] = None
+        
+        if 'which_g2bfile' not in self.prms.keys():
+            self.prms['which_g2bfile'] = None
     
         if 'arc_type' not in self.prms.keys():
             self.prms['arc_type'] = None
+        
+        if 'scaleparameter_times' not in self.prms.keys():
+            self.prms['scaleparameter_times'] = None
         
 
 

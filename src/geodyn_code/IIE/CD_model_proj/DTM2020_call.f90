@@ -4,7 +4,7 @@
               &               ALTM,PHI,XLAMB,              &
               &               COSHL,SINHL,                 &
               &               RHO,DRHODZ, dtmversion_model,&
-              &               XKP,INDEX,IKPAP,I324)
+              &               XKP,INDEX,IKPAP,I324, num_dens_temp)
       
       
 !********1*********2*********3*********4*********5*********6*********7**
@@ -239,7 +239,7 @@
             STLOC = STLOC + TWOPI
       endif
 
-      WRITE(6,*) 'STLOC, SINHL, COSHL ', STLOC, SINHL, COSHL          
+      ! WRITE(6,*) 'STLOC, SINHL, COSHL ', STLOC, SINHL, COSHL          
 
 
 ! LONGITUDE AND LATITUDE   (in radian)

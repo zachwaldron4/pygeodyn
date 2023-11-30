@@ -589,7 +589,7 @@
               &               ALTI,PHI,XLAMB,               &
               &               COSHL,SINHL,                &
               &               RHO,DRHODZ, dtmversion_model, &
-              &               FLUXM(1),IMARK,IKPAP,I324)
+              &               FLUXM(1),IMARK,IKPAP,I324, n_dens_temp)
             C(1)=DRHODZ
 
          ! DTM2020 Research case
@@ -608,9 +608,9 @@
             CALL DTM2020_call(MJDSEC,FSEC,                  &
               &               FLUXIN,FLXAVG,FLUXKP,         &
               &               ALTI,PHI,XLAMB,               &
-              &               COSHLN,SINHLN,                &
+              &               COSHL,SINHL,                &
               &               RHO,DRHODZ, dtmversion_model, &
-              &               FLUXM(1),IMARK,IKPAP,I324)
+              &               FLUXM(1),IMARK,IKPAP,I324, n_dens_temp)
             C(1)=DRHODZ
 
          end select !------------------------------------------------------------------ End dtm model cases
@@ -1353,6 +1353,12 @@
                              &        n_dens_temp(4) +  & 
                              &        n_dens_temp(5) +  & 
                              &        n_dens_temp(6) )    
+
+               if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90] - MEANMOL  ',  MEANMOL
+               if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90] - TEMP     ',  TEMP
+               if(kentry.eq.1) WRITE(6,*) ' [DRAG.f90] - NOXA     ',  NOXA
+
+                        
             end select 
 
          ENDIF  ! end jb2008 case for DRIA [>> IF(IATDN.EQ.2)---------------------------------------- end JB2008 DRIA 
@@ -1470,7 +1476,8 @@
                &      CD_drag,DXDD,PXDDT,JARADJ,II(JARUA),NEQN, &
                &      ISHFLG,AA(KSDIND),B0,B,SCAREA,RHO,        &
                &      TC1,TOTARE, kin_2, CDprime,               &
-               &      Ldrag_ScalingFactor, SPEED_RATIO)
+               &      Ldrag_ScalingFactor, SPEED_RATIO,         &
+               &                   ctheta_1, ctheta_2, ctheta_4, ctheta_14    )
           
          
          
@@ -1531,13 +1538,16 @@
 !--------------------------------------------------------------------------------------------------------
 ! ****   PRINT THE DRAG FILE and Spacecraft obervatory file
       IF(LSTINR) THEN
-        WRITE(103,7003) IYMD,IHMS,                           & 
-        &              CD_drag,TOTARE,VEL, SPEED_RATIO,      &  
-        &              DXDD(1),DXDD(2),DXDD(3)             
+        WRITE(103,7003) IYMD,IHMS,                                & 
+        &              CD_drag,TOTARE,VEL, SPEED_RATIO,           &  
+        &              ctheta_1, ctheta_2, ctheta_4, ctheta_14
+      !   &              DXDD(1),DXDD(2),DXDD(3)             
         !                                                 
 7003   FORMAT(  2(I0.6,1X),      &  
        &        4(D20.11,1X),    & 
-       &        3(D20.11,1X)     ) 
+      !  &        3(D20.11,1X)     &
+       &        4(D20.11,1X)     &
+       &     ) 
        
        
        intFACE = int( NFACE )

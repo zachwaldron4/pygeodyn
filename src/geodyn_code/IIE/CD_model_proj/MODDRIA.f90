@@ -4,7 +4,8 @@
      &                   BWAREA,MEANMOL,TEMP,NOXA, CD,                  &
      &                   DXDD,PXDDT,JARADJ,IMAPAR,NEQN,                 &
      &                   ISHFLG,SPLADG,B0,B,SCAREA,RHO,TC1,TOTARE,kin_2,&
-     &                   CDprime, Ldrag_ScalingFactor, SPEED_RATIO)
+     &                   CDprime, Ldrag_ScalingFactor, SPEED_RATIO,     &
+     &                   ctheta_1, ctheta_2, ctheta_4, ctheta_14      )
 !                                                                       &
 !      - note from zach, fortran wants the dyn.arrays (TDNRM1,TDNRM2,TDNRM3)
 !                       to be first and on their own lines.  It not, they get
@@ -114,6 +115,10 @@
       real(8) :: ZDOT
       real(8) :: FRAC
       real(8) :: CTHETA
+      real(8) :: ctheta_1
+      real(8) :: ctheta_2
+      real(8) :: ctheta_4
+      real(8) :: ctheta_14
       real(8) :: MRPAN
       real(8) :: ALPHA_S
       real(8) :: CDS
@@ -137,8 +142,8 @@
      ! INITIALIZE VARIABLES
       TOTARE = ZERO
       JCOUNT = JARADJ-1
-      ICNT = ICNT+1
-      MS   = 26.980D0   ! aluminum atomic weight
+      ICNT   = ICNT+1
+      MS     = 26.980D0   ! aluminum atomic weight
       MS(13) = 60.08D0
       MS(14) = 60.08D0     ! THIS NEEDS TO BE CHANGED!
 !      !!!!   SET THE CD OPTIONS FROM INPUTS:
@@ -163,9 +168,11 @@
           MS(13) = 60.08D0
           MS(14) = 60.08D0
 
-          
-          WRITE(6,*) ' [MODDRIA.f90] - ALPHA  ',  ALPHA
+          WRITE(6,*) ' [MODDRIA.f90] - MEANMOL  ',  MEANMOL
+          WRITE(6,*) ' [MODDRIA.f90] - TEMP     ',  TEMP
+          WRITE(6,*) ' [MODDRIA.f90] - NOXA     ',  NOXA
 
+          WRITE(6,*) ' [MODDRIA.f90] - ALPHA  ',  ALPHA
           WRITE(6,*) ' [MODDRIA.f90] - MS     ',  MS
           WRITE(6,*) ' [MODDRIA.f90] - TW     ',  TW
           WRITE(6,*) ' [MODDRIA.f90] - KL     ',  KL
@@ -175,11 +182,13 @@
     
       endif
 
+      if(ICNT.eq.1) WRITE(6,*) ' [MODDRIA.f90] - MS     ',  MS
       if(kin_2.eq.1) WRITE(6,*) ' [MODDRIA.f90] - MS     ',  MS
 
 
     ! REMOVE SPACECRAFT AREA AS DEFINED ON THE SATPAR CARD FROM APGMR
       b_coeff = B0/SCAREA
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90] - B/B0 = CD = ', B/B0
       if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90] - B/B0 = CD = ', B/B0
       !WRITE(6,*) '     [MODDRIA.f90] - B/B0 = CD = ', B/B0
 
@@ -217,7 +226,6 @@
       DXDD(2) = ZERO
       DXDD(3) = ZERO
 
- 
       ! LOOP THROUGH EACH PLATE,
       DO 100 I=1,NFACE
         ! INITIALIZE PARTIAL POINTERS
@@ -225,10 +233,10 @@
 
 
 
-           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
-           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
-           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
-           if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] BWAREA(I)', BWAREA(I)
+          !  if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
+          !  if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
+          !  if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] TDNRM1(I)', TDNRM1(I)
+          !  if(kin_2.eq.1) WRITE(6,*) ' [DRAG.f90] BWAREA(I)', BWAREA(I)
 
 
           ! FOR EACH PLATE, 
@@ -238,6 +246,29 @@
               &   TDNRM2(I) * XVEL(2)   +  &      !    and relative velocity vector
               &   TDNRM3(I) * XVEL(3)   )       
               
+        ! if(kin_2.gt.1)   then                                                !**** 
+
+            if (I.eq.1) then ! panel 1
+              ctheta_1 = CTHETA
+              ! WRITE(6,*) '  Panel 1  | CTHETA = ', CTHETA
+            end if
+            if (I.eq.2) then ! panel 2
+              ctheta_2 = CTHETA
+              ! WRITE(6,*) '  Panel 2  | CTHETA = ', CTHETA
+            end if
+            if (I.eq.4) then ! panel 4
+              ctheta_4 = CTHETA
+              ! WRITE(6,*) '  Panel 4  | CTHETA = ', CTHETA
+            end if
+            if (I.eq.14) then ! panel 14
+              ctheta_14 = CTHETA
+              ! WRITE(6,*) '  Panel 14 | CTHETA = ', CTHETA
+            end if
+
+          ! end if                                                           !****
+
+
+
           ! MASS FRACTION OF PANELS
           MRPAN = MEANMOL/MS(I)   ! % mass fraction of panel
 
@@ -312,7 +343,15 @@
 
   100 END DO
 
-      
+    ! if(kin_2.eq.1)   then                                                !**** 
+    !   WRITE(6,*) '***********CTHETA CHECK***********'
+    ! end if
+
+    ! if(kin_2.gt.1)   then                                                
+    !   WRITE(6,*) ctheta_1, ctheta_2, ctheta_4, ctheta_14
+    ! end if
+
+
       !     TOTAL DRAG-COEFFICIENT
       CD = FRAC*CDADS + (1.0D0-FRAC)*CDS      
       
@@ -342,6 +381,7 @@
       ! AND ADD THE PARTIALS TO THOSE
       ! PREVIOUSLY COMPUTED FOR THE OTHER NON-CONSERVATIVE FORCES
             IF(IMAPAR(I).GT.0) THEN
+               if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90] - PARTIALS in MODDRIA '
                if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90] - PARTIALS in MODDRIA '
                PART(1) = ACCEL(1)/BWAREA(I)
                PART(2) = ACCEL(2)/BWAREA(I)
@@ -356,6 +396,12 @@
       
       SPEED_RATIO = S_ratio
       
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90] ACCELERATION DUE TO DRAG UPDATED USING DRIA'
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(1)  ', DXDD(1)
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(2)  ', DXDD(2)
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(3)  ', DXDD(3)
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - TOTARE   ', TOTARE
+      if(ICNT.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - CD       ', CD
       if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90] ACCELERATION DUE TO DRAG UPDATED USING DRIA'
       if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(1)  ', DXDD(1)
       if(kin_2.eq.1) WRITE(6,*) '     [MODDRIA.f90]  - DXDD(2)  ', DXDD(2)

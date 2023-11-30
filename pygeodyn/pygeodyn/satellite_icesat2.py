@@ -128,7 +128,11 @@ class ICESat2(RunController, ReadRawOutput):
                 self.filename_g2b = f"pce_icesat2_pso_{self.raw_satinput['daterange']}" 
             else:
 #                 self.filename_g2b = f"pce_icesat2_pso_20181108_20181124save" 
-                self.filename_g2b = f"pce_icesat2_pso_2018_10" 
+                
+                if self.prms['which_g2bfile'] is not None:
+                    self.filename_g2b = self.prms['which_g2bfile']
+
+    #                 self.filename_g2b = f"pce_icesat2_pso_2018_10" 
 
 
             

@@ -1094,9 +1094,13 @@ class ReadRawOutput:
                                      'VELREL',
                                      'SpeedRatio',
                                     #                                      
-                                    'DXDD_X',
-                                    'DXDD_Y',
-                                    'DXDD_Z',
+                                    # 'DXDD_X',
+                                    # 'DXDD_Y',
+                                    # 'DXDD_Z',
+                                     "ctheta_1",
+                                     "ctheta_2",
+                                     "ctheta_4",
+                                     "ctheta_14",
                                   ],
                             sep = '\s+',
                             )
@@ -1104,81 +1108,106 @@ class ReadRawOutput:
         drag_df = pd.DataFrame(Drag_csv)
         #### The below takes the double precision format from Fortran (D) and puts an 
         #### E in the string to be interpeted as a float by python
-        fix_D_decimal_to_E1 = []
-        fix_D_decimal_to_E2 = []
-        fix_D_decimal_to_E3 = []
-        fix_D_decimal_to_E4 = []
-        fix_D_decimal_to_E5 = []
-        fix_D_decimal_to_E6 = []
-        fix_D_decimal_to_E7 = []
 
-        #### TODO: There is definitely a faster and better way to do this...
-        for i,val1 in enumerate(drag_df['CD']):
-            val2 = drag_df['VELREL'][i]
-            val3 = drag_df['DXDD_X'][i]
-            val4 = drag_df['DXDD_Y'][i]
-            val5 = drag_df['DXDD_Z'][i]
-            val6 = drag_df['TOTAREA'][i]
-            val7 = drag_df['SpeedRatio'][i]
 
-            list_val1 = list(val1)
-            list_val2 = list(val2)
-            list_val3 = list(val3)
-            list_val4 = list(val4)
-            list_val5 = list(val5)
-            list_val6 = list(val6)
-            list_val7 = list(val7)
+        fix_D_decimal_to_E = {}
+        for colname in list(drag_df.columns)[2:]:
+            # print(colname)
+            fix_D_decimal_to_E[colname] = []
 
-            indx1 = list(val1).index('D')
-            indx2 = list(val2).index('D')
-            indx3 = list(val3).index('D')
-            indx4 = list(val4).index('D')
-            indx5 = list(val5).index('D')
-            indx6 = list(val6).index('D')
-            indx7 = list(val7).index('D')
+            for i,val in enumerate(drag_df[colname]):
+                list_val1 = list(val)
+                indx1 = list(val).index('D')
+                list_val1[indx1] = 'E'
+                list_val1 = "".join(list_val1)
 
-            list_val1[indx1] = 'E'
-            list_val2[indx2] = 'E'
-            list_val3[indx3] = 'E'
-            list_val4[indx4] = 'E'
-            list_val5[indx5] = 'E'
-            list_val6[indx6] = 'E'
-            list_val7[indx7] = 'E'
+                #### If you get an error here, it is likely:
+                ####  due to some values not being floats?
+                ###
+                val_float1 = np.float(list_val1)
 
-            list_val1 = "".join(list_val1)
-            list_val2 = "".join(list_val2)
-            list_val3 = "".join(list_val3)
-            list_val4 = "".join(list_val4)
-            list_val5 = "".join(list_val5)
-            list_val6 = "".join(list_val6)
-            list_val7 = "".join(list_val7)
+                fix_D_decimal_to_E[colname].append(val_float1)
+
+            drag_df[colname] = fix_D_decimal_to_E[colname]
+
+        # fix_D_decimal_to_E1 = []
+        # fix_D_decimal_to_E2 = []
+        # fix_D_decimal_to_E3 = []
+        # fix_D_decimal_to_E4 = []
+        # fix_D_decimal_to_E5 = []
+        # fix_D_decimal_to_E6 = []
+        # fix_D_decimal_to_E7 = []
+
+        # #### TODO: There is definitely a faster and better way to do this...
+        # for i,val1 in enumerate(drag_df['CD']):
+        #     val2 = drag_df['VELREL'][i]
+        #     val3 = drag_df['DXDD_X'][i]
+        #     val4 = drag_df['DXDD_Y'][i]
+        #     val5 = drag_df['DXDD_Z'][i]
+        #     val6 = drag_df['TOTAREA'][i]
+        #     val7 = drag_df['SpeedRatio'][i]
+
+        #     list_val1 = list(val1)
+        #     list_val2 = list(val2)
+        #     list_val3 = list(val3)
+        #     list_val4 = list(val4)
+        #     list_val5 = list(val5)
+        #     list_val6 = list(val6)
+        #     list_val7 = list(val7)
+
+        #     indx1 = list(val1).index('D')
+        #     indx2 = list(val2).index('D')
+        #     indx3 = list(val3).index('D')
+        #     indx4 = list(val4).index('D')
+        #     indx5 = list(val5).index('D')
+        #     indx6 = list(val6).index('D')
+        #     indx7 = list(val7).index('D')
+
+        #     list_val1[indx1] = 'E'
+        #     list_val2[indx2] = 'E'
+        #     list_val3[indx3] = 'E'
+        #     list_val4[indx4] = 'E'
+        #     list_val5[indx5] = 'E'
+        #     list_val6[indx6] = 'E'
+        #     list_val7[indx7] = 'E'
+
+        #     list_val1 = "".join(list_val1)
+        #     list_val2 = "".join(list_val2)
+        #     list_val3 = "".join(list_val3)
+        #     list_val4 = "".join(list_val4)
+        #     list_val5 = "".join(list_val5)
+        #     list_val6 = "".join(list_val6)
+        #     list_val7 = "".join(list_val7)
             
-            #### If you get an error here, it is likely:
-            ####  due to some values not being floats?
-            ###
-            val_float1 = np.float(list_val1)
-            val_float2 = np.float(list_val2)
-            val_float3 = np.float(list_val3)
-            val_float4 = np.float(list_val4)
-            val_float5 = np.float(list_val5)
-            val_float6 = np.float(list_val6)
-            val_float7 = np.float(list_val7)
+        #     #### If you get an error here, it is likely:
+        #     ####  due to some values not being floats?
+        #     ###
+        #     val_float1 = np.float(list_val1)
+        #     val_float2 = np.float(list_val2)
+        #     val_float3 = np.float(list_val3)
+        #     val_float4 = np.float(list_val4)
+        #     val_float5 = np.float(list_val5)
+        #     val_float6 = np.float(list_val6)
+        #     val_float7 = np.float(list_val7)
 
-            fix_D_decimal_to_E1.append(val_float1)
-            fix_D_decimal_to_E2.append(val_float2)
-            fix_D_decimal_to_E3.append(val_float3)
-            fix_D_decimal_to_E4.append(val_float4)
-            fix_D_decimal_to_E5.append(val_float5)
-            fix_D_decimal_to_E6.append(val_float6)
-            fix_D_decimal_to_E7.append(val_float7)
+        #     fix_D_decimal_to_E1.append(val_float1)
+        #     fix_D_decimal_to_E2.append(val_float2)
+        #     fix_D_decimal_to_E3.append(val_float3)
+        #     fix_D_decimal_to_E4.append(val_float4)
+        #     fix_D_decimal_to_E5.append(val_float5)
+        #     fix_D_decimal_to_E6.append(val_float6)
+        #     fix_D_decimal_to_E7.append(val_float7)
 
-        drag_df['CD']         = fix_D_decimal_to_E1
-        drag_df['VELREL']     = fix_D_decimal_to_E2
-        drag_df['DXDD_X']     = fix_D_decimal_to_E3
-        drag_df['DXDD_Y']     = fix_D_decimal_to_E4
-        drag_df['DXDD_Z']     = fix_D_decimal_to_E5
-        drag_df['TOTAREA']    = fix_D_decimal_to_E6
-        drag_df['SpeedRatio'] = fix_D_decimal_to_E7
+        # drag_df['CD']         = fix_D_decimal_to_E1
+        # drag_df['VELREL']     = fix_D_decimal_to_E2
+        # drag_df['DXDD_X']     = fix_D_decimal_to_E3
+        # drag_df['DXDD_Y']     = fix_D_decimal_to_E4
+        # drag_df['DXDD_Z']     = fix_D_decimal_to_E5
+        # drag_df['TOTAREA']    = fix_D_decimal_to_E6
+        # drag_df['SpeedRatio'] = fix_D_decimal_to_E7
+
+
+
 
 
         ####--------------------------------------------------------
@@ -1272,23 +1301,33 @@ class ReadRawOutput:
         
 #         #### Drop the NaNs
 #         drag_df = drag_df.dropna()
-        def nearest(items, pivot):
-            return min(items, key=lambda x: abs(x - pivot))
-        epoch_start = self.prms_arc['start_ymdhms']
-        epoch_start_YYMMDD     = epoch_start[:6].strip() 
-        epoch_start_HHMM       = epoch_start[7:11].strip()
-        epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
-        vals  = np.arange(drag_df.index[0],drag_df.index[-1]+1)
-        df = drag_df.set_index('Date',drop=False ) 
-        df['i_vals'] = vals
-        date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
+        # def nearest(items, pivot):
+        #     return min(items, key=lambda x: abs(x - pivot))
+        # epoch_start = self.prms_arc['start_ymdhms']
+        # epoch_start_YYMMDD     = epoch_start[:6].strip() 
+        # epoch_start_HHMM       = epoch_start[7:11].strip()
+        # epoch_start_dt = pd.to_datetime( epoch_start_YYMMDD+epoch_start_HHMM, format='%y%m%d%H%M%S')
+        # vals  = np.arange(drag_df.index[0],drag_df.index[-1]+1)
+        # df = drag_df.set_index('Date',drop=False ) 
+        # df['i_vals'] = vals
+        # date_nearstart = nearest(pd.to_datetime(df['i_vals'].index), epoch_start_dt)
         
-        index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
-        for name in drag_df.columns:
-            drag_df[name] = drag_df[name][index_date:]
+        # index_date = df['i_vals'][date_nearstart].min() #df['i_vals'][date_nearend].min()#df.loc[df.index.max()]['i_vals'].min() 
+        # for name in drag_df.columns:
+        #     drag_df[name] = drag_df[name][index_date:]
+
+        # drag_df = drag_df.dropna()
+        #--------------------------------------------------------
+        
+        drag_df = drag_df.drop_duplicates(subset=["Date"], keep='first'\
+                ).sort_values(by='Date'\
+                                ).reset_index(drop=True)
+
 
         drag_df = drag_df.dropna()
-        #--------------------------------------------------------
+
+
+
         end = time.time()
         elapsed = end - start
 #         print('Density file end: ',elapsed)

@@ -124,11 +124,14 @@ def get_continuous_densities(OBJECT, choose_model,scale_cadence ,verbose=False):
         else:
             arc_name =arc[:8]+('%.3f'%frachours).lstrip('0')+ maneuv_indicator
 
-        #
-        start_arc = pd.to_datetime(epochstart, format='%Y-%m-%d %H:%M:%S') + pd.to_timedelta(scale_cadence,'h')
-        end_arc   = pd.to_datetime(epochstop , format='%Y-%m-%d %H:%M:%S') - pd.to_timedelta(scale_cadence,'h')
-        #         start_arc = pd.to_datetime(arc, format='%Y.%j')
-        #         end_arc = pd.to_datetime(arc, format='%Y.%j')+ pd.to_timedelta(24,'h')
+           
+        # Truncate the ends of the arc for regular days
+#         print(pd.to_datetime(arc, format = '%Y.%j'))
+#         print(pd.to_datetime(arc, format = '%Y.%j')+pd.to_timedelta(24, 'h')-pd.to_timedelta(1, 'm'))
+#         start_arc = pd.to_datetime(epochstart, format='%Y-%m-%d %H:%M:%S') + pd.to_timedelta(scale_cadence,'h')
+#         end_arc   = pd.to_datetime(epochstop , format='%Y-%m-%d %H:%M:%S') - pd.to_timedelta(scale_cadence,'h')
+        start_arc = pd.to_datetime(arc[:8], format='%Y.%j')
+        end_arc = pd.to_datetime(arc[:8], format = '%Y.%j')+pd.to_timedelta(24, 'h')-pd.to_timedelta(1, 'm')
         if verbose:
             print('arc'      , arc)
             print('start_arc', start_arc)
@@ -410,8 +413,10 @@ def orbit_avg_generic(Dates, rho, Lats ):
         # average density over orbital passes
         d_avg[j]      = np.mean(rho[i[j] : i[j+1]-1  ]  )
         # average dates
-        t1 = pd.to_datetime(time_pd[ i[j]    ])
-        t2 = pd.to_datetime(time_pd[ i[j+1]-1])
+        # t1 = pd.to_datetime(time_pd[ i[j]    ])
+        # t2 = pd.to_datetime(time_pd[ i[j+1]-1])
+        t1 = pd.to_datetime(time_pd.values[ i[j]    ])
+        t2 = pd.to_datetime(time_pd.values[ i[j+1]-1])
         datemiddle = pd.Timestamp(t1) + (pd.Timestamp(t2) - pd.Timestamp(t1)) / 2
         time_avg.append(datemiddle)
         

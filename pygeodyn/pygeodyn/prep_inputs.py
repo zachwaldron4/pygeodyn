@@ -973,56 +973,82 @@ class PrepareInputs():
                                     +'\n' 
         
         ### DRAG OPTIONS --------------------------------------------------
-
+        # '''
+        #CONDRG  1        1807001     181109000000.00181110000000.00         0.50000  288 102903
+        #DRAG             1807001 2.50000000E+00                                          102904
+        #DRAG             1807001 2.50000000D+00     1811100000 0.00    0.100D+02         102905
         CD_VALUE = str(self.prms['cd_value'])
         if self.prms['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
-            arc_options_cards['condrg'] = \
-                        f"CONDRG  1        {self.prms['sat_ID']}"\
-                            + f"{start_ymdhms}.00".rjust(20,' ')\
-                            + f"{stop_ymdhms}.00".rjust(15,' ') \
-                            + f"{0.5}".rjust(13,' ')\
-                            + f"{86400.}".rjust(8,' ')\
-                            +'\n' 
+            
+            scaletimes = self.prms_arc['scaleparameter_times']
+            scalestart = pd.to_datetime(scaletimes[0]).strftime('%y%m%d%H%M%S')
+            scalestop = pd.to_datetime(scaletimes[-1]).strftime('%y%m%d%H%M%S')
+            
+            # arc_options_cards['condrg'] = \
+            #             f"CONDRG  1        {self.prms['sat_ID']}"\
+            #                 + f"{scalestart}.00".rjust(20,' ')\
+            #                 + f"{scalestop}.00".rjust(15,' ') \
+            #                 + f"{0.5}".rjust(13,' ')\
+            #                 + f"{86400.}".rjust(8,' ')\
+            #                 +'\n' 
+            # arc_options_cards['condrg'] = \
+            #             f"CONDRG  1        {self.prms['sat_ID']}"\
+            #                 + f"{start_ymdhms}.00".rjust(20,' ')\
+            #                 + f"{stop_ymdhms}.00".rjust(15,' ') \
+            #                 + f"{0.5}".rjust(13,' ')\
+            #                 + f"{86400.}".rjust(8,' ')\
+            #                 +'\n' 
 
-# '''
-#CONDRG  1        1807001     181109000000.00181110000000.00         0.50000  288 102903
-#DRAG             1807001 2.50000000E+00                                          102904
-#DRAG             1807001 2.50000000D+00     1811100000 0.00    0.100D+02         102905
+
             arc_options_cards['drag'] ='DRAG             '\
                                     +f"{self.prms['sat_ID']}".rjust(7,' ')\
                                     +f"{CD_VALUE}".rjust(20,' ')          \
                                     +'\n' 
 
 
-            hours_between_cd_adj = self.prms['hours_between_cd_adj']
-            if self.prms_arc['arc_length_h']==hours_between_cd_adj:   # The 24 hour case
-                num_of_cd_adj = (self.prms_arc['arc_length_h']/hours_between_cd_adj)
-            else:    
-                num_of_cd_adj = (self.prms_arc['arc_length_h']/hours_between_cd_adj)
+            # hours_between_cd_adj = self.prms['hours_between_cd_adj']
+            # if self.prms_arc['arc_length_h']==hours_between_cd_adj:   # The 24 hour case
+            #     num_of_cd_adj = (self.prms_arc['arc_length_h']/hours_between_cd_adj)
+            # else:    
+            #     num_of_cd_adj = (self.prms_arc['arc_length_h']/hours_between_cd_adj)
 
-                # print('*** ERROR in setupfile write for time dependent drag.')
-                # print('     fix the case for adjusting drag with Arclength!=24 hours')
-                # import sys
-                # sys.exit(0)
+            #     # print('*** ERROR in setupfile write for time dependent drag.')
+            #     # print('     fix the case for adjusting drag with Arclength!=24 hours')
+            #     # import sys
+            #     # sys.exit(0)
+            # add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
+            # drag_dates = []
+            # for i_cd in np.arange(0, num_of_cd_adj):
+            #     factor = i_cd+1
+            #     drag_dates.append( ( self.prms_arc['epoch_startDT']  \
+            #                         +add_hours_dt*factor             \
+            #                         ).dt.strftime('%y%m%d%H%M%S').values[0])
+            # for i_cd in np.arange(0, num_of_cd_adj):
+            #     i_cd = int(i_cd)
+            #     print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
 
-            add_hours_dt = pd.Series(pd.to_timedelta(hours_between_cd_adj,'h'))
-            drag_dates = []
-            for i_cd in np.arange(0, num_of_cd_adj):
-                factor = i_cd+1
-                drag_dates.append( ( self.prms_arc['epoch_startDT']  \
-                                    +add_hours_dt*factor             \
-                                    ).dt.strftime('%y%m%d%H%M%S').values[0])
-                
-            for i_cd in np.arange(0, num_of_cd_adj):
+            #     arc_options_cards[f'drag_t{i_cd}'] ='DRAG             '   \
+            #                         +f"{self.prms['sat_ID']}".rjust(7,' ')\
+            #                         +f"{CD_VALUE}".rjust(20,' ')          \
+            #                         +f"{drag_dates[i_cd]}.00".rjust(15) \
+            #                         +f"10.0".rjust(13) \
+            #                         +'\n' 
+
+            scaletimes = self.prms_arc['scaleparameter_times']
+            for i_cd in np.arange(0, len(scaletimes)):
                 i_cd = int(i_cd)
-                print('     drag_date ', i_cd ,' ',  pd.to_datetime( drag_dates[i_cd], format='%y%m%d%H%M%S'))
+                
+                scaletime_i = pd.to_datetime(scaletimes[i_cd]).strftime('%y%m%d%H%M%S')
+                print('     drag card date ', i_cd ,' ',   scaletime_i)
 
                 arc_options_cards[f'drag_t{i_cd}'] ='DRAG             '   \
                                     +f"{self.prms['sat_ID']}".rjust(7,' ')\
                                     +f"{CD_VALUE}".rjust(20,' ')          \
-                                    +f"{drag_dates[i_cd]}.00".rjust(15) \
+                                    +f"{scaletime_i}.00".rjust(15) \
                                     +f"10.0".rjust(13) \
                                     +'\n' 
+
+
 
         if self.prms['cd_adjustment_boolean'] == False:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
             # arc_options_cards['drag'] ='DRAG             '\

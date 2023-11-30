@@ -1160,6 +1160,9 @@ class Util_Tools:
                                         - prms_arc['epoch_startDT'],\
                                         'hours')
         prms_arc['arc_length_h'] = prms_arc['epoch_delta'].total_seconds()/3600
+
+        if self.prms['scaleparameter_times'] is not None:
+            prms_arc['scaleparameter_times'] = self.prms['scaleparameter_times'][self.arcnumber]
         
         if skip_ic==False:
             if self.prms['initial_conditions'] is not None:
