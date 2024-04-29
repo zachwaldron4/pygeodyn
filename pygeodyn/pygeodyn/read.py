@@ -922,8 +922,8 @@ class ReadRawOutput:
             ####
             ###
             
-            val_float = np.float(list_val)
-            val_float2 = np.float(list_val2)
+            val_float = float(list_val)
+            val_float2 = float(list_val2)
 
             fix_D_decimal_to_E.append(val_float)
             fix_D_decimal_to_E2.append(val_float2)
@@ -1124,7 +1124,7 @@ class ReadRawOutput:
                 #### If you get an error here, it is likely:
                 ####  due to some values not being floats?
                 ###
-                val_float1 = np.float(list_val1)
+                val_float1 = float(list_val1)
 
                 fix_D_decimal_to_E[colname].append(val_float1)
 
@@ -1412,12 +1412,12 @@ class ReadRawOutput:
             #### If you get an error here, it is likely:
             ####  due to some values not being floats?
             ###
-            val_float1 = np.float(list_val1)
-            val_float2 = np.float(list_val2)
-            val_float3 = np.float(list_val3)
-            val_float4 = np.float(list_val4)
-            val_float5 = np.float(list_val5)
-            val_float6 = np.float(list_val6)
+            val_float1 = float(list_val1)
+            val_float2 = float(list_val2)
+            val_float3 = float(list_val3)
+            val_float4 = float(list_val4)
+            val_float5 = float(list_val5)
+            val_float6 = float(list_val6)
 
             fix_D_decimal_to_E1.append(val_float1)
             fix_D_decimal_to_E2.append(val_float2)
@@ -3426,8 +3426,15 @@ class ReadRawOutput:
                     if 'request_data' in self.__dict__['run_parameters'+self.arcdate_v2]:
                         del self.__dict__['run_parameters'+self.arcdate_v2]['request_data']
             
-            ### Must use garbage collector in conjunction with del to clear memory in python
-            gc.collect()
+
+        def reset_global_PCEdataraw():
+            global PCE_data_raw
+            del PCE_data_raw
+            print('deleting PCE_data_raw from globals. Allows reset for new month file.')
+
+        reset_global_PCEdataraw()
+        ### Must use garbage collector in conjunction with del to clear memory in python
+        gc.collect()
         
 
         return(self)

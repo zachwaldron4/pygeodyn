@@ -144,8 +144,9 @@
       JCOUNT = JARADJ-1
       ICNT   = ICNT+1
       MS     = 26.980D0   ! aluminum atomic weight
-      MS(13) = 60.08D0
-      MS(14) = 60.08D0     ! THIS NEEDS TO BE CHANGED!
+      !  Comment out the below for Spire.. they are icesat specific
+      ! MS(13) = 60.08D0
+      ! MS(14) = 60.08D0     ! THIS NEEDS TO BE CHANGED!
 !      !!!!   SET THE CD OPTIONS FROM INPUTS:
       if(ICNT.eq.1) then
           !!! Read the path to the options file from am environment variable
@@ -165,8 +166,10 @@
           ALPHA  = array_params(3)
           KL     = array_params(4)
           FRACOX = array_params(5)
-          MS(13) = 60.08D0
-          MS(14) = 60.08D0
+         !  Comment out the below for Spire.. they are icesat specific
+
+          !MS(13) = 60.08D0
+          !MS(14) = 60.08D0
 
           WRITE(6,*) ' [MODDRIA.f90] - MEANMOL  ',  MEANMOL
           WRITE(6,*) ' [MODDRIA.f90] - TEMP     ',  TEMP
@@ -359,7 +362,7 @@
       ! COMPUTE DRAG ACCELERATION ON THIS PLATE IN
       ! X,Y,AND Z DIRECTION OF THE TRUE OF DATE SYSTEM
         TERM1 = -CD                !  CD contains the physical_CD*total area (in flow dir)
-        TERM2 = b_coeff*VEL*RHO    ! complete the drag equation
+        TERM2 = b_coeff*VEL*RHO    !     complete the drag equation
           
         ! Needs to also include the Scaling factor for CD 
         if(Ldrag_ScalingFactor) then

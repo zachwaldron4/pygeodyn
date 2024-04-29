@@ -12,14 +12,17 @@ from gc import collect as gc_collect
 
 
 #
-from pygeodyn.util_dir.time_systems     import mjds_to_ymdhms
-from pygeodyn.util_dir.time_systems     import time_gps_to_tdt
+from pygeodyn.util_dir.time_systems       import mjds_to_ymdhms
+from pygeodyn.util_dir.time_systems       import time_gps_to_tdt
 #
-from pygeodyn.util_dir.quaternions      import quat_trans_SBFtoRSW_to_SBFtoECI
-from pygeodyn.satellite_spire           import load_attitude_spire
-from pygeodyn.util_dir.quaternions      import call_slerp_SpireAtt
+from pygeodyn.util_dir.quaternions        import quat_trans_SBFtoRSW_to_SBFtoECI
+# from pygeodyn.pygeodyn.satellite_spire_v1           import load_attitude_spire
+
+# from pygeodyn.satellite_spire_v2 import load_attitude_spire
+
+from pygeodyn.util_dir.quaternions        import call_slerp_SpireAtt
 #
-from pygeodyn.util_dir.attitude_binary  import write_EXAT_binary
+from pygeodyn.util_dir.attitude_binary    import write_EXAT_binary
 
 from pygeodyn.util_dir.time_systems import  get_leapseconds
 from pygeodyn.util_dir.time_systems import  time_utc_to_gps, ymdhms_to_mjds
@@ -62,7 +65,7 @@ class PrepareInputs():
             self.file_exat = self.dir_exat +'/' +self.filename_exat
 
 
-            print(f"{self.tab} Making an external attitude file: {self.filename_exat}")
+            print(f"{self.tab}* Making an external attitude file: {self.filename_exat}")
             self.make_write_exat(raw_satinput, verbose)
         
 
@@ -83,13 +86,10 @@ class PrepareInputs():
         from astropy.time import Time
         from astropy import time
         # from pygeodyn.util_dir.coordinate_systems import call_teme2eci
+        if 'spire' in self.prms['satellite']:
+            from pygeodyn.satellite_spire_v2 import load_attitude_spire 
 
 
-        # path_attitude     = "/data/SatDragModelValidation/data/inputs/"\
-        #                    +"sat_spire83/data_Spire/attitude/"\
-        #                    +"20180923_20181209_TaskOrder3Data/"
-        # filename          = "leoAtt_2018-09-23T00-12-00Z.9999999.083.log"
-        file__AttitudeRaw = raw_satinput['att_path']
         interval          = raw_satinput['att_interval']  # seconds
 
         if raw_satinput['att_date'] == 'date_gps':
@@ -101,22 +101,34 @@ class PrepareInputs():
             sys.exit(0)
 
 
-        one_hour = pd.to_timedelta(1,'h')
-        startEpoch  = self.prms_arc['epoch_startDT']  - one_hour  
-        stopEpoch   = self.prms_arc['epoch_stopDT']   + one_hour
- 
-        #### 1. Load the attitude data that corresponds to the entire timeperiod
-                                    # note: the start and end epoch are expanded
-                                    #       by an hour on either side
-        SpireDF = load_attitude_spire(file__AttitudeRaw,
-                                        startEpoch,
-                                        stopEpoch)
-        # print(SpireDF.head())
+        ## 1. Load the attitude data that corresponds to the timeperiod of interest
+                    # note (04/26/2024): the start and end epoch are expanded to +/- 1 day
 
-        # print(exists(file__AttitudeRaw))
-        # print(startEpoch, stopEpoch)
+        #### Load the previous and following day's files as well. 
+        one_day = pd.to_timedelta(1,'d')
+        day        = self.prms_arc['epoch_startDT'].strftime('%Y-%m-%d')
+        day_minus1 = (self.prms_arc['epoch_startDT'] - one_day).strftime('%Y-%m-%d')
+        day_plus1  = (self.prms_arc['epoch_startDT'] + one_day).strftime('%Y-%m-%d')
+        list_days = [day_minus1, day, day_plus1]
 
-        #### 2. Convert from GPS time to TDT time
+        startEpoch = day_minus1
+        stopEpoch  = day_plus1
+
+        #### Load each day's file and concatenate into a DF.
+        bigdf = {}
+        for iday in list_days:
+            file__AttitudeRaw =  raw_satinput['att_path']+f"{iday}/" \
+                        + f"spire_att_L1A_telAtt_v06.01_{iday}T00-00-00_FM{self.prms['satnum']:03d}.csv"
+            #print(f"{self.tab}* Reading From: {file__AttitudeRaw.split('/')[-1]}" )
+
+            bigdf[iday] = load_attitude_spire(file__AttitudeRaw)
+
+        SpireDF = pd.concat([ bigdf[iday] for iday in list_days]  )
+        SpireDF = SpireDF.reset_index(drop=True)
+        del bigdf
+
+
+        ## 2. Convert from GPS time to TDT time
         if date_ref == "date_gps":
             if verbose: print(f"{self.tabtab} - converting dates from GPS to TDT.")
             SpireDF['date_tdt'] = [time_gps_to_tdt(tim, leap_sec=37) 
@@ -167,6 +179,9 @@ class PrepareInputs():
         #         print('   Need to make considerations for new type of coordinate system')
         #         sys.exit(0)
 
+        ### 2.5) Prerequisite transformation for pos and vel
+        ###      from eci-teme-ofepoch to eci-j2000 for 
+ 
         # ZACH NOTE!! COORDINATE TRANSFORM HERE!!! CHECK!
         x_teme, y_teme, z_teme = map(list,  \
             zip(*[[xyz[0]*1000,xyz[1]*1000,xyz[2]*1000]\
@@ -175,14 +190,14 @@ class PrepareInputs():
                     zip(*[[xyz_dot[0]*1000,xyz_dot[1]*1000,xyz_dot[2]*1000] \
                     for xyz_dot in SpireDF['vel (eci)'] ]))
         teme = coord.TEME(x  = x_teme   *u.m,
-                        y  = y_teme   *u.m,
-                        z  = z_teme   *u.m,
-                        v_x= xdot_teme*u.m/u.s,
-                        v_y= ydot_teme*u.m/u.s,
-                        v_z= zdot_teme*u.m/u.s, 
-                        representation_type='cartesian', 
-                        differential_type='cartesian', 
-                        obstime=Time(SpireDF[date_ref]))
+                          y  = y_teme   *u.m,
+                          z  = z_teme   *u.m,
+                          v_x= xdot_teme*u.m/u.s,
+                          v_y= ydot_teme*u.m/u.s,
+                          v_z= zdot_teme*u.m/u.s, 
+                          representation_type='cartesian', 
+                          differential_type='cartesian', 
+                          obstime=Time(SpireDF[date_ref]))
         j2000 = teme.transform_to(coord.GCRS(obstime=Time(SpireDF[date_ref])))
         r_j2000 = j2000.cartesian.xyz.value.transpose()
         v_j2000 = j2000.cartesian.differentials['s'].d_xyz.value.transpose()
@@ -980,17 +995,23 @@ class PrepareInputs():
         CD_VALUE = str(self.prms['cd_value'])
         if self.prms['cd_adjustment_boolean'] == True:  ### Allow CD to ADJUST, i.e. multiple DRAG cards with times
             
+
+            print('hours_between_cd_adj',self.prms['hours_between_cd_adj'] )
+
             scaletimes = self.prms_arc['scaleparameter_times']
             scalestart = pd.to_datetime(scaletimes[0]).strftime('%y%m%d%H%M%S')
             scalestop = pd.to_datetime(scaletimes[-1]).strftime('%y%m%d%H%M%S')
             
-            # arc_options_cards['condrg'] = \
-            #             f"CONDRG  1        {self.prms['sat_ID']}"\
-            #                 + f"{scalestart}.00".rjust(20,' ')\
-            #                 + f"{scalestop}.00".rjust(15,' ') \
-            #                 + f"{0.5}".rjust(13,' ')\
-            #                 + f"{86400.}".rjust(8,' ')\
-            #                 +'\n' 
+            if self.prms['hours_between_cd_adj'] == 24:
+                pass
+            else:
+                arc_options_cards['condrg'] = \
+                            f"CONDRG  1        {self.prms['sat_ID']}"\
+                                + f"{scalestart}.00".rjust(20,' ')\
+                                + f"{scalestop}.00".rjust(15,' ') \
+                                + f"{0.5}".rjust(13,' ')\
+                                + f"{86400.}".rjust(8,' ')\
+                                +'\n' 
             # arc_options_cards['condrg'] = \
             #             f"CONDRG  1        {self.prms['sat_ID']}"\
             #                 + f"{start_ymdhms}.00".rjust(20,' ')\

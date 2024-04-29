@@ -24,7 +24,8 @@ from pygeodyn.prep_inputs import PrepareInputs
 
 ## level 2
 from pygeodyn.satellite_icesat2 import ICESat2
-from pygeodyn.satellite_spire   import Spire_Lemur2_v33
+# from pygeodyn.satellite_spire_v1   import Spire_Lemur2_v33
+from pygeodyn.satellite_spire_v2   import Spire_Lemur2_v34
 
 import os
 import yaml
@@ -57,15 +58,25 @@ from os.path import exists
 class SatelliteHandler(ICESat2):
     def __init__(self, whichSatellite):
         if whichSatellite == 'icesat2':
-            ICESat2.__init__(self)
+            # ICESat2.__init__(self)
             # print("check sat ICESat2")
-
+            pass
         elif    whichSatellite == 'spire083' \
              or whichSatellite == 'spire084' \
              or whichSatellite == 'spire085':
             pass
-        #     Spire_Lemur2_v33.__init__(self)
-        #     print("check sat Spire")
+            # Spire_Lemur2_v33.__init__(self)
+            # print("check sat Spire v1")
+        elif    whichSatellite == 'spire103' \
+             or whichSatellite == 'spire104' \
+             or whichSatellite == 'spire106' \
+             or whichSatellite == 'spire113' \
+             or whichSatellite == 'spire143' \
+             or whichSatellite == 'spire148' \
+             or whichSatellite == 'spire150':
+            # pass
+            Spire_Lemur2_v34.__init__(self)
+            print("Using class 'Spire_Lemur2_v34'")
         else:
             raise ValueError(f'ERROR, {whichSatellite} is not a valid satellite option')
         
@@ -170,48 +181,56 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
             self.prms['scaleparameter_times'] = None
         
 
+        if 'initialize_satellite' not in self.prms.keys():
+            self.prms['initialize_satellite'] = None
 
 
-        self.prms['initialize'] = False
-        # Store some commonly used settings into their own attributes
-        self.arc_input = self.prms['arc']  # datetime.strftime(pd.to_datetime(self.prms['epoch_start'][0]),'%Y.%j') 
-        # print("self.arc_input" , self.arc_input)
-        #### Set some more permanant default options.
-        # self.prms['verbose']          = False
-        self.verbose                  = False
-        self.prms['value_io_fortran'] = "None"
-        self.prms['DRHODZ_update']    = True
-        self.prms['recompile_on']     = False
-        self.prms['empirical_accels'] = False  # use empirical accelerations?
-        # Request Specific Raw Output Files?
-        self.prms['save_drag_file']   =  True
-        self.prms['save_accel_file']  =  True
         # Formatting.    
         self.tab    = '  '
         self.tabtab = '       '
+
+
+        if self.prms['initialize_satellite']==True:           
+            self.prms['initialize'] = True
+
+            ### add filler text to the variables since not used when initializing
+            self.prms['cd_model']       = '*****'
+            self.prms['run_specifier']  = '*****'
+            self.prms['file_string']    = '*****'
+            self.prms['global_options'] = '**INIT**'
+
+
+        else: 
+            self.prms['initialize'] = False
+            # Store some commonly used settings into their own attributes
+            self.arc_input = self.prms['arc']  # datetime.strftime(pd.to_datetime(self.prms['epoch_start'][0]),'%Y.%j') 
+            # print("self.arc_input" , self.arc_input)
+            #### Set some more permanant default options.
+            # self.prms['verbose']          = False
+            self.verbose                  = False
+            self.prms['value_io_fortran'] = "None"
+            self.prms['DRHODZ_update']    = True
+            self.prms['recompile_on']     = False
+            self.prms['empirical_accels'] = False  # use empirical accelerations?
+            # Request Specific Raw Output Files?
+            self.prms['save_drag_file']   =  True
+            self.prms['save_accel_file']  =  True
         
-        ### Prepare epoch and arc date info
+            ###### CD Model Input Handling
+            if self.prms['cd_model'] == 'DRIA': 
+                self.cd_model_params = self.prms['cd_model_params']
 
 
-        ###### CD Model Input Handling
-        if self.prms['cd_model'] == 'DRIA': 
-            self.cd_model_params = self.prms['cd_model_params']
-
-
-        ### Populate the io_geodyn user input files with control options
-        ### these allow FORTRAN to read in options without recompiling.
-        self.set_density_model_setup_params( self.prms['den_model'] )     
-
-
+            ### Populate the io_geodyn user input files with control options
+            ### these allow FORTRAN to read in options without recompiling.
+            self.set_density_model_setup_params( self.prms['den_model'] )  
+        
+        
+        
         ### Inherit the satellite class. 
         # Inheriter.__init__(self, self.prms['satellite'])
         SatelliteHandler.__init__(self, self.prms['satellite'])
 
-
-        # if self.prms['satellite'] == 'icesat2':
-        #     InheritIcesat2.__init__(self)
-        # elif self.prms['satellite'] == 'spire':
-        #     Inherit_Spire.__init__(self)
 
 
     def initialize_timeperiod_stage1(self, startdate, enddate, 
@@ -227,7 +246,6 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         """
         import pandas as pd
         from  datetime import datetime, timedelta
-
 
         self.prms['initialize'] = True
 
@@ -254,11 +272,9 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
                                               for idate in ends_linspace_dt]
 
         print(f"----------------------------------------------------------------------------")
-        print(f"Initializing the time period from "\
+        print(f"Initializing the time period from"\
               f"{startdate_list_str[0]} to {enddate_list_str[-1]}")
         print("     overwriting the epoch start and stop to match")
-        print(f"----------------------------------------------------------------------------")
-        print()
 
         ### Update the input date options 
         ###  (overwriting other date inputs that may otherwise be set)
@@ -267,30 +283,44 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
 
         #### Sept 2023. Add the maneuver days back in for ICESat-2
         ##   Add a check to see if the arcs have maneuver indicators (A or B)
-        arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times.txt'
-        ### Find the right range of dates in this file.
-        arcs = pd.read_csv(arc_timesfile, 
-                    sep = ',',
-        #             dtype=object,
-                    names = ['arc'  ,'epoch_start' ,'epoch_stop'  ,'orbit_start' ,'orbit_stop'],
-                    )
-        ### Convert to list and remove whitespaces in each string
-        arcs_withmaneuvs = []
-        for iarc in self.prms['arc']:
-            index = arcs['arc'].str.contains(iarc)
-            arcs_withmaneuvs.extend(arcs['arc'][index].values.tolist())
+        if self.prms['satellite'] == 'icesat2':
+            arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times.txt'
+            ### Find the right range of dates in this file.
+            arcs = pd.read_csv(arc_timesfile, 
+                        sep = ',',
+            #             dtype=object,
+                        names = ['arc'  ,'epoch_start' ,'epoch_stop'  ,'orbit_start' ,'orbit_stop'],
+                        )
+            ### Convert to list and remove whitespaces in each string
+            arcs_withmaneuvs = []
+            for iarc in self.prms['arc']:
+                index = arcs['arc'].str.contains(iarc)
+                arcs_withmaneuvs.extend(arcs['arc'][index].values.tolist())
 
-        arcs_withmaneuvs = [x.strip() for x in arcs_withmaneuvs]
-        # Update the arcs to reflect maneuvers
-        self.prms['arc'] = arcs_withmaneuvs
+            arcs_withmaneuvs = [x.strip() for x in arcs_withmaneuvs]
+        
+            # Update the arcs to reflect maneuvers
+            self.prms['arc'] = arcs_withmaneuvs
+            self.prms['epoch_start'] = [pd.to_datetime(idate[:8], format= '%Y.%j') for idate in arcs_withmaneuvs]
+            self.prms['epoch_stop']  = [pd.to_datetime(idate[:8], format= '%Y.%j')+dt_1day[0] for idate in arcs_withmaneuvs]
+
+        else:
+            self.prms['arc'] = [datetime.strftime(idate, '%Y.%j') for idate in starts_linspace_dt]
+
+            self.prms['epoch_start'] = [pd.to_datetime(idate[:8], format= '%Y.%j') for idate in self.prms['arc']]
+            self.prms['epoch_stop']  = [pd.to_datetime(idate[:8], format= '%Y.%j')+dt_1day[0] for idate in self.prms['arc']]
+
+
         self.arc_input = self.prms['arc'] 
 
-        print("self.prms['arc']", self.prms['arc'])
+        print("     self.prms['arc']", self.prms['arc'])
+        print(f"----------------------------------------------------------------------------")
+        print()
 
        
         
-        self.prms['epoch_start'] = [pd.to_datetime(idate[:8], format= '%Y.%j') for idate in arcs_withmaneuvs]
-        self.prms['epoch_stop']  = [pd.to_datetime(idate[:8], format= '%Y.%j')+dt_1day[0] for idate in arcs_withmaneuvs]
+        # self.prms['epoch_start'] = [pd.to_datetime(idate[:8], format= '%Y.%j') for idate in arcs_withmaneuvs]
+        # self.prms['epoch_stop']  = [pd.to_datetime(idate[:8], format= '%Y.%j')+dt_1day[0] for idate in arcs_withmaneuvs]
 
         # self.prms['epoch_start'] = startdate_list_str
         # self.prms['epoch_stop']  = enddate_list_str
@@ -308,9 +338,6 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         self.make_directory_check_exist(path_inputs+'/external_attitude',verbose=True)
         self.make_directory_check_exist(path_inputs+'/g2b'    ,verbose=True)
 
-
-        # print(self.dir_output_raw)
-        # print(self.prms['satellite'])
 
         #-------------------------------------------------------------------
         if self.prms['satellite'] =='icesat2':

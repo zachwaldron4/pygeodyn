@@ -861,8 +861,8 @@ class RunController():
         del_tmp = '/'.join(self.dir_tmp_arc.split('/')[:-1])
 
 
-        # print(self.tabtab,'Deleting tmp/: ',del_tmp)
-        # os.system('rm -rf'+' ' +del_tmp)
+        print(self.tabtab,'Deleting tmp/: ',del_tmp)
+        os.system('rm -rf'+' ' +del_tmp)
      
 
 

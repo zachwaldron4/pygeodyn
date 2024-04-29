@@ -145,11 +145,12 @@ class Util_Tools:
             verboseprint = lambda *a, **k: None # do-nothing function
 
         if os.path.exists(directory):
-            verboseprint('Directory Exists: ',directory)
+            verboseprint(self.tab +'* Directory Exists: ',directory)
         else:
             os.makedirs(directory)
-            verboseprint('Making Directory: ',directory)
+            verboseprint(self.tab +'*Making Directory: ',directory)
         return
+
 
     def geodyn_modify_inputs(self, DRHODZ_update, density_model):
         '''
@@ -902,6 +903,10 @@ class Util_Tools:
             maneuv_indicator = ''
 
         if self.prms['arc_type'] == "Nominal30hr_and_AB":
+            ### Arc names do not have a fraction attached
+            self.arcdate_for_files = '%d%03d'  % ( int(self.YR), int(doy)) + maneuv_indicator
+            self.arcdate_v2        = '%d.%03d' % ( int(self.YR), int(doy)) + maneuv_indicator        
+        elif self.prms['arc_type'] == "Nominal30hr":
             ### Arc names do not have a fraction attached
             self.arcdate_for_files = '%d%03d'  % ( int(self.YR), int(doy)) + maneuv_indicator
             self.arcdate_v2        = '%d.%03d' % ( int(self.YR), int(doy)) + maneuv_indicator

@@ -1279,7 +1279,7 @@
        
       ! remove the other values stored in CD and leave only the drag coeff.
       CD_check = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )   
-      CDprime = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )   
+      CDprime  = (TC1*(2.0D0*SCMASS)/(SCAREA*C3)  )  !  This is the scaling factor if Scaling is on
       if(kin_2.eq.1) WRITE(6,*) '  '
       if(kin_2.eq.1) WRITE(6,*) '           - pre-check- TC1      ', TC1
       if(kin_2.eq.1) WRITE(6,*) '           - pre-check- CD_check ', CD_check
