@@ -1,0 +1,14 @@
+cp hdr_template_bn_new fort.10
+
+cp ascp1950.430 fort.11
+
+
+create_ephemeris >out 2>err
+mv fort.20 ephem430.data
+rm -f fort*
+
+
+##### The output is on fort.20 and in this case an ephemeris 430 file from 1950 to 2050.
+
+
+

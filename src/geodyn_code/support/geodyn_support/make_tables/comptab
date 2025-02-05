@@ -1,0 +1,66 @@
+# INSTRUCTIONS ON HOW TO CREATE A GEODYN II BINARY EOP AND FLUX FILE
+#
+#
+#
+# Start with an ascii master file. In this directory it is called 
+# "master.original".
+# You can download the "daily" master file from:
+# https://portal.nccs.nasa.gov/datashare/geodyn/DAILY_TABLES/master_bih.table
+# This master file is uploaded daily after creating EOP and flux binary tables
+# with data from IERS/GFZ/NOAA
+#
+# 1. There are two programs that need to be compiled on your local machine
+#    a. tabY2Kg.f90
+#    b. getdate_option.f90
+#
+# 2. compile (comptab)
+#
+# ifort -o tabY2Kg tabY2Kg.f90 2>err1
+# ifort -o getdate_option getdate_option.f90 2>err2
+#
+# 3. Have the ascii master file in your directory as 
+#    master.original
+#
+# 4. Have an empty "emptyfile"  in your directory
+#
+# 5. Execute mk_binary
+#    This will create a GEODYN binary file with EOP data and Fluxes  
+#    " gdntable.data "
+
+chmod a+w *mod *.o
+rm *mod *.o
+
+
+# Compile subroutines using same compile configuration as the GEOYDN files.
+gfortran -pg -std=legacy -fdefault-integer-8 -fcray-pointer -O2 tabY2Kg.f90 2>comperr -o tabY2Kg
+# ifort -o tabY2Kg tabY2Kg.f90 2>comperr
+gfortran -pg -std=legacy -fdefault-integer-8 -fcray-pointer -O2 getdate_option.f90 2>comperr -o getdate_option
+# ifort -o getdate_option getdate_option.f90 2>comperr
+# -fdefault-integer-8
+#-fdefault-integer-8
+
+#####   -c flag   : Compile only, do not procude executable
+#####   -o flag   : Specify name of object, library, or executable file to write (-o filename)
+#####   -O2 flag  : Enables basic block level optimizations.
+#####   -pg       : allows linking for the GPROF profiler
+#####
+#####  -std=legacy 
+###             Specify the standard to which the program is expected to conform, 
+###             which may be one of ‘f95’, ‘f2003’, ‘f2008’, ‘f2018’, ‘gnu’, or ‘legacy’.
+###             The default value for std is ‘gnu’, which specifies a superset of the latest Fortran
+###             standard that includes all of the extensions supported by GNU Fortran, although 
+###             warnings will be given for obsolete extensions not recommended for use in new code.
+###             The ‘legacy’ value is equivalent but without the warnings for 
+###             obsolete extensions, and may be useful for old non-standard programs.
+##### -fdefault-integer-8 
+###             Set the default integer and logical types to an 8 byte wide type.
+###             This option also affects the kind of integer constants like 42. 
+###             Unlike -finteger-4-integer-8, it does not promote variables with explicit kind declaration.
+#####  -fcray-pointer 
+###             Enable the Cray pointer extension, which provides C-like pointer functionality.
+#####  -llapack and -lblas
+###             LAPACK (Linear Algebra PACKage) is a FORTRAN program system for solving linear equations for
+###             matrices which fit entirely in core. Links to LAPACK and its associated BLAS (Basic Linear Algebra Subroutines)  
+
+
+

@@ -24,8 +24,9 @@ from pygeodyn.prep_inputs import PrepareInputs
 
 ## level 2
 from pygeodyn.satellite_icesat2 import ICESat2
+# from pygeodyn.satellite_gracefoC import GRACEFOC
 # from pygeodyn.satellite_spire_v1   import Spire_Lemur2_v33
-from pygeodyn.satellite_spire_v2   import Spire_Lemur2_v34
+# from pygeodyn.satellite_spire_v37   import Spire_Lemur2_v37
 
 import os
 import yaml
@@ -37,29 +38,14 @@ import sys
 from os.path import exists
 
 
-# class InheritIcesat2(ICESat2):
-#     def __init__(self):
-#         ICESat2.__init__(self)
-#         pass
-    
-# class Inherit_Starlette(Satellite_Starlette):
-#     def __init__(self):
-#         Satellite_Starlette.__init__(self)
-#         pass
-    
-# class Inherit_Spire(Satellite_Spire):
-#     def __init__(self):
-#         Satellite_Spire.__init__(self)
-#         pass
 
-
-
-
+# class SatelliteHandler(GRACEFOC):
 class SatelliteHandler(ICESat2):
+# class SatelliteHandler(Spire_Lemur2_v37):
     def __init__(self, whichSatellite):
         if whichSatellite == 'icesat2':
-            # ICESat2.__init__(self)
-            # print("check sat ICESat2")
+            ICESat2.__init__(self)
+            print("check sat ICESat2")
             pass
         elif    whichSatellite == 'spire083' \
              or whichSatellite == 'spire084' \
@@ -74,55 +60,17 @@ class SatelliteHandler(ICESat2):
              or whichSatellite == 'spire143' \
              or whichSatellite == 'spire148' \
              or whichSatellite == 'spire150':
-            # pass
-            Spire_Lemur2_v34.__init__(self)
-            print("Using class 'Spire_Lemur2_v34'")
+            pass
+            # Spire_Lemur2_v37.__init__(self)
+            # print("Using class 'Spire_Lemur2_v3.7'")
+
+        elif whichSatellite == 'gracefoc':
+            # GRACEFOC.__init__(self)
+            # print("check sat GRACEFOC")
+            pass
         else:
             raise ValueError(f'ERROR, {whichSatellite} is not a valid satellite option')
         
-# class SatelliteHandler( Spire_Lemur2_v33):
-#     def __init__(self, whichSatellite):
-#         if whichSatellite == 'icesat2':
-#             pass
-#             # ICESat2.__init__(self)
-#             # print("check sat ICESat2")
-
-#         elif    whichSatellite == 'spire083' \
-#              or whichSatellite == 'spire084' \
-#              or whichSatellite == 'spire085':
-#             Spire_Lemur2_v33.__init__(self)
-#             print("check sat Spire")
-#         else:
-#             raise ValueError(f'ERROR, {whichSatellite} is not a valid satellite option')
-
-
-
-# class SatelliteHandler(ICESat2, Spire_Lemur2_v33):
-#     def __init__(self, whichSatellite):
-#         if whichSatellite is ICESat2 :
-#             ICESat2.__init__(self)
-#             print("check sat ICESat2")
-#         elif    whichSatellite is Spire_Lemur2_v33 :#
-#             #  or whichSatellite is 'spire084' \
-#             #  or whichSatellite is 'spire085':
-#             Spire_Lemur2_v33.__init__(self)
-#             print("check sat Spire")
-#         else:
-#             raise ValueError(f'ERROR, {whichSatellite} is not a valid satellite option')
-
-
-
-# class Inheriter():
-#     def __init__(self, whichOne):
-#         if      whichOne == 'icesat2':
-#             return SatelliteHandler(ICESat2)
-#         elif    whichOne == 'spire083' \
-#              or whichOne == 'spire084' \
-#              or whichOne == 'spire085':
-#             return SatelliteHandler(Spire_Lemur2_v33)
-#         else:
-#             raise ValueError("Error when inheriting the satellite. "\
-#                              +"Check Satellite name.")
 
 
 
@@ -272,7 +220,7 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
                                               for idate in ends_linspace_dt]
 
         print(f"----------------------------------------------------------------------------")
-        print(f"Initializing the time period from"\
+        print(f"Initializing the time period from "\
               f"{startdate_list_str[0]} to {enddate_list_str[-1]}")
         print("     overwriting the epoch start and stop to match")
 
@@ -284,7 +232,12 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         #### Sept 2023. Add the maneuver days back in for ICESat-2
         ##   Add a check to see if the arcs have maneuver indicators (A or B)
         if self.prms['satellite'] == 'icesat2':
-            arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times.txt'
+
+            
+            #### Zach changed to arc_times3  out the below on 2024/11/25 to run extended ICESat-2 dates (June 2022)
+
+            arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times_2019.txt'
+            # arc_timesfile = '/data/SatDragModelValidation/data/inputs/raw_inputdata/data_ICESat2/arc_times.txt'
             ### Find the right range of dates in this file.
             arcs = pd.read_csv(arc_timesfile, 
                         sep = ',',
@@ -340,8 +293,8 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
 
 
         #-------------------------------------------------------------------
-        if self.prms['satellite'] =='icesat2':
-            print("Do not update EXAT files for ICESat-2")
+        if self.prms['satellite'] =='icesat2' or self.prms['satellite'] =='gracefoc' :
+            print("Do not update EXAT files for ",self.prms['satellite'])
         else:
             print("Step 1: Construct daily external Attitude files")
         for iarc, arc in enumerate(self.arc_input):  # must be a list
@@ -363,7 +316,7 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
 
         
             ## Will need to make some way to work around the maneuver days
-            if self.prms['satellite'] =='icesat2':
+            if self.prms['satellite'] =='icesat2' or self.prms['satellite'] =='gracefoc':
                 pass
             else:
                 self.prep_exat_check(self.raw_satinput,             \
@@ -623,7 +576,7 @@ class Pygeodyn(Util_Tools,PrepareInputs, SatelliteHandler):
         self.set_density_model_setup_params( self.prms['den_model'] )
         for iarc, arc in enumerate(self.arc_input):
             self.arcnumber = iarc
-            if self.prms['satellite'] == 'icesat2':
+            if self.prms['satellite'] == 'icesat2' or self.prms['satellite'] == 'gracefoc':
 
                 print(f'|     Running GEODYN with orbit cloud')
                 self.set_file_paths_for_multiple_arcs( arc , iarc)            

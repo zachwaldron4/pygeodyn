@@ -1,0 +1,31 @@
+# 1. Sources of programs that need to be compiled on your platform.
+# ascii_to_binary.f90
+# create_ephemeris.f90
+
+# 2. Use the compile script to compile the sources:
+#       compile*
+#       You will create two executables:
+#           ascii_to_binary_eph430*
+#           create_ephemeris*
+
+# 3. Ascii files we have created from JPL data pertaining to ephemeris 430
+#       Need to be present in the directory you create the ephemeris.
+#           ascii_header_430
+#           ascp1950.430
+
+# 4. Execute
+#       RUN1_EPH_430*
+#       The following file will be created:
+#           hdr_template_bn_new
+
+# 5. Execute 
+#        RUN2_EPH_430*
+#        The file ephem430.data will be created. This is the input binary file 
+#        on unit 1 when running GEODYN IIS. 
+
+
+
+ifort -o ascii_to_binary_eph430 ascii_to_binary.f90 >comp.out 2>comperr
+ifort -o create_ephemeris create_ephemeris.f90 >comp.out 2>comperr
+chmod 755 ascii_to_binary_eph430
+chmod 755 create_ephemeris

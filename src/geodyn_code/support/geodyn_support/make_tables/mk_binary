@@ -1,0 +1,51 @@
+
+chmod a+w *mod *.o
+rm *mod *.o
+
+
+# Compile subroutines using same compile configuration as the GEOYDN files.
+gfortran -pg -O2 tabY2Kg.f90 2>comperr -o tabY2Kg
+# ifort -o tabY2Kg tabY2Kg.f90 2>comperr
+gfortran -pg -O2 getdate_option.f90 2>comperr -o getdate_option
+
+
+# -std=legacy -fdefault-integer-8 -fcray-pointer
+
+
+rm -f fort*
+## bring in the master file on fort.11 as input to tabY2K        
+cp master.original fort.11
+#
+# make sure to have an empty fort.12 in place of the update file      
+cp emptyfile fort.12
+
+#
+# copy options to be used in the tables program
+#
+# copy the current date to a file to be read by getdate_option
+# which creates an option file with the current date to be read by
+# the tables program
+#
+date > ftn9
+./getdate_option 
+mv ftn10  fort.4
+#
+cat ftn9
+# remove file containing the current date
+# rm ftn9
+
+cat fort.4
+#
+# run the tables program which creates a binary tables file
+# to be used by geodyn and a new ascii master file
+#
+./tabY2Kg>outtab 2>taberr
+# since there are no updates fort.13 must be identical to fort.11
+mv fort.13  new_master   
+
+mv fort.14 gdntable.data
+
+# remove copies of master file, updates and options files
+ rm -f  fort*
+#
+#

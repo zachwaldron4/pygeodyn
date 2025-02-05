@@ -274,6 +274,7 @@
       DATA N_amu/14.0067D0/
       !
       DOUBLE PRECISION, allocatable :: n_dens_temp(:)
+      DOUBLE PRECISION, allocatable :: HASDM_n_dens_temp(:)
       !
       REAL(8) :: CD_drag
       REAL(8) :: TEMP_atm
@@ -732,6 +733,32 @@
 
             !! Allocate the Number density/temperature array to be used with DRIA
             if(kentry.eq.1) allocate(n_dens_temp(6))
+
+
+            !!! input case for if using HASDM and DRIA... Get the n_dens_temp from JB2008
+            if (optionsin(4).eq.2) then         !!! DRIA
+                  if(choose_model.eq.7) then !!! HASDM
+
+                        if(kentry.eq.1) allocate(HASDM_n_dens_temp(9))
+
+                        if(kentry.eq.1) WRITE(6,*) '  '
+                        if(kentry.eq.1) WRITE(6,*) '  HASDM w DRIA.'
+                        if(kentry.eq.1) WRITE(6,*) '     * get rho_i and temp from JB2008 '
+                     CALL JB2008_call( MJDSEC,                 &  ! time in integral secs from geodyn ref time
+                        &     FSEC,                   &  ! fractional remaining seconds
+                        &     ALTI,                   &  ! atitude in meters
+                        &     PHI,                    &  ! geodetic latitude in radians (ouptut from PHLOUT.f90)
+                        &     XLAMB,                  &  ! geodetic longitude in radians (ouptut from PHLOUT.f90)
+                        &     RHO,                    &  ! I/O RHO to be overwritten
+                        &     DRHODZ,                 &  ! I/O pertial derivitive to be overwritten
+                        &     COSPSI,                 &  ! cosine of geocentric latitude
+                        &     SINPSI,                 &  ! sine of geocentric latitude
+                        &     LSTINR,                 &  ! denotes OD is on last inner iteration
+                        &     HASDM_n_dens_temp)               ! I/O array of consitituent densities
+                  RHO=0.0D0   
+                  C(1)=DRHODZ
+                  endif
+            endif
 
             !! Get the correct year and DOY 
             IJDSEC=MJDSEC+FSEC
@@ -1396,7 +1423,7 @@
                        &          n_dens_temp(9))
                        
                        
-              case(6:)  !------------------------------------------------------- Kamodo TIEGCM dria  
+              case(6)  !------------------------------------------------------- Kamodo TIEGCM dria  
                         ! Use Kamodo_orbit cloud method if case is greater than 6
                   if(kentry.eq.1) WRITE(6,*) ' =======       WITH TIEGCM Kamodo'
                                 !  'rho_interpd      ',  n_dens_temp(1)
@@ -1418,7 +1445,33 @@
                        &             n_dens_temp(3) +  &
                        &             n_dens_temp(4) +  &
                        &             n_dens_temp(5) )
+
+              case(7)  !------------------------------------------------------- Kamodo HASDM+JB2008 dria  
+                        ! Use Kamodo_orbit cloud method if case is greater than 6
+                  if(kentry.eq.1) WRITE(6,*) ' =======       WITH HASDM Orbit Cloud + JB2008 for DRIA'
+                
+
+                  ! Atmospheric temperature at satellite altitude
+                  TEMP_atm = HASDM_n_dens_temp(9) !   TEMP(2): Temperature at Input Position (deg K)
+                  ! Number of atomic oxygens in atmosphere
+                  NOXA_atm = HASDM_n_dens_temp(3) !   O !molecules/m**3)
+                  ! Calculate the Mean Molecular Mass
+                  MEANMOL_atm = ((HASDM_n_dens_temp(1)*N2_amu) +  & ! N2 [molecules/m**3]
+                              &     (HASDM_n_dens_temp(2)*O2_amu) +  & ! O2 [molecules/m**3]
+                              &     (HASDM_n_dens_temp(3)*O_amu)  +  & ! O  [molecules/m**3]
+                              &     (HASDM_n_dens_temp(4)*Ar_amu) +  & ! Ar [molecules/m**3]
+                              &     (HASDM_n_dens_temp(5)*He_amu) +  & ! He [molecules/m**3]
+                              &     (HASDM_n_dens_temp(6)*H_amu) ) / & ! H  [molecules/m**3]
+                              &            (HASDM_n_dens_temp(1)+ & 
+                              &        HASDM_n_dens_temp(2) +  & 
+                              &        HASDM_n_dens_temp(3) +  & 
+                              &        HASDM_n_dens_temp(4) +  & 
+                              &        HASDM_n_dens_temp(5) +  & 
+                              &        HASDM_n_dens_temp(6) )    
               end select
+
+
+
               if(kentry.eq.1) WRITE(6,*) ' ======= ======= ======= ======= ======= ======= '
         
          endif  !  END MSIS case [>>IF(IATDN.EQ.5) THEN<<] -------------------------------------------- END MSIS DRIA    

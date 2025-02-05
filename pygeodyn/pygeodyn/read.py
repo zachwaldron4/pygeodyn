@@ -165,7 +165,7 @@ class ReadRawOutput:
 #         data_dict_sat_packets['Satellite ECF Z velocity']        =[]
 #         data_dict_sat_packets['Polar Motion X']                  =[]
 #         data_dict_sat_packets['Polar Motion Y']                  =[]
-#         data_dict_sat_packets['Beta prime angle']                =[]
+        data_dict_sat_packets['Beta prime angle']                =[]
 #         data_dict_sat_packets['Yaw angle']                       =[]
 #         data_dict_sat_packets['Orbit Angle']                     =[]
 #         data_dict_sat_packets['Q(1)']                            =[]
@@ -229,7 +229,7 @@ class ReadRawOutput:
 #                     data_dict_sat_packets['Satellite ECF Z velocity'].append(a[(index +15) - 2])
 #                     data_dict_sat_packets['Polar Motion X'].append(a[(index +16) - 2])
 #                     data_dict_sat_packets['Polar Motion Y'].append(a[(index +17) - 2])
-#                     data_dict_sat_packets['Beta prime angle'].append(a[(index +18) - 2])
+                    data_dict_sat_packets['Beta prime angle'].append(a[(index +18) - 2])
 #                     data_dict_sat_packets['Yaw angle'].append(a[(index +19) - 2])
 #                     data_dict_sat_packets['Orbit Angle'].append(a[(index +20) - 2])
 #                     data_dict_sat_packets['Q(1)'].append(a[(index +21) - 2])
@@ -736,7 +736,7 @@ class ReadRawOutput:
 
                     apriorival = float(data_1stline[19:41])
                     prevval = float(data_2ndtline[19:41])
-                    currentval  = float(data_3rdline[19:41])
+                    currentval  = float(data_3rdline[18:41])   ## Zach edit 2025/01/13, to add the negative sign sometimes seen in the scaling factors
                     totalDelta = float(data_2ndtline[42:62])
                     currentDelta =  float(data_3rdline[42:62])
                     AprioriSigma = float(data_2ndtline[63:78])
@@ -893,7 +893,7 @@ class ReadRawOutput:
 #                                     'YDOT',
 #                                     'ZDOT',
                                   ],
-                            sep = '\s+',
+                            sep = r"\s+",
                             )
 
         #### The below takes the double precision format from Fortran (D) and puts an 
@@ -1102,7 +1102,7 @@ class ReadRawOutput:
                                      "ctheta_4",
                                      "ctheta_14",
                                   ],
-                            sep = '\s+',
+                            sep = r"\s+",
                             )
 
         drag_df = pd.DataFrame(Drag_csv)
@@ -1360,7 +1360,7 @@ class ReadRawOutput:
                                     'genrel_acc_mag',
                                     'fburn_acc_mag',
                                   ],
-                            sep = '\s+',
+                            sep = r"\s+",
                             )
 
         #### The below takes the double precision format from Fortran (D) and puts an 
@@ -1904,7 +1904,7 @@ class ReadRawOutput:
             resid_meas_summry_iter = pd.read_csv(self._iieout_filename, 
                                        skiprows = text_smry_meas_line_no + 2  , 
                                        nrows =  count_lines-2,
-                                       sep = '\s+',
+                                       sep = r"\s+",
                                        names =['Binary' ,
                                                 'NUMBER' ,
                                                 'MEAN' ,
@@ -2208,7 +2208,7 @@ class ReadRawOutput:
 #         xyzline = pd.read_csv(self.StateVector_epochs_datafile, 
 #                     skiprows = line_no, 
 #                     nrows=1,           
-#                     sep = '\s+',
+#                     sep = "\s+",
 #                     dtype=str,
 #                     names = [
 #                             'Date',
@@ -2415,7 +2415,7 @@ class ReadRawOutput:
             PCE_data = pd.read_csv(StateVector_PCE_datafile, 
                         skiprows = first_line, 
                         nrows=last_line-first_line,           
-                        sep = '\s+',
+                        sep = r"\s+",
                         dtype=str,
                         names = [
                                 'Date',
@@ -2959,12 +2959,14 @@ class ReadRawOutput:
                 index_PCEY = self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['TYPE'] =='PCEY'
                 index_PCEZ = self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['TYPE'] =='PCEZ'
                 #
-                rms_PCEX = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'])
-                rms_PCEY = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS'])
-                rms_PCEZ = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['RMS'])
-                w_rms_PCEX = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS'])
-                w_rms_PCEY = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS'])
-                w_rms_PCEZ = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['WTD-RMS'])
+                # print(f"------check {self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS']}" )
+                # print(f"------float check {float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'].values)}")
+                rms_PCEX = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'].values)
+                rms_PCEY = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS'].values)
+                rms_PCEZ = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['RMS'].values)
+                w_rms_PCEX = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS'].values)
+                w_rms_PCEY = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS'].values)
+                w_rms_PCEZ = float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['WTD-RMS'].values)
 
                 #### Total number of observational Residuals
                 N = np.sum(np.array(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter]['NUMBER']))
@@ -3008,12 +3010,12 @@ class ReadRawOutput:
                 data['Total_iters'].append(int(final_iter))
                 data['RMS_total_XYZ'].append(RMS_total)     
                 data['w_RMS_total_XYZ'].append(w_RMS_total)
-                data['PCEX_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'])    )
-                data['PCEX_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS']))
-                data['PCEY_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS']))
-                data['PCEY_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS']))
-                data['PCEZ_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['RMS']))
-                data['PCEZ_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['WTD-RMS']))
+                data['PCEX_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['RMS'].values)    )
+                data['PCEX_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEX]['WTD-RMS'].values))
+                data['PCEY_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['RMS'].values))
+                data['PCEY_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEY]['WTD-RMS'].values))
+                data['PCEZ_RMS'].append(    float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['RMS'].values))
+                data['PCEZ_WTD-RMS'].append(float(self.__dict__['Residuals_summary'][self.arcdate_v2][index_iter][index_PCEZ]['WTD-RMS'].values))
                 ## None of the above is available for orbit propagation runs
 
             ############--------------------------------------------------------
@@ -3056,8 +3058,8 @@ class ReadRawOutput:
                     print('No matching lastline time: ',arc_last_time_str, last_line )
             # print("first_line", first_line)
             # print("last_line" , last_line)
-#             print("arc_first_time", arc_first_time)
-#             print("arc_last_time", arc_last_time)
+            # print("arc_first_time", arc_first_time)
+            # print("arc_last_time", arc_last_time)
 
             ####    If you get an error here stating that either first_line or last_line is 
             ####    It is probably an issue with the date in the arc not matching up with the dates given in the PCEfile
@@ -3069,7 +3071,7 @@ class ReadRawOutput:
 
                 PCE_data_raw = pd.read_csv(StateVector_PCE_datafile, 
                             skiprows = 23, 
-                            sep = '\s+',
+                            sep = r"\s+",
                             names = [
                                 'DateYMD',
                                 'DateHMS',
@@ -3102,7 +3104,7 @@ class ReadRawOutput:
             #     PCE_data = pd.read_csv(StateVector_PCE_datafile, 
             #                 skiprows = first_line, 
             #                 nrows=last_line-first_line,           
-            #                 sep = '\s+',
+            #                 sep = "\s+",
             #                 dtype=str,
             #                 names = [
             #                         'Date',
@@ -3129,7 +3131,7 @@ class ReadRawOutput:
             #     PCE_data = pd.read_csv(StateVector_PCE_datafile, 
             #                 skiprows = first_line, 
             #                 # nrows=last_line - first_line,           
-            #                 sep = '\s+',
+            #                 sep = "\s+",
             #                 dtype=str,
             #                 names = [
             #                     'DateYMD',

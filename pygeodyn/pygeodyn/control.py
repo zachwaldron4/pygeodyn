@@ -75,14 +75,14 @@ class RunController():
         
         if skip_files==False:
             #### Add temporary fix for spire
-            if 'spire'in self.prms['satellite']:
-                dir_gravfield = self.path_data_inputs +'/common_2018'+''
-                dir_atmograv  = self.path_data_inputs +'/common_2018'+''
-                dir_ephem     = self.path_data_inputs +'/common_2018'+''
-            else:
-                dir_gravfield = path_inputs + '/gravity'
-                dir_atmograv  = path_inputs + '/atgrav'
-                dir_ephem     = path_inputs + '/ephem'
+            # if 'spire'in self.prms['satellite']:
+            dir_gravfield = self.path_data_inputs +'/common_2018'+''
+            dir_atmograv  = self.path_data_inputs +'/common_2018'+''
+            dir_ephem     = self.path_data_inputs +'/common_2018'+''
+            # else:
+            #     dir_gravfield = path_inputs + '/gravity'
+            #     dir_atmograv  = path_inputs + '/atgrav'
+            #     dir_ephem     = path_inputs + '/ephem'
 
             #--Planetary Ephemeris
             self.file_ephem      = dir_ephem     +'/'+ self.filename_ephem
@@ -255,7 +255,7 @@ class RunController():
         print('| '+" --------- ")
         print('| '+"   Satellite   ",self.prms['satellite'])
         print('| '+"   Run Type    ",self.prms['run_type'])
-        print('| '+"   CD Type     ",self.prms['cd_type'])
+#         print('| '+"   CD Type     ",self.prms['cd_type'])
         print('| '+"   CD Value    ",self.prms['cd_value'])
         print('| '+"   Density     ",self.prms['den_model'])
         print('|')
@@ -873,7 +873,7 @@ class RunController():
     ###########################################################################
     ##### MAKE THE CSV
     def make_orbit_cloud_csv(self, kamodo_flag=True, HASDM_format_flag=False):
-        """
+        r"""
         This function goes through the steps necessary to construct the Orbit Cloud File.
         
         The file has the following format for the columns:
@@ -938,7 +938,7 @@ class RunController():
                                      'Lat',
                                      'Lon',
                                          ],
-                            sep = '\s+',
+                            sep = r"\s+",
                             )
                
         #### Fix the formatting of the dates in the density file
@@ -1308,7 +1308,7 @@ class RunController():
                 ##### Open the right files:
                 path_sethasdm_database = \
                     "/data/SatDragModelValidation/data/inputs/atmos_models/hasdm/SET_hasdm_density_database/"
-
+                # print('date_list')
                 # print(date_list[0])
                 # print(date_list)
                 max_doy   = pd.to_datetime(date_list, format='%y%m%d%H%M%S').max().day_of_year
@@ -1338,29 +1338,29 @@ class RunController():
                 files_to_load = list(np.unique(files_to_load))
                 print(f"****Loading SET-HASDM files: {files_to_load}****")
                                 
-                #### Find the indices for the desired Day of Year (DOY)
-                doy1 = np.sort(DOYs)[0]-1
-                # doy1 = np.sort(DOYs)[0]
-                doy2 = np.sort(DOYs)[-1]+1
-                flag1=True
+                # #### Find the indices for the desired Day of Year (DOY)
+                # doy1 = np.sort(DOYs)[0]-1
+                # # doy1 = np.sort(DOYs)[0]
+                # doy2 = np.sort(DOYs)[-1]+1
+                # flag1=True
 
 
-                with open(path_sethasdm_database+files_to_load[0], 'r') as f:
-                    for line_no, line_text in enumerate(f):
-                        ### First instance of DOY
-                        if str(doy1) in line_text[5:10] and flag1:
-                            index1 = line_no
-                            flag1=False
-                        ### Final instance of DOY
-                        if str(doy2) in line_text[5:10]:
-                            index2 = line_no
-                            break
-                print('Will load data from index', index1,'to', index2 ,'for days', doy1,'-',doy2)
+                # with open(path_sethasdm_database+files_to_load[0], 'r') as f:
+                #     for line_no, line_text in enumerate(f):
+                #         ### First instance of DOY
+                #         if str(doy1) in line_text[5:10] and flag1:
+                #             index1 = line_no
+                #             flag1=False
+                #         ### Final instance of DOY
+                #         if str(doy2) in line_text[5:10]:
+                #             index2 = line_no
+                #             break
+                # print('Will load data from index', index1,'to', index2 ,'for days', doy1,'-',doy2)
 
 
                 ### Prepare to load HASDM dataset with correct dateformat and columns
-                from datetime import datetime
-                custom_date_parser= lambda v,w,x,y,z: datetime.strptime(f"{v}-{w} {x}:{y}:{z}", "%Y-%j %H:%M:%S.000")
+                # from datetime import datetime
+                # custom_date_parser= lambda v,w,x,y,z: datetime.strptime(f"{v}-{w} {x}:{y}:{z}", "%Y-%j %H:%M:%S.000")
                 col_names =   [ "IYR"   ,   #  = year
                                 "IYDAY" ,   #  = day of year (1 through 366)
                                 "IHR"   ,   #  = hour of day
@@ -1379,21 +1379,38 @@ class RunController():
 
                     ### Load HASDM data
                     df_bighasdm[file]  =  pd.read_csv(path_sethasdm_database+file,
-                                                skiprows = index1, 
-                                                nrows=(index2-index1),           
-                                                sep = '\s+',
-                                                parse_dates={'Date':["IYR" ,"IYDAY" ,"IHR","IMIN","SEC"]},
-                                                date_parser=custom_date_parser,
+                                                # skiprows = index1, 
+                                                # nrows=(index2-index1),           
+                                                sep = r"\s+",
+                                                dtype=object,
                                                 names= col_names)
+                    df_bighasdm[file]['Date'] =  pd.to_datetime(     df_bighasdm[file]['IYR'] \
+                                                                +' '+df_bighasdm[file]['IYDAY'] \
+                                                                +' '+df_bighasdm[file]['IHR'] \
+                                                                +' '+df_bighasdm[file]['IMIN'] \
+                                                                +' '+df_bighasdm[file]['SEC'], \
+                                                 format="%Y %j %H %M %S.000")
+                    df_bighasdm[file] = df_bighasdm[file].query(f"Date >= '{pd.to_datetime(date_list, format='%y%m%d%H%M%S').min()}' and Date < '{pd.to_datetime(date_list, format='%y%m%d%H%M%S').max()}'")
+
+                    del df_bighasdm[file]['IYR']
+                    del df_bighasdm[file]['IYDAY']
+                    del df_bighasdm[file]['IHR']
+                    del df_bighasdm[file]['IMIN']
+                    del df_bighasdm[file]['SEC']
+
                 ### Concatinate it all into one dataframe
                 DF = pd.concat([ df_bighasdm[file] for file in files_to_load]  )
                 DF.reset_index(drop=True)
+
+                ### Reduce size of dataframe by dropping unused altitudes.
+                # DF = DF.query(f"HTM > '{(min_alt/1000)-25}'and HTM < '{(max_alt/1000)+25}'")
+
 
                 from gc import collect as gc_collect
                 ### Save memory:
                 del df_bighasdm
                 del DF['Date']
-                hasdm_matrix = DF.to_numpy()
+                hasdm_matrix = DF.to_numpy(dtype=float)
                 del DF
                 gc_collect()
 

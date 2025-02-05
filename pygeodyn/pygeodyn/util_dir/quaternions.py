@@ -196,18 +196,32 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
     from scipy.spatial.transform import Slerp
     
     
+    print(f"start_date {start_date}")
+    print(f"stop_date {stop_date}")
+
+
+
     ### Make linearly spaced time series from the Epoch Start to Epoch End 
     ### given some time cadence (interval).
-    startDT = pd.to_datetime(start_date, format='%Y-%m-%d %H:%M:%S')
-    stopDT  = pd.to_datetime(stop_date,  format='%Y-%m-%d %H:%M:%S')
+    # startDT = pd.to_datetime(start_date, format='%Y-%m-%d %H:%M:%S')
+    # stopDT  = pd.to_datetime(stop_date,  format='%Y-%m-%d %H:%M:%S')
+    startDT = pd.to_datetime(start_date, format='ISO8601')
+    stopDT  = pd.to_datetime(stop_date,  format='ISO8601')
 
-    freq_str = str(int(interval))+"S"
+    freq_str = str(int(interval))+"s"
     times_linspace = pd.date_range(start=startDT, end=stopDT, freq=freq_str)
     times_linspace = [pd.Timestamp(date).to_pydatetime()
                                 for date in times_linspace ]
 
+
+    ### Remove any duplicates or repeats that may corrupt the interpolation
+    ###  Slerp require STRICTLY INCREASING array
+    SpireDF = SpireDF.drop_duplicates(subset=["date_tdt"], keep='first'\
+                ).sort_values(by='date_tdt'\
+                                ).reset_index(drop=True)
+
     
-    
+    print(SpireDF['date_tdt'].values)
     
     ### Simplify variable name
     Spire_dates = SpireDF['date_tdt'].values
@@ -225,7 +239,7 @@ def call_slerp_SpireAtt(SpireDF, start_date, stop_date, interval ):
     key_rots = R.from_quat(SpireDF['q_SBF_to_J2000'] .values.tolist() )
     
     #### Construct a Slerp interpolation object    
-    slerp_obj = Slerp(np.sort(tim_unix_spire),key_rots)
+    slerp_obj = Slerp(tim_unix_spire,key_rots)
 
     #### Interpolate the quaternions to desired time series
     interp_rots = slerp_obj(tim_unix_interp)

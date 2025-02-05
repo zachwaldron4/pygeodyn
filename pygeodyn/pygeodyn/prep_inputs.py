@@ -50,7 +50,14 @@ class PrepareInputs():
         """
 
         ### External Attitude File must have name as follows
-        self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+        if self.prms['satellite'] =='gracefoc':
+                dayone = (pd.to_datetime(self.arcdate_for_files, format= '%Y%j')- pd.to_timedelta(24,'h')).strftime('%Y%j')
+                daytwo = (pd.to_datetime(dayone, format= '%Y%j')+ pd.to_timedelta(48,'h')).strftime('%Y%j')
+                self.filename_exat = f"EXAT01_AB_{dayone}115947_{daytwo}115947.gz"
+        else:
+            self.filename_exat = 'EXAT01.'+self.arc_name_id+'.gz'
+
+
         ## full path to file
         self.file_exat = self.dir_exat +'/' +self.filename_exat
 
@@ -60,7 +67,12 @@ class PrepareInputs():
         if not exists(self.file_exat) or bool_overwrite==True:
             
             ### If writing, use unzipped binary filenames
-            self.filename_exat = 'EXAT01.'+self.arc_name_id+''
+            if self.prms['satellite'] =='gracefoc':
+                dayone = (pd.to_datetime(self.arcdate_for_files, format= '%Y%j')- pd.to_timedelta(24,'h')).strftime('%Y%j')
+                daytwo = (pd.to_datetime(dayone, format= '%Y%j')+ pd.to_timedelta(48,'h')).strftime('%Y%j')
+                self.filename_exat = f"EXAT01_AB_{dayone}115947_{daytwo}115947"
+            else:
+                self.filename_exat = 'EXAT01.'+self.arc_name_id+''
             ## full path to file
             self.file_exat = self.dir_exat +'/' +self.filename_exat
 
@@ -87,7 +99,7 @@ class PrepareInputs():
         from astropy import time
         # from pygeodyn.util_dir.coordinate_systems import call_teme2eci
         if 'spire' in self.prms['satellite']:
-            from pygeodyn.satellite_spire_v2 import load_attitude_spire 
+            from pygeodyn.satellite_spire_v37 import load_attitude_spire 
 
 
         interval          = raw_satinput['att_interval']  # seconds
@@ -109,10 +121,14 @@ class PrepareInputs():
         day        = self.prms_arc['epoch_startDT'].strftime('%Y-%m-%d')
         day_minus1 = (self.prms_arc['epoch_startDT'] - one_day).strftime('%Y-%m-%d')
         day_plus1  = (self.prms_arc['epoch_startDT'] + one_day).strftime('%Y-%m-%d')
+        # day_plus2  = 
         list_days = [day_minus1, day, day_plus1]
 
-        startEpoch = day_minus1
-        stopEpoch  = day_plus1
+
+        # note (04/26/2024): the start and end epoch are expanded to +/- 1 day
+        ### this may need to change
+        startEpoch = (self.prms_arc['epoch_startDT'] - pd.to_timedelta(6,'h'))#.strftime('%Y-%m-%d')
+        stopEpoch  = (self.prms_arc['epoch_startDT'] + pd.to_timedelta(30,'h'))#.strftime('%Y-%m-%d')
 
         #### Load each day's file and concatenate into a DF.
         bigdf = {}
@@ -222,6 +238,9 @@ class PrepareInputs():
 
         
         #### 4. Interpolate Quaternions to linearly spaced time series
+
+        # print('TEST HELLO')
+
         if verbose: print(f"{self.tabtab} - Interpolate Quaternions to linearly "\
                                          +f"spaced time series from {startEpoch} to {stopEpoch}")
         exatt_quats = call_slerp_SpireAtt(SpireDF, 
@@ -256,18 +275,18 @@ class PrepareInputs():
             
             ### Time info
             exat_param[sat]['startEpoch']  = float(pd.to_datetime(
-                        startEpoch,format='%Y-%m-%d %H:%M:%S'
+                        startEpoch,format='ISO8601'
                         ).strftime(format='%y%m%d%H%M%S'))
             exat_param[sat]['stopEpoch']   = float(pd.to_datetime(
                                                     stopEpoch,\
-                                                    format='%Y-%m-%d %H:%M:%S'
+                                                    format='ISO8601'
                                                     ).strftime(\
                                                     format='%y%m%d%H%M%S'))
             exat_param[sat]['interval']    = float(interval) 
             exat_param[sat]['startFrac_S'] = float(pd.to_datetime(
-                        startEpoch, format='%Y-%m-%d %H:%M:%S').microsecond)
+                        startEpoch, format='ISO8601').microsecond)
             exat_param[sat]['stopFrac_S']  = float(pd.to_datetime(
-                        stopEpoch, format='%Y-%m-%d %H:%M:%S').microsecond)
+                        stopEpoch, format='ISO8601').microsecond)
             ### Panel info:
                 # QQQ is the total # of separate movable panels   
                 #      + antenna quaternion sets for this satellite 
@@ -728,8 +747,8 @@ class PrepareInputs():
         # Initialize the date variables that help with time keeping
         epoch_start = self.prms['epoch_start'][self.arcnumber]
         epoch_stop   = self.prms['epoch_stop'][self.arcnumber]
-        epoch_startDT = pd.to_datetime(epoch_start,format='%Y-%m-%d %H:%M:%S')
-        epoch_stopDT  = pd.to_datetime(epoch_stop ,format='%Y-%m-%d %H:%M:%S')
+        epoch_startDT = pd.to_datetime(epoch_start,format='ISO8601')#format='%Y-%m-%d %H:%M:%S')
+        epoch_stopDT  = pd.to_datetime(epoch_stop ,format='ISO8601')#format='%Y-%m-%d %H:%M:%S')
         #
         dt_2days = pd.Series(pd.to_timedelta(48,'h'))
         dt_1days = pd.Series(pd.to_timedelta(24,'h'))
@@ -919,6 +938,10 @@ class PrepareInputs():
             elems1['7']  = f'{ 1 }'.rjust(1 ,' ') #I1           # use cartesian
             if self.prms['coord_ref_system']  =='j2000':
                 elems1['8']  = f'{ 1 }'.rjust(1 ,' ') #I1       # use j2000
+            elif self.prms['coord_ref_system']  =='true_of_reference':
+                elems1['8']  = f'{ 0 }'.rjust(1 ,' ') #I1       # use TOR
+            else:
+                sys.exit(0)
             elems1['11_14']  = f'{300:04}'.rjust(4 ,' ')#I4     # earth is body
             #
             elems1['21_40']  = f"{self.prms_arc['X']  :18.10f}".ljust(20,' ') #D20.14
@@ -952,6 +975,8 @@ class PrepareInputs():
         # coordinate system
         if self.prms['coord_ref_system']  == 'j2000':
             orbfil.append(f"{2}".rjust(1,' ') )     # use j2000
+        else:
+            orbfil.append(f"{0}".rjust(1,' ') )     # use True of Date (TOD)
         # number of satellites
         if self.prms['number_of_satellites']  == 1:
             orbfil.append(f"{0}".rjust(1,' ') )     # use 1 satellite
@@ -1005,11 +1030,18 @@ class PrepareInputs():
             if self.prms['hours_between_cd_adj'] == 24:
                 pass
             else:
+#                 arc_options_cards['condrg'] = \
+#                             f"CONDRG  1        {self.prms['sat_ID']}"\
+#                                 + f"{scalestart}.00".rjust(20,' ')\
+#                                 + f"{scalestop}.00".rjust(15,' ') \
+#                                 + f"{0.5}".rjust(13,' ')\
+#                                 + f"{86400.}".rjust(8,' ')\
+#                                 +'\n' 
                 arc_options_cards['condrg'] = \
                             f"CONDRG  1        {self.prms['sat_ID']}"\
                                 + f"{scalestart}.00".rjust(20,' ')\
                                 + f"{scalestop}.00".rjust(15,' ') \
-                                + f"{0.5}".rjust(13,' ')\
+                                + f"{1}".rjust(13,' ')\
                                 + f"{86400.}".rjust(8,' ')\
                                 +'\n' 
             # arc_options_cards['condrg'] = \
@@ -1066,7 +1098,7 @@ class PrepareInputs():
                                     +f"{self.prms['sat_ID']}".rjust(7,' ')\
                                     +f"{CD_VALUE}".rjust(20,' ')          \
                                     +f"{scaletime_i}.00".rjust(15) \
-                                    +f"10.0".rjust(13) \
+                                    +f"0.15".rjust(13) \
                                     +'\n' 
 
 

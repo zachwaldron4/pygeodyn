@@ -1153,10 +1153,14 @@ class Util_Tools:
         prms_arc['epoch_start'] = self.prms['epoch_start'][self.arcnumber]
         prms_arc['epoch_stop']  = self.prms['epoch_stop'][self.arcnumber]
         #
+        # prms_arc['epoch_startDT'] = pd.to_datetime(prms_arc['epoch_start'],\
+        #                                             format='%Y-%m-%d %H:%M:%S')
+        # prms_arc['epoch_stopDT']  = pd.to_datetime(prms_arc['epoch_stop'],\
+        #                                             format='%Y-%m-%d %H:%M:%S')
         prms_arc['epoch_startDT'] = pd.to_datetime(prms_arc['epoch_start'],\
-                                                    format='%Y-%m-%d %H:%M:%S')
+                                                    format='ISO8601')
         prms_arc['epoch_stopDT']  = pd.to_datetime(prms_arc['epoch_stop'],\
-                                                    format='%Y-%m-%d %H:%M:%S')
+                                                    format='ISO8601')
         prms_arc['start_ymdhms']= prms_arc['epoch_startDT'].strftime(format='%y%m%d%H%M%S')
         prms_arc['stop_ymdhms'] = prms_arc['epoch_stopDT'].strftime(format='%y%m%d%H%M%S')
 

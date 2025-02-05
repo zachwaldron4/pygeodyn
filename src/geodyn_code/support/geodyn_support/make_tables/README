@@ -1,0 +1,32 @@
+
+INSTRUCTIONS ON HOW TO CREATE A GEODYN II BINARY EOP AND FLUX FILE
+
+Start with an ascii master file. In this directory it is called 
+"master.original".
+You can download the "daily" master file from:
+https://portal.nccs.nasa.gov/datashare/geodyn/DAILY_TABLES/master_bih.table
+This master file is uploaded daily after creating EOP and flux binary tables
+with data from IERS/GFZ/NOAA
+
+1. There are two programs that need to be compiled on your local machine
+   a. tabY2Kg.f90
+   b. getdate_option.f90
+
+2. compile (comptab)
+./comptab
+
+
+<!-- ifort -o tabY2Kg tabY2Kg.f90 2>err1
+ifort -o getdate_option getdate_option.f90 2>err2 -->
+
+3. Have the ascii master file in your directory as 
+   master.original
+
+4. Have an empty "emptyfile"  in your directory
+
+5. Execute mk_binary
+   This will create a GEODYN binary file with EOP data and Fluxes  
+   " gdntable.data "
+
+./mk_binary
+

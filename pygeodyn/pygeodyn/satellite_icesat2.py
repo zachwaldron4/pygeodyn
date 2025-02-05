@@ -72,7 +72,7 @@ class ICESat2(RunController, ReadRawOutput):
         self.prms['number_of_satellites']    = 1
 
 
-
+        print(self.prms['epoch_start'])
         self.raw_satinput = {} 
         datestr1 = pd.to_datetime(self.prms['epoch_start'][0]).strftime('%Y%m%d')    
         datestr2 = pd.to_datetime(self.prms['epoch_start'][-1]).strftime('%Y%m%d') 
@@ -97,8 +97,10 @@ class ICESat2(RunController, ReadRawOutput):
         if self.prms['global_options']=='pso_2018':
 
             #### Atmospheric Gravity file name
+            # self.filename_atmograv  = 'ATGRAV.glo-3HR_20160101-PRESENT'\
+            #                                     +'_9999_AOD1B_0006.0090'
             self.filename_atmograv  = 'ATGRAV.glo-3HR_20160101-PRESENT'\
-                                                +'_9999_AOD1B_0006.0090'
+                                                +'_9999_AOD1B_0006.0090_long'
             #### Planetary Ephemeris file name
             self.filename_ephem     = 'ephem1430.data_2025'
             #### Gravity field file name
@@ -106,6 +108,14 @@ class ICESat2(RunController, ReadRawOutput):
             ### Global Option Cards for PSO            
             self.file_globalcards = self.path_data_inputs +'/common_2018'\
                                         +'/icesat2_pso_global_cards.txt'
+
+        elif self.prms['global_options']=='**INIT**':
+            print(f"{self.tab}* Global Option not needed during Initializing Stage")
+            self.filename_atmograv  = '*****'
+            self.filename_ephem     = '*****'
+            self.filename_gravfield = '*****'
+            self.file_globalcards   = '*****'
+
 
         else:
             print("Run Settings Error: User input bad option as global_options.")

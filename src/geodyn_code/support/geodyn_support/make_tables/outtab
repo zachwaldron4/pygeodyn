@@ -1,0 +1,54 @@
+
+
+                                             **********************************************
+                                             **********************************************
+                                             **           TABLE UPDATE PROGRAM           **
+                                             **                   FOR                    **
+                                             ** A1-UTC,A1-UT1,POLAR MOTION AND FLUX DATA **
+                                             **              VERSION 0110.0              **
+                                             **********************************************
+                                             **********************************************
+
+
+                                              DATE AND TIME FOR THIS RUN WAS 240923 210009
+
+
+
+
+                    OPTIONS      T=ON,F=OFF
+               OVERRIDE OPTION =     F
+             PRINT MASTER FILE =     F
+             PRINT GEODYN FILE =     F
+              NO BIH REFERENCE =     F
+     NEW BIH COORDINATE SYSTEM =     T
+        FOR XP AND UT1 DATA      
+         SOLAR FLUX PREDICTION =     F
+              TITLE ='Sep2324 '
+
+
+**********************************************************************************************************************************
+
+                                                    DATES FROM OLD MASTER FILE
+0            A1-UTC         POLE/A1-UT1/EOPS             FLUXS               FLUXAP              FLUXKP              SUNSPOT
+          START  END          START    END        START   END   PRED       START  END          START  END          START  END
+         560307 170101     57092300  24122200    580301 241130      0     580301 241130       660101 241130            0      0
+
+
+**************************************************LISTING OF UPDATES ON UNIT 12***************************************************
+
+
+
+**********************************************************************************************************************************
+
+                                                    DATES AFTER UPDATES ADDED 
+0            A1-UTC         POLE/A1-UT1/EOPS             FLUXS               FLUXAP              FLUXKP              SUNSPOT
+          START  END          START    END        START   END   PRED       START  END          START  END          START  END
+         560307 170101     57092300  24122200    580301 241130      0     580301 241130       660101 241130            0      0
+
+**********************************************************************************************************************************
+
+     MAXIMUM NUMBER OF WORDS ALLOCATED FOR TEMPORARY ARRAYS =  200000
+     MAXIMUM NUMBER OF WORDS USED FOR TEMPORARY ARRAYS      =147852
+
+
+                              *** NORMAL END OF JOB ***

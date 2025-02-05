@@ -1,0 +1,6 @@
+cp ascii_header_430 fort.10
+
+ascii_to_binary_eph430 >out 2>err
+
+mv fort.20 hdr_template_bn_new
+

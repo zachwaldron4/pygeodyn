@@ -218,8 +218,16 @@ def get_continuous_scaled_densities(OBJECT, model_dict, choose_model, scale_cade
     if scale_cadence ==24:
         den_dict['denscaled']=[]
 
-
+    # if choose_model == 'novmsis2':
+    #     ARCSET = OBJECT[choose_model]['global_params']['arc_input']
+    #     print(ARCSET)
     for ii,arc in enumerate(OBJECT[choose_model]['global_params']['arc_input']):
+
+        # if arc not in ARCSET:
+        #     print(f'skipping {arc}, {choose_model}')
+        #     continue
+
+
         epochstart = OBJECT[choose_model]['global_params']['prms']['epoch_start'][ii]
         epochstop = OBJECT[choose_model]['global_params']['prms']['epoch_stop'][ii]
         hrs        = pd.to_datetime(epochstart, format='%Y-%m-%d %H:%M:%S').hour
@@ -233,6 +241,8 @@ def get_continuous_scaled_densities(OBJECT, model_dict, choose_model, scale_cade
         arc_type = OBJECT[choose_model]['global_params']['prms']['arc_type']
         if arc_type == "Nominal30hr_and_AB":
             arc_name =arc[:8] + maneuv_indicator
+            arc_name_DOY = arc[:8]
+
         else:
             arc_name =arc[:8]+('%.3f'%frachours).lstrip('0')
         #
@@ -381,7 +391,10 @@ def calc_rho_ScaledEnsembleWgtAvg(models_dens,run_dict, month_list, run_list):
 
         for it,val in enumerate(models_dens[month+run_list[0]]['datescaled']):
             ## Get the index of the weight directly from the timestamp
-            indx_wgt = pd.to_datetime(val).strftime(format='%Y.%j')
+            indx_wgt = (pd.to_datetime(val)- pd.to_timedelta(1,'s')).strftime(format='%Y.%j')
+            if indx_wgt == '2019.365':
+                continue
+
 
             ### Initialize date level list
             it_models = []
@@ -450,14 +463,20 @@ def normalize_density_msis2(sat_data, sat_name, alt_norm):
     SWI_option = [1.0]*25
     SWI_option[8] = -1.0
     
-    if sat_name =='GRACE-FO':
+    if sat_name =='GRACE-FO Acc':
         rhoname  = 'dens_x'
         datename = 'Date'
     if sat_name =='ICESat-2':
         rhoname  = 'Rho_x'
         datename = 'date'
+    if sat_name =='GFO-C POD':
+        rhoname  = 'Rho_x'
+        datename = 'date'
 
-        
+    if sat_name =='Spire 104' or  sat_name =='Spire 113' or  sat_name =='Spire 106':
+        rhoname  = 'Rho_x'
+        datename = 'date'
+
         
     from netCDF4 import Dataset
     import numpy as np 
@@ -507,35 +526,45 @@ def normalize_density_msis2(sat_data, sat_name, alt_norm):
     #################################################################
     Kp_to_Ap = {0.    : 0  ,
                 0.1   : 0  ,
+                0.2   : 1  ,
                 0.3   : 2  ,
+                0.6   : 3  ,
                 0.7   : 3  ,
-                 1.   : 4  ,
-                 1.3  : 5  ,
-                 1.7  : 6  ,
-                 2.   : 7  ,
-                 2.3  : 9  ,
-                 2.7  : 12 ,
-                 3.   : 15 ,
-                 3.3  : 18 ,
-                 3.7  : 22 ,
-                 4.   : 27 ,
-                 4.3  : 32 ,
-                 4.7  : 39 ,
-                 5    : 48 ,
-                 5.3  : 56 ,
-                 5.7  : 67 ,
-                 6.   : 80 ,
-                 6.3  : 94 ,
-                 6.7  : 111,
-                 7    : 132,
-                 7.3  : 154,
-                 7.7  : 179,
-                 8.   : 207,
-                 8.3  : 236,
-                 8.7  : 300,
-                 9.   : 400}
-
-    path_to_gpi = '/data/SatDragModelValidation/data/inputs/atmos_models/geo_phys_indicies/gpi_1960001-2021243_f107aDaily.nc'
+                1.   : 4  ,
+                1.3  : 5  ,
+                1.6  : 6  ,
+                1.7  : 6  ,
+                2.   : 7  ,
+                2.3  : 9  ,
+                2.6  : 12 ,
+                2.7  : 12 ,
+                3.   : 15 ,
+                3.3  : 18 ,
+                3.6  : 22 ,
+                3.7  : 22 ,
+                4.   : 27 ,
+                4.3  : 32 ,
+                4.6  : 39 ,
+                4.7  : 39 ,
+                5    : 48 ,
+                5.3  : 56 ,
+                5.6  : 67 ,
+                5.7  : 67 ,
+                6.   : 80 ,
+                6.3  : 94 ,
+                6.6  : 111,
+                6.7  : 111,
+                7    : 132,
+                7.3  : 154,
+                7.6  : 179,
+                7.7  : 179,
+                8.   : 207,
+                8.3  : 236,
+                8.6  : 300,
+                8.7  : 300,
+                9.   : 400}
+    # path_to_gpi = '/data/SatDragModelValidation/data/inputs/atmos_models/geo_phys_indicies/gpi_1960001-2021243_f107aDaily.nc'
+    path_to_gpi = '/data/SatDragModelValidation/data/inputs/atmos_models/geo_phys_indicies/gpi_1960001-2023355.nc'
     variables    =  ['year_day', 'f107d', 'f107a', 'kp']
     gpi_data    =  read_nc_file(path_to_gpi, variables)
     gpi_data    =  gpi_data[0]
@@ -588,8 +617,8 @@ def normalize_density_msis2(sat_data, sat_name, alt_norm):
 
 
     #### clear up some space        
-    truncate_date    = np.logical_and(gpi_data['Date'].year>=2018 , gpi_data['Date'].year<=2019 )
-    truncate_date3hr =  np.logical_and(gpi_data['Date_3hrAp'].year>=2018 , gpi_data['Date_3hrAp'].year<=2019 )
+    truncate_date    = np.logical_and(gpi_data['Date'].year>=2018 , gpi_data['Date'].year<=2022 )
+    truncate_date3hr =  np.logical_and(gpi_data['Date_3hrAp'].year>=2018 , gpi_data['Date_3hrAp'].year<=2022 )
 
     gpi_data['Date_3hrAp'] = gpi_data['Date_3hrAp'][truncate_date3hr]
     gpi_data['Ap']         = np.array(gpi_data['Ap'])[truncate_date3hr]
@@ -661,7 +690,9 @@ def normalize_density_msis2(sat_data, sat_name, alt_norm):
         # print(output2_norm[0,0,0,0][0] / output2_sat[0,0,0,0][0])
         # print(sat_data[rhoname][it])
         ### Add the values to the growing lists
-        Dnorm[it]   = sat_data[rhoname][it] * (output2_norm[0,0,0,0][0] / output2_sat[0,0,0,0][0])   # normalized density to norm altitude with MSIS2
+        # normalized density to norm altitude with MSIS2
+#         Dnorm[it]   = sat_data[rhoname][it] * (output2_norm[0,0,0,0][0] / output2_sat[0,0,0,0][0])   
+        Dnorm[it]   = sat_data[rhoname][it] * (output2_norm[0][0] / output2_sat[0][0])   
 
     return(Dnorm)
 
